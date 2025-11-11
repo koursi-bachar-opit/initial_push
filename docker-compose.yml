@@ -28,7 +28,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - .:/app   # remove for production (for dev runs)
+      - .:/app
 
 volumes:
   pgdata:
