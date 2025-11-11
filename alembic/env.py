@@ -10,11 +10,9 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Import your models' metadata for 'autogenerate' support if needed
+# Import model metadata for 'autogenerate' support if needed
 # from your_app.models import Base
 target_metadata = None
-
-# --- NEW CODE STARTS HERE ---
 
 # Read DATABASE_URL (or TEST_DATABASE_URL) from environment
 db_url = os.getenv("DATABASE_URL") or os.getenv("TEST_DATABASE_URL")
@@ -28,8 +26,6 @@ if db_url.startswith("postgres://"):
 
 # Set URL into Alembic config
 config.set_main_option("sqlalchemy.url", db_url)
-
-# --- NEW CODE ENDS HERE ---
 
 
 def run_migrations_offline() -> None:
