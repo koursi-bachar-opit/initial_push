@@ -22,8 +22,6 @@ jobs:
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       TEST_DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
-      SUPABASE_JWT_PUBLIC_KEY: ${{ secrets.SUPABASE_JWT_PUBLIC_KEY }}
-      JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
 
     steps:
       - name: Fail fast if required secrets are missing
