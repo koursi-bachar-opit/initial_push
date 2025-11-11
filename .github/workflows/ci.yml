@@ -33,6 +33,12 @@ jobs:
               exit 1
             fi
           done
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          TEST_DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+        
 
       - name: Checkout code
         uses: actions/checkout@v4
