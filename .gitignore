@@ -1,0 +1,24 @@
+# env / secrets
+.env
+*.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# pytest & coverage
+.pytest_cache/
+coverage.xml
+htmlcov/
+.cache/
+.coverage*
+
+# build
+dist/
+build/
+
+# OS junk
+.DS_Store
+Thumbs.db
