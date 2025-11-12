@@ -35,29 +35,3 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
-
-
-# from pydantic_settings import BaseSettings
-# from pydantic import Field, ConfigDict
-
-# class Settings(BaseSettings):
-#     model_config = ConfigDict(
-#         env_file=".env",
-#         case_sensitive=True,
-#         extra="ignore"  # Allow undeclared environment variables (e.g., POSTGRES_USER)
-#     )
-
-#     # Environment
-#     ENV: str = Field(default="local")
-
-#     # Database (single unified app DB)
-#     DATABASE_URL: str = Field(
-#         #default=""#
-#     )
-
-#     # Optional auth/crypto placeholders (safe for future use)
-#     SUPABASE_JWT_PUBLIC_KEY: str | None = None
-#     ENCRYPTION_KEY: str | None = None
-
-
-# settings = Settings()
