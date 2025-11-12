@@ -169,3 +169,21 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# --- For this project ---
+# env / secrets
+*.env
+
+# Python
+*.pyc
+.venv/
+
+# pytest & coverage
+.cache/
+
+# build
+dist/
+
+# OS junk
+.DS_Store
+Thumbs.db
