@@ -3,6 +3,10 @@ from logging.config import fileConfig
 from sqlalchemy import engine_from_config, pool
 from alembic import context
 
+from app.database import Base
+from app import models
+
+
 # Alembic Config object
 config = context.config
 
@@ -12,7 +16,7 @@ if config.config_file_name is not None:
 
 # Import model metadata for 'autogenerate' support if needed
 # from your_app.models import Base
-target_metadata = None
+target_metadata = Base.metadata
 
 # Read DATABASE_URL (or TEST_DATABASE_URL) from environment
 db_url = os.getenv("DATABASE_URL") or os.getenv("TEST_DATABASE_URL")
