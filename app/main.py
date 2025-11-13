@@ -1,9 +1,20 @@
 from fastapi import FastAPI
 from app.api import listings
 from app.api import bookings
+from fastapi.middleware.cors import CORSMiddleware
 
 # Main FastAPI application entrypoint
 app = FastAPI(title="Remote Servers Marketplace", version="0.2")
+
+FRONTEND_ORIGIN = "https://remote-servers-marketplace-test.onrender.com"    #change to real site
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[FRONTEND_ORIGIN],   # allow Render site
+    allow_credentials=True,
+    allow_methods=["*"],               # allow all HTTP methods
+    allow_headers=["*"],               # allow all headers
+)
 
 # Include routers for modular endpoints
 app.include_router(listings.router, prefix="/api/v1/listings", tags=["listings"])
