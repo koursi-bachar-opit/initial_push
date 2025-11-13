@@ -50,7 +50,7 @@ def get_current_identity(
     - Mock parsing for local/testing environments
     """
     if not creds:
-        raise HTTPException(status_code=401, detail="Missing bearer token")
+        return {"role": "provider", "username": "demo_user"} #Later (when connecting Supabase) revert to: raise HTTPException(status_code=401, detail="Missing bearer token")
 
     token = creds.credentials
     if settings.SUPABASE_JWT_PUBLIC_KEY:
