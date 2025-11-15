@@ -1,15 +1,20 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
 import os
 
+from fastapi import FastAPI, Request, Depends, Response
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel
+
 from app.api import bookings, listings
+from app.auth import optional_user
 
-# Main FastAPI application entrypoint
-app = FastAPI(title="Remote Servers Marketplace", version="0.2")
 
-# CORS (adjust when deploying full production frontend)
+# FastAPI APP SETUP
+
+app = FastAPI(title="Remote Servers Marketplace", version="0.3")
+
 FRONTEND_ORIGIN = "https://remote-servers-marketplace-test.onrender.com"
 
 app.add_middleware(
@@ -17,78 +22,100 @@ app.add_middleware(
     allow_origins=[
         FRONTEND_ORIGIN,
         "http://localhost:8000",
-        "http://127.0.0.1:8000"
+        "http://127.0.0.1:8000",
     ],
-    #allow_origins=[FRONTEND_ORIGIN],    # hosted Render site
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# API Routers
+
+# Routers
+
 app.include_router(listings.router, prefix="/api/v1/listings", tags=["listings"])
 app.include_router(bookings.router, prefix="/api/v1/bookings", tags=["bookings"])
+
 
 @app.get("/api/v1/health")
 def health():
     return {"status": "ok"}
 
 
-# STATIC FRONTEND (MVP + scalable)
 
-# Absolute path to /frontend directory
-frontend_dir = os.path.join(os.path.dirname(__file__), "..", "frontend")
+# STATIC + TEMPLATES
 
-# Serve entire frontend at root (/) — best for MVP & future development
-app.mount(
-    "/", 
-    StaticFiles(directory=frontend_dir, html=True), 
-    name="frontend"
-)
+BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+templates_dir = os.path.join(BASE_DIR, "frontend", "templates")
+static_dir = os.path.join(BASE_DIR, "frontend", "static")
 
-# Note:
-# html=True means:
-#   - visiting "/" returns index.html
-#   - unknown paths under "/" also return index.html (good for future SPA routing)
+templates = Jinja2Templates(directory=templates_dir)
+app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 
-# from fastapi import FastAPI
-# from app.api import bookings, listings
-# from fastapi.middleware.cors import CORSMiddleware
-# from fastapi.staticfiles import StaticFiles
-# from fastapi.responses import FileResponse
-# import os
+# AUTH SESSION STORAGE ENDPOINT
+class StoreSession(BaseModel):
+    token: str
 
-# # Main FastAPI application entrypoint
-# app = FastAPI(title="Remote Servers Marketplace", version="0.2")
 
-# FRONTEND_ORIGIN = "https://remote-servers-marketplace-test.onrender.com"    #change to real site
+@app.post("/auth/store-session")
+async def store_session(payload: StoreSession, response: Response):
+    """
+    Stores the Supabase JWT in an HttpOnly cookie
+    so Jinja2-rendered pages know the logged-in user.
+    """
+    response.set_cookie(
+        key="access_token",
+        value=payload.token,
+        httponly=True,
+        secure=False,  # set True when using HTTPS
+        samesite="lax",
+        path="/"
+    )
+    return {"status": "ok"}
 
-# app.add_middleware(
-#     CORSMiddleware,
-#     allow_origins=[FRONTEND_ORIGIN],   # allow Render site
-#     allow_credentials=True,
-#     allow_methods=["*"],               # allow all HTTP methods
-#     allow_headers=["*"],               # allow all headers
-# )
 
-# # Include routers for modular endpoints
-# app.include_router(listings.router, prefix="/api/v1/listings", tags=["listings"])
-# app.include_router(bookings.router, prefix="/api/v1/bookings", tags=["bookings"])
+# PAGE ROUTES (JINJA2)
+@app.get("/", response_class=HTMLResponse)
+async def home(request: Request, user=Depends(optional_user)):
+    return templates.TemplateResponse("index.html", {"request": request, "user": user})
 
-# @app.get("/api/v1/health")
-# def health():
-#     """Simple health-check endpoint used by CI/CD and uptime monitors."""
-#     return {"status": "ok"}
 
-# # Static Frontend Serving
-# frontend_dir = os.path.join(os.path.dirname(__file__), "..", "frontend")
+@app.get("/login", response_class=HTMLResponse)
+async def login_page(request: Request, user=Depends(optional_user)):
+    if user:
+        return RedirectResponse("/")
+    return templates.TemplateResponse("login.html", {"request": request})
 
-# # Serve the static folder (JS, CSS, images)
-# app.mount("/static", StaticFiles(directory=frontend_dir), name="static")
 
-# # Serve index.html when visiting root or unknown routes
-# @app.get("/", include_in_schema=False)
-# async def serve_index():
-#     index_path = os.path.join(frontend_dir, "index.html")
-#     return FileResponse(index_path)
+@app.get("/signup", response_class=HTMLResponse)
+async def signup_page(request: Request, user=Depends(optional_user)):
+    if user:
+        return RedirectResponse("/")
+    return templates.TemplateResponse("signup.html", {"request": request})
+
+
+@app.get("/listings", response_class=HTMLResponse)
+async def listings_page(request: Request, user=Depends(optional_user)):
+    return templates.TemplateResponse("listings.html", {"request": request, "user": user})
+
+
+@app.get("/bookings", response_class=HTMLResponse)
+async def bookings_page(request: Request, user=Depends(optional_user)):
+    if not user:
+        return RedirectResponse("/login")
+    return templates.TemplateResponse("bookings.html", {"request": request, "user": user})
+
+
+@app.get("/dashboard", response_class=HTMLResponse)
+async def dashboard_page(request: Request, user=Depends(optional_user)):
+    if not user:
+        return RedirectResponse("/login")
+    return templates.TemplateResponse("dashboard.html", {"request": request, "user": user})
+
+
+# LOGOUT (Clears Cookie)
+@app.get("/logout")
+async def logout():
+    response = RedirectResponse("/")
+    response.delete_cookie("access_token")
+    return response

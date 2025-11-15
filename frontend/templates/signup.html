@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="max-w-md mx-auto bg-white p-6 rounded-lg border shadow-sm">
+    <h1 class="text-2xl font-semibold mb-4">Create an account</h1>
+
+    <form id="signup-form" class="space-y-4">
+
+        <div>
+            <label class="text-sm font-medium" for="email">Email</label>
+            <input id="email" type="email" required
+                   class="mt-1 w-full border rounded-lg p-2.5">
+        </div>
+
+        <div>
+            <label class="text-sm font-medium" for="password">Password</label>
+            <input id="password" type="password" required
+                   class="mt-1 w-full border rounded-lg p-2.5">
+        </div>
+
+        <div>
+            <label class="text-sm font-medium" for="confirm">Confirm Password</label>
+            <input id="confirm" type="password" required
+                   class="mt-1 w-full border rounded-lg p-2.5">
+        </div>
+
+        <!-- ROLE SELECTION -->
+        <fieldset>
+            <legend class="text-sm font-medium mb-1">Account Type</legend>
+
+            <label class="flex items-center gap-2 mb-1">
+                <input type="radio" name="role" value="buyer" checked>
+                <span>Buyer</span>
+            </label>
+
+            <label class="flex items-center gap-2">
+                <input type="radio" name="role" value="provider">
+                <span>Provider</span>
+            </label>
+        </fieldset>
+
+        <div id="signup-error" class="text-red-600 text-sm"></div>
+
+        <button class="w-full bg-blue-600 text-white p-2.5 rounded-lg hover:bg-blue-700">
+            Create Account
+        </button>
+    </form>
+</div>
+
+<script type="module" src="/static/js/signup.js"></script>
+
+{% endblock %}

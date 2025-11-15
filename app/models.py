@@ -11,6 +11,7 @@ class BookingStatus(str, Enum):
     COMPLETED = "completed"
     CANCELLED = "cancelled"
 
+
 class Listing(Base):
     """Represents a rentable compute resource or server."""
     __tablename__ = "listings"
@@ -22,13 +23,25 @@ class Listing(Base):
     # One-to-many relationship with bookings
     bookings = relationship("Booking", back_populates="listing")
 
+
 class Booking(Base):
     """Represents a booking event made by a buyer for a specific listing."""
     __tablename__ = "bookings"
 
     id = Column(Integer, primary_key=True, index=True)
-    buyer_name = Column(String, nullable=False)
-    listing_id = Column(Integer, ForeignKey("listings.id", ondelete="CASCADE"), nullable=False)
+
+    # Link to the buyer user account
+    buyer_user_id = Column(
+        Integer,
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+    listing_id = Column(
+        Integer,
+        ForeignKey("listings.id", ondelete="CASCADE"),
+        nullable=False,
+    )
 
     # Booking window
     start_time = Column(DateTime(timezone=True), nullable=False)
@@ -43,7 +56,9 @@ class Booking(Base):
         default=BookingStatus.REQUESTED,
     )
 
+    # Relationships
     listing = relationship("Listing", back_populates="bookings")
+    buyer = relationship("User")
 
     # Runtime usage details
     active_session_start = Column(DateTime(timezone=True), nullable=True)
@@ -51,11 +66,13 @@ class Booking(Base):
     actual_price_charged = Column(Float, nullable=True)
     usage_seconds = Column(Float, nullable=True)
 
+
 class UserRole(str, Enum):
     BUYER = "buyer"
     PROVIDER = "provider"
     ADMIN = "admin"
     ORG_ADMIN = "org_admin"
+
 
 class User(Base):
     __tablename__ = "users"

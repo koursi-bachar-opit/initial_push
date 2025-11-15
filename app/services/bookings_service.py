@@ -3,11 +3,19 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException
 from app import models
 
+
 # This service layer file handles all business logic related to Bookings.
 # Each function corresponds to an action in the booking lifecycle:
 # request → confirm → cancel → start → end
 
-def request_booking(db: Session, listing_id: int, buyer_name: str, start_time: datetime, end_time: datetime):
+
+def request_booking(
+    db: Session,
+    listing_id: int,
+    buyer_user_id: int,
+    start_time: datetime,
+    end_time: datetime,
+):
     """
     Create a new booking request for a specific listing.
 
@@ -15,7 +23,7 @@ def request_booking(db: Session, listing_id: int, buyer_name: str, start_time: d
     1. Fetch the listing from the database using its ID.
     2. Validate that the listing exists.
     3. Calculate the estimated total price based on duration (in hours * price).
-    4. Create a new Booking record with 'REQUESTED' status.
+    4. Create a new Booking record with 'REQUESTED' status and buyer_user_id.
     5. Persist and return the new booking.
     """
     listing = db.get(models.Listing, listing_id)
@@ -28,11 +36,11 @@ def request_booking(db: Session, listing_id: int, buyer_name: str, start_time: d
     # Create and store the booking object
     booking = models.Booking(
         listing_id=listing_id,
-        buyer_name=buyer_name,
+        buyer_user_id=buyer_user_id,
         start_time=start_time,
         end_time=end_time,
         total_price_estimate=total_price,
-        status=models.BookingStatus.REQUESTED
+        status=models.BookingStatus.REQUESTED,
     )
     db.add(booking)
     db.commit()
