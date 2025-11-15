@@ -67,20 +67,25 @@ def get_current_user(
     token = creds.credentials.strip()
 
     # 2. MOCK TOKEN FOR TESTS
-    # Accept "Bearer provider:alice" and "Bearer buyer:alice"
     if ":" in token:
         try:
             role_str, email = token.split(":", 1)
             role_enum = models.UserRole(role_str.lower())
         except Exception:
             raise HTTPException(status_code=401, detail="Invalid mock token")
-
         return models.User(
             id=999,
             supabase_id=f"mock-{email}",
             email=email,
             role=role_enum,
         )
+
+    # 2b. INVALID NON-JWT, NON-MOCK TOKEN → REJECT
+    if token.count(".") != 2:
+        raise HTTPException(status_code=401, detail="Invalid bearer token")
+
+    # 3. REAL JWT TOKEN
+    decoded = _decode_supabase_jwt(token)
 
     # 3. REAL JWT TOKEN
     decoded = _decode_supabase_jwt(token)
