@@ -59,6 +59,7 @@ def get_current_user(
     creds: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db),
 ):
+    print("AUTH DEBUG: token received =", creds.credentials if creds else None)
     # 1. Missing credentials
     if not creds:
         raise HTTPException(status_code=401, detail="Missing bearer token")
