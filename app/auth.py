@@ -59,37 +59,37 @@ def get_current_user(
     creds: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db),
 ):
-    # If no token, dev mode
+    # --------------------------
+    # 1. Missing token
+    # --------------------------
     if not creds:
-        if os.getenv("DEV_MODE") == "true":
-            return models.User(
-                id=0,
-                supabase_id="dev-user",
-                email="dev@example.com",
-                role=models.UserRole.PROVIDER,
-            )
         raise HTTPException(status_code=401, detail="Missing bearer token")
 
-    token = creds.credentials
+    token = creds.credentials.strip()
 
-    # CI MOCK MODE: handle "provider:alice"
-    if ":" in token and not token.count(".") == 2:
-        # Format: role:email
+    # -----------------------------------------
+    # 2. MOCK TOKEN MODE FOR TESTS
+    # Format:  role:email   (NO JWT)
+    # Example: provider:alice   or   buyer:alice
+    # -----------------------------------------
+    if ":" in token and token.count(".") != 2:
         try:
-            role_str, email = token.split(":")
+            role_str, email = token.split(":", 1)
             role_enum = models.UserRole(role_str.upper())
         except Exception:
-            raise HTTPException(status_code=401, detail="Invalid mock token")
+            raise HTTPException(status_code=401, detail="Invalid mock token format")
 
-        # Return a fake user WITHOUT touching DB
+        # Return a fake user object for testing
         return models.User(
-            id=999,  # CI test user
+            id=999,
             supabase_id=f"mock-{email}",
             email=email,
             role=role_enum,
         )
 
-    # REAL JWT: decode Supabase token
+    # -----------------------------------------
+    # 3. REAL SUPABASE JWT HANDLING
+    # -----------------------------------------
     decoded = _decode_supabase_jwt(token)
 
     sub = decoded.get("sub")
