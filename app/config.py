@@ -30,9 +30,9 @@ class Settings(BaseSettings):
     TEST_DATABASE_URL: str | None = Field(default=None)
 
     # Supabase Auth
-    SUPABASE_URL: str = Field(...)
-    SUPABASE_ANON_KEY: str = Field(...)
-    SUPABASE_JWT_SECRET: str = Field(...)
+    SUPABASE_URL: str | None = None
+    SUPABASE_ANON_KEY: str | None = None
+    SUPABASE_JWT_SECRET: str | None = None
 
     # Optional: useful for Docker-based PG setups
     POSTGRES_DB: str | None = None
