@@ -71,7 +71,7 @@ def get_current_user(
     if ":" in token:
         try:
             role_str, email = token.split(":", 1)
-            role_enum = models.UserRole(role_str.upper())
+            role_enum = models.UserRole(role_str.lower())
         except Exception:
             raise HTTPException(status_code=401, detail="Invalid mock token")
 
