@@ -59,27 +59,21 @@ def get_current_user(
     creds: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db),
 ):
-    # --------------------------
-    # 1. Missing token
-    # --------------------------
+    # 1. Missing credentials
     if not creds:
         raise HTTPException(status_code=401, detail="Missing bearer token")
 
     token = creds.credentials.strip()
 
-    # -----------------------------------------
-    # 2. MOCK TOKEN MODE FOR TESTS
-    # Format:  role:email   (NO JWT)
-    # Example: provider:alice   or   buyer:alice
-    # -----------------------------------------
-    if ":" in token and token.count(".") != 2:
+    # 2. MOCK TOKEN FOR TESTS
+    # Accept "Bearer provider:alice" and "Bearer buyer:alice"
+    if ":" in token:
         try:
             role_str, email = token.split(":", 1)
             role_enum = models.UserRole(role_str.upper())
         except Exception:
-            raise HTTPException(status_code=401, detail="Invalid mock token format")
+            raise HTTPException(status_code=401, detail="Invalid mock token")
 
-        # Return a fake user object for testing
         return models.User(
             id=999,
             supabase_id=f"mock-{email}",
@@ -87,14 +81,11 @@ def get_current_user(
             role=role_enum,
         )
 
-    # -----------------------------------------
-    # 3. REAL SUPABASE JWT HANDLING
-    # -----------------------------------------
+    # 3. REAL JWT TOKEN
     decoded = _decode_supabase_jwt(token)
 
     sub = decoded.get("sub")
     email = decoded.get("email") or decoded.get("user_metadata", {}).get("email")
-
     if not sub or not email:
         raise HTTPException(status_code=401, detail="Invalid JWT payload")
 
