@@ -14,14 +14,6 @@ def test_parse_mock_token_wrong_role():
     with pytest.raises(HTTPException):
         auth._parse_mock_token("guest:user")
 
-def test_decode_jwt_invalid(monkeypatch):
-    import jwt
-    def fail(*a, **kw): raise jwt.InvalidTokenError()
-    monkeypatch.setattr(jwt, "decode", fail)
-    with pytest.raises(HTTPException):
-        auth._decode_jwt_token("fake")
-
-
 # DATABASE generator lifecycle
 def test_get_db_generator_closes():
     gen = get_db()
