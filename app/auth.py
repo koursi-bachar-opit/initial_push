@@ -14,19 +14,19 @@ security = HTTPBearer(auto_error=False)
 
 def _get_or_create_user(db: Session, sub: str, email: str, role: str | None) -> models.User:
     """
-    Fetch user from DB or create one.
-    Now: Applies role from Supabase metadata on first creation.
+    Fetch or create user from DB.
+    Role from Supabase metadata must match enum values (lowercase).
     """
     user = db.query(models.User).filter_by(supabase_id=sub).first()
 
     if user:
         return user
 
-    # Map Supabase role string → Enum
+    # FIX: convert role to lowercase (NOT uppercase)
     if role:
-        role_enum = models.UserRole(role.upper())
+        role_enum = models.UserRole(role.lower())
     else:
-        role_enum = models.UserRole.BUYER  # default
+        role_enum = models.UserRole.BUYER
 
     new_user = models.User(
         supabase_id=sub,
@@ -55,43 +55,54 @@ def _decode_supabase_jwt(token: str) -> dict:
         raise HTTPException(status_code=401, detail="Invalid or expired JWT")
 
 
+def _parse_mock_token(token: str) -> models.User:
+    """
+    Parse mock tokens used by the test suite.
+    Expected format: "<role>:<email>"
+    Example: "provider:alice"
+    """
+    if ":" not in token:
+        raise HTTPException(status_code=401, detail="Invalid mock token")
+
+    try:
+        role_str, email = token.split(":", 1)
+        role_enum = models.UserRole(role_str.lower())
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid mock token")
+
+    return models.User(
+        id=999,
+        supabase_id=f"mock-{email}",
+        email=email,
+        role=role_enum,
+    )
+
+
 def get_current_user(
     creds: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db),
 ):
-    print("AUTH DEBUG: token received =", creds.credentials if creds else None)
-    # 1. Missing credentials
-    if not creds:
+    token = creds.credentials.strip() if creds else None
+
+    if not token:
         raise HTTPException(status_code=401, detail="Missing bearer token")
 
-    token = creds.credentials.strip()
-
-    # 2. MOCK TOKEN FOR TESTS
+    # ----------- MOCK TOKEN BRANCH -----------
+    # Treat ANY token with ":" as mock. _parse_mock_token handles validity.
     if ":" in token:
-        try:
-            role_str, email = token.split(":", 1)
-            role_enum = models.UserRole(role_str.lower())
-        except Exception:
-            raise HTTPException(status_code=401, detail="Invalid mock token")
-        return models.User(
-            id=999,
-            supabase_id=f"mock-{email}",
-            email=email,
-            role=role_enum,
-        )
+        return _parse_mock_token(token)
 
-    # 2b. INVALID NON-JWT, NON-MOCK TOKEN → REJECT
+    # ----------- INVALID NON-MOCK, NON-JWT TOKEN -----------
+    # JWTs must have 2 dots. If not → reject.
     if token.count(".") != 2:
         raise HTTPException(status_code=401, detail="Invalid bearer token")
 
-    # 3. REAL JWT TOKEN
-    decoded = _decode_supabase_jwt(token)
-
-    # 3. REAL JWT TOKEN
+    # ----------- REAL JWT TOKEN -----------
     decoded = _decode_supabase_jwt(token)
 
     sub = decoded.get("sub")
     email = decoded.get("email") or decoded.get("user_metadata", {}).get("email")
+
     if not sub or not email:
         raise HTTPException(status_code=401, detail="Invalid JWT payload")
 
