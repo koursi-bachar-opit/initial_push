@@ -59,7 +59,7 @@ def get_current_user(
     creds: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db),
 ):
-    # DEV MODE: allow testing without a real token
+    # If no token, dev mode
     if not creds:
         if os.getenv("DEV_MODE") == "true":
             return models.User(
@@ -71,20 +71,36 @@ def get_current_user(
         raise HTTPException(status_code=401, detail="Missing bearer token")
 
     token = creds.credentials
+
+    # CI MOCK MODE: handle "provider:alice"
+    if ":" in token and not token.count(".") == 2:
+        # Format: role:email
+        try:
+            role_str, email = token.split(":")
+            role_enum = models.UserRole(role_str.upper())
+        except Exception:
+            raise HTTPException(status_code=401, detail="Invalid mock token")
+
+        # Return a fake user WITHOUT touching DB
+        return models.User(
+            id=999,  # CI test user
+            supabase_id=f"mock-{email}",
+            email=email,
+            role=role_enum,
+        )
+
+    # REAL JWT: decode Supabase token
     decoded = _decode_supabase_jwt(token)
 
-    # Extract identity
     sub = decoded.get("sub")
     email = decoded.get("email") or decoded.get("user_metadata", {}).get("email")
 
     if not sub or not email:
         raise HTTPException(status_code=401, detail="Invalid JWT payload")
 
-    # Extract ROLE from Supabase user_metadata (set during signup)
-    metadata = decoded.get("user_metadata", {}) or {}
-    role = metadata.get("role")  # "buyer" | "provider"
+    metadata = decoded.get("user_metadata") or {}
+    role = metadata.get("role")
 
-    # Fetch user or create with metadata role
     return _get_or_create_user(db, sub, email, role)
 
 
