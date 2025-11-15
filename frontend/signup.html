@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en" class="h-full bg-gray-50">
+
+<head>
+  <!-- Load template injection first -->
+  <script type="module" src="/js/ui.js"></script>
+
+  <!-- MUST be here (NOT inside template) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body class="h-full">
+
+<!-- Inject real <head> and header -->
+<div data-template="head"></div>
+<div data-template="header"></div>
+
+<main class="mx-auto grid min-h-[80vh] max-w-md place-items-center p-6">
+  <div class="w-full rounded-lg border bg-white p-6 shadow-sm">
+
+    <h1 class="mb-1 text-2xl font-semibold">Create an account</h1>
+    <p class="mb-6 text-sm text-gray-500">Sign up to manage your servers</p>
+
+    <form id="signup-form" class="space-y-4">
+
+      <!-- Email -->
+      <div>
+        <label class="mb-2 block text-sm font-medium" for="signup-email">Email</label>
+        <input id="signup-email" type="email" required
+               class="block w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-blue-600 focus:ring-blue-600">
+      </div>
+
+      <!-- Password -->
+      <div>
+        <label class="mb-2 block text-sm font-medium" for="signup-password">Password</label>
+        <input id="signup-password" type="password" required
+               class="block w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-blue-600 focus:ring-blue-600">
+      </div>
+
+      <!-- Confirm Password -->
+      <div>
+        <label class="mb-2 block text-sm font-medium" for="signup-password-confirm">Confirm Password</label>
+        <input id="signup-password-confirm" type="password" required
+               class="block w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-blue-600 focus:ring-blue-600">
+      </div>
+
+      <!-- Role Selection -->
+      <fieldset class="space-y-2">
+        <legend class="text-sm font-medium text-gray-700">Account Type</legend>
+
+        <div class="flex items-center">
+          <input id="role-buyer" name="role" type="radio" value="buyer" class="h-4 w-4" checked>
+          <label for="role-buyer" class="ml-2 text-sm text-gray-700">Buyer (rent servers)</label>
+        </div>
+
+        <div class="flex items-center">
+          <input id="role-provider" name="role" type="radio" value="provider" class="h-4 w-4">
+          <label for="role-provider" class="ml-2 text-sm text-gray-700">Provider (offer servers)</label>
+        </div>
+      </fieldset>
+
+      <div id="signup-error" class="text-sm text-red-600"></div>
+
+      <button type="submit"
+              class="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-white hover:bg-blue-700">
+        Create Account
+      </button>
+
+      <p class="mt-3 text-center text-sm text-gray-600">
+        Already have an account?
+        <a href="/login.html" class="text-blue-600 hover:underline">Sign in</a>
+      </p>
+    </form>
+  </div>
+</main>
+
+<div data-template="footer"></div>
+
+<!-- Signup Logic -->
+<script type="module" src="/js/signup.js"></script>
+
+</body>
+</html>

@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app import crud, schemas, models
 from app.services import bookings_service
+from app.auth import get_current_user
 
 # Create a router instance to define booking-related API endpoints
 router = APIRouter()
@@ -18,11 +19,22 @@ def create_booking(payload: schemas.BookingCreate, db: Session = Depends(get_db)
     return crud.create_booking(db, payload)
 
 @router.get("/", response_model=list[schemas.BookingRead])
-def list_bookings(db: Session = Depends(get_db)):
-    """
-    Retrieve a list of all bookings in the system.
-    Used by admins or for debugging / dashboard purposes.
-    """
+def list_bookings(
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user)
+):
+    if user.role == models.UserRole.BUYER:
+        return db.query(models.Booking).filter_by(buyer_name=user.email).all()
+
+    if user.role == models.UserRole.PROVIDER:
+        return (
+            db.query(models.Booking)
+            .join(models.Listing, models.Booking.listing_id == models.Listing.id)
+            .filter(models.Listing.owner_id == user.id)
+            .all()
+        )
+
+    # admin fallback
     return crud.list_bookings(db)
 
 

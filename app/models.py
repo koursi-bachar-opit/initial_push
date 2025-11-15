@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, ForeignKey, Enum, DateTime, Enum as SQLEnum
+from sqlalchemy import Column, Integer, String, Float, ForeignKey, Enum, DateTime, Enum as SQLEnum, func
 from sqlalchemy.orm import relationship
 from app.database import Base
 from enum import Enum
@@ -50,3 +50,18 @@ class Booking(Base):
     active_session_end = Column(DateTime(timezone=True), nullable=True)
     actual_price_charged = Column(Float, nullable=True)
     usage_seconds = Column(Float, nullable=True)
+
+class UserRole(str, Enum):
+    BUYER = "buyer"
+    PROVIDER = "provider"
+    ADMIN = "admin"
+    ORG_ADMIN = "org_admin"
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    supabase_id = Column(String, unique=True, index=True, nullable=False)  # sub from JWT
+    email = Column(String, unique=True, index=True, nullable=False)
+    role = Column(SQLEnum(UserRole, native_enum=False), nullable=False, default=UserRole.BUYER)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)

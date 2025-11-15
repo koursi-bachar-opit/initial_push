@@ -1,48 +1,26 @@
-<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-<link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.css" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.js"></script>
+<!doctype html>
+<html lang="en" class="h-full bg-gray-50">
 
-<body class="bg-gray-50">
-  <section class="max-w-6xl mx-auto p-4">
-    <h1 class="text-3xl font-bold mb-4">Server Listings</h1>
-    <div id="listings" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
-  </section>
+<div data-template="head"></div>
 
-  <script>
-    const apiBase = "/api/v1";
+<script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.5.1/flowbite.min.js"></script>
 
-    async function loadListings() {
-      const res = await fetch(`${apiBase}/listings`);
-      const data = await res.json();
+<body class="h-full">
 
-      const container = document.getElementById("listings");
-      container.innerHTML = data.map(listing => `
-        <div class="bg-white rounded-lg shadow p-4">
-          <h2 class="text-xl font-semibold">${listing.title}</h2>
-          <p class="text-gray-500">Price: $${listing.price}/hour</p>
-          <button onclick="bookServer(${listing.id})"
-            class="mt-3 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-            Book
-          </button>
-        </div>
-      `).join("");
-    }
+<div data-template="header"></div>
 
-    async function bookServer(listingId) {
-      const payload = {
-        listing_id: listingId,
-        buyer_name: "test_user",
-        start_time: new Date().toISOString(),
-        end_time: new Date(Date.now() + 3600*1000).toISOString()
-      };
-      const res = await fetch(`${apiBase}/bookings`, {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(payload)
-      });
-      alert(res.ok ? "Booked!" : "Booking failed");
-    }
+<main class="mx-auto max-w-7xl p-6">
+  <div class="mb-6">
+    <input type="text" class="border rounded px-3 py-2 w-full" placeholder="Search (does nothing yet)">
+  </div>
 
-    loadListings();
-  </script>
+  <div id="listings" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"></div>
+</main>
+
+<div data-template="footer"></div>
+
+<script type="module" src="/js/ui.js"></script>
+<script type="module" src="/js/listings.js"></script>
+
 </body>
+</html>
