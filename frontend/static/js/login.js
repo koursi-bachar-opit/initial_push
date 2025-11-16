@@ -27,14 +27,14 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        // Send token to backend to set HttpOnly cookie
+        //Send the session token to backend to set HttpOnly cookie
         await fetch("/auth/store-session", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ token: session.access_token }),
         });
 
-        // Store user role for frontend UI logic
+        //Store user role for frontend UI logic
         const { data: userData } = await supabase.auth.getUser();
         const role = userData?.user?.user_metadata?.role || "buyer";
         localStorage.setItem("user_role", role);

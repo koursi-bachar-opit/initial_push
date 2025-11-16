@@ -1,10 +1,98 @@
 {% extends "base.html" %}
 {% block content %}
 
-<h1 class="text-2xl font-semibold mb-6">Available Listings</h1>
+<h1 class="text-3xl font-bold mb-8">Listings</h1>
 
-<div id="listings" class="grid gap-4"></div>
+<!--Tabs-->
+<div class="mb-6 border-b border-gray-200">
+    <ul class="flex flex-wrap -mb-px text-sm font-medium text-center" id="listingTabs" role="tablist">
+        <li class="mr-2">
+            <button class="inline-block p-4 border-b-2 rounded-t-lg"
+                    id="all-listings-tab"
+                    data-tabs-target="#all-listings"
+                    type="button"
+                    role="tab"
+                    aria-controls="all-listings"
+                    aria-selected="true">
+                All Listings
+            </button>
+        </li>
+
+        {% if user %}
+        <li class="mr-2">
+            <button class="inline-block p-4 border-b-2 rounded-t-lg"
+                    id="my-listings-tab"
+                    data-tabs-target="#my-listings"
+                    type="button"
+                    role="tab"
+                    aria-controls="my-listings"
+                    aria-selected="false">
+                My Listings
+            </button>
+        </li>
+        {% endif %}
+    </ul>
+</div>
+
+<!--All Listings-->
+<div id="all-listings" role="tabpanel" aria-labelledby="all-listings-tab">
+    <div id="listingsGrid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+</div>
+
+<!--My Listings-->
+{% if user %}
+<div id="my-listings" class="hidden" role="tabpanel" aria-labelledby="my-listings-tab">
+    <div id="myListingsGrid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+</div>
+{% endif %}
+
+<!--Detail Modal-->
+<div id="listingDetailsModal" tabindex="-1" aria-hidden="true"
+     class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 
+     justify-center items-center w-full md:inset-0 h-modal md:h-full">
+
+    <div class="relative p-4 w-full max-w-lg h-full md:h-auto">
+        <div class="relative bg-white rounded-lg shadow">
+            
+            <!--Modal Header-->
+            <div class="flex items-center justify-between p-4 border-b">
+                <h3 id="modalTitle" class="text-xl font-semibold"></h3>
+                <button type="button"
+                        class="text-gray-400 hover:text-gray-900 rounded-lg text-sm p-1.5"
+                        data-modal-hide="listingDetailsModal">
+                    X
+                </button>
+            </div>
+
+            <!--Modal-->
+            <div class="p-4 space-y-3">
+                <p id="modalDescription" class="text-gray-700"></p>
+
+                <div class="flex items-center gap-2">
+                    <span class="font-medium">Price:</span>
+                    <span id="modalPrice" class="text-blue-600 font-semibold"></span>
+                </div>
+
+                <div id="modalMeta" class="text-sm text-gray-500"></div>
+            </div>
+
+            <!--Modal Footer-->
+            <div class="flex justify-end p-4 border-t">
+                <button data-modal-hide="listingDetailsModal"
+                        class="mr-2 px-4 py-2 bg-gray-100 rounded hover:bg-gray-200">
+                    Close
+                </button>
+
+                {% if user and user.role == "buyer" %}
+                <button id="modalBookButton"
+                        class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">
+                    Request Booking
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
 
 <script type="module" src="/static/js/listings.js"></script>
-
 {% endblock %}

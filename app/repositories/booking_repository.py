@@ -1,31 +1,24 @@
 from datetime import timedelta
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
+
 from app import models, schemas
 
+"""
+Repository methods for interacting with Booking objects.
+This layer handles direct DB reads/writes and lightweight validation.
+State transitions happen in bookings_service.py.
+"""
 
-def get_listings(db: Session):
-    """Return all listings sorted by ID (ascending)."""
-    return db.query(models.Listing).order_by(models.Listing.id.asc()).all()
-
-
-def create_listing(db: Session, data: schemas.ListingCreate):
-    """Create a new listing record and persist to the database."""
-    obj = models.Listing(**data.model_dump())
-    db.add(obj)
-    db.commit()
-    db.refresh(obj)
-    return obj
-
-
-def create_booking(db: Session, data: schemas.BookingCreate):
+def create_booking(db: Session, data: schemas.BookingCreate) -> models.Booking:
     """
-    Create a booking for a given listing (admin primitive).
-
-    - Validates that the listing exists
-    - Checks start < end
-    - Estimates total price
-    - Requires buyer_user_id to be provided in the payload
+    This is the low-level primitive used by the service layer to create a booking.
+    It assumes the caller manages the booking process (separation of concerns),
+    and it performs curcial validation:
+    1. A listing must exist
+    2. The time window must be valid
+    3. Necessitates a buyer id
+    It also computes the estimated price based on whole hours.
     """
     listing = db.get(models.Listing, data.listing_id)
     if not listing:
@@ -40,7 +33,8 @@ def create_booking(db: Session, data: schemas.BookingCreate):
             detail="buyer_user_id is required for admin booking creation",
         )
 
-    # Compute duration (ceil to next hour)
+    #Compute the duration in hours.
+    #A booking is charged in whole hours, so times are rounded up in hour.
     delta: timedelta = data.end_time - data.start_time
     hours = (delta.total_seconds() + 3599) // 3600
     total = int(hours) * int(listing.price)
@@ -60,7 +54,12 @@ def create_booking(db: Session, data: schemas.BookingCreate):
 
 
 def list_bookings(db: Session):
-    """Return ALL bookings — FOR ADMINS ONLY."""
+    """
+    Return every booking in the system. 
+    The router/service layer ensures only 
+    admins or providers can call this.
+    Should be refactored to consider provider access limitations.
+    """
     return (
         db.query(models.Booking)
         .order_by(models.Booking.id.asc())
@@ -69,10 +68,15 @@ def list_bookings(db: Session):
 
 
 def list_bookings_for_user(db: Session, user_id: int):
-    """Return only the bookings belonging to the authenticated user."""
+    """Buyers only see their own bookings, filtered by buyer_user_id."""
     return (
         db.query(models.Booking)
         .filter(models.Booking.buyer_user_id == user_id)
         .order_by(models.Booking.id.asc())
         .all()
     )
+
+
+def get_booking_by_id(db: Session, booking_id: int) -> models.Booking | None:
+    """Fetches a booking by its primary key."""
+    return db.get(models.Booking, booking_id)

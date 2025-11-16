@@ -1,14 +1,70 @@
 {% extends "base.html" %}
 {% block content %}
 
-<h1 class="text-3xl font-semibold mb-4">Welcome to Remote Servers Marketplace</h1>
-<p class="text-gray-600 mb-8 max-w-xl">
-    Rent GPU servers on demand, or list your own for others to use.
-</p>
+<!--Jumbotron Flowbite effect-->
+<section class="bg-white rounded-2xl shadow-sm px-6 py-16 text-center mx-auto">
+    <h1 class="mb-6 text-4xl font-extrabold tracking-tight leading-tight text-gray-900">
+        Rent High-Performance Servers On Demand
+    </h1>
 
-<a href="/listings"
-   class="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700">
-    Browse Listings
-</a>
+    <p class="mb-8 text-lg text-gray-600 max-w-2xl mx-auto">
+        A secure, easy-to-use marketplace where providers list their GPU and compute servers,
+        and buyers instantly book the power they need — pay only for what you use.
+    </p>
+
+    <div class="flex flex-col sm:flex-row gap-4 justify-center mt-6">
+        <a href="/listings"
+           class="inline-flex items-center justify-center px-8 py-3 text-base font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">
+            Browse Listings
+        </a>
+
+        <a href="/signup"
+           class="inline-flex items-center justify-center px-8 py-3 text-base font-medium text-blue-700 bg-blue-100 rounded-lg hover:bg-blue-200">
+            Become a Provider
+        </a>
+    </div>
+</section>
+
+<!--Value propositions/marketing text-->
+<section class="mt-20 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+
+    <div class="p-6 bg-white rounded-xl border shadow-sm hover:shadow-md transition">
+        <div class="mb-4 text-blue-600 text-4xl">⚡</div>
+        <h3 class="text-xl font-semibold mb-2">Instant Access</h3>
+        <p class="text-gray-600">
+            Deploy compute power from trusted providers with zero setup time.
+        </p>
+    </div>
+
+    <div class="p-6 bg-white rounded-xl border shadow-sm hover:shadow-md transition">
+        <div class="mb-4 text-blue-600 text-4xl">🔒</div>
+        <h3 class="text-xl font-semibold mb-2">Secure Sessions</h3>
+        <p class="text-gray-600">
+            Your sessions are isolated, protected, and wiped after usage.
+        </p>
+    </div>
+
+    <div class="p-6 bg-white rounded-xl border shadow-sm hover:shadow-md transition">
+        <div class="mb-4 text-blue-600 text-4xl">💻</div>
+        <h3 class="text-xl font-semibold mb-2">Real Providers</h3>
+        <p class="text-gray-600">
+            Users and organizations list their actual hardware — no cloud intermediaries.
+        </p>
+    </div>
+
+</section>
+
+<!--Second CTA-->
+<section class="mt-20 text-center">
+    <h2 class="text-2xl font-bold mb-4">Ready to get started?</h2>
+    <p class="text-gray-600 mb-8 max-w-xl mx-auto">
+        Join a growing marketplace where compute power becomes accessible to everyone.
+    </p>
+
+    <a href="/signup"
+       class="inline-block bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700">
+        Create an Account
+    </a>
+</section>
 
 {% endblock %}

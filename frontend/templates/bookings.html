@@ -1,10 +1,21 @@
 {% extends "base.html" %}
 {% block content %}
 
-<h1 class="text-2xl font-semibold mb-6">Your Bookings</h1>
+<h1 class="text-3xl font-bold mb-8">Your Bookings</h1>
 
-<div id="bookings" class="space-y-4"></div>
+<!--Bookings info-->
+<div class="mb-6">
+    <div class="p-4 mb-4 text-sm text-blue-800 rounded-lg bg-blue-50 border border-blue-200" role="alert">
+        View all of your active, pending, and past bookings.
+    </div>
+</div>
 
+<!--Bookings grid-->
+<div id="bookings" class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+    <!--JS inserts cards in this spot-->
+</div>
+
+<!--Bookings JS-->
 <script type="module" src="/static/js/bookings.js"></script>
 
 {% endblock %}

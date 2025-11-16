@@ -1,96 +1,104 @@
 {% extends "base.html" %}
 {% block content %}
 
-{% if user.role == "buyer" %}
-    <h1 class="text-2xl font-semibold mb-6">Buyer Dashboard</h1>
-{% elif user.role == "provider" %}
-    <div class="flex items-center justify-between mb-6">
-        <h1 class="text-2xl font-semibold">Provider Dashboard</h1>
+<h1 class="text-3xl font-bold mb-8">
+    {% if user.role == "buyer" %}Buyer Dashboard{% else %}Provider Dashboard{% endif %}
+</h1>
 
-        <!-- Create Listing Button -->
-        <button data-modal-target="createListingModal"
-                data-modal-toggle="createListingModal"
-                class="text-white bg-blue-600 hover:bg-blue-700 font-medium rounded-lg text-sm px-4 py-2">
-            + Create Listing
-        </button>
-    </div>
-{% else %}
-    <h1 class="text-2xl font-semibold mb-6">Dashboard</h1>
-{% endif %}
-
-<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+<!--Stats-->
+<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
     <div class="rounded-lg border bg-white p-4">
-        <div class="text-sm text-gray-500">Active Servers</div>
-        <div class="mt-1 text-2xl font-semibold">3</div>
+        <div class="text-sm text-gray-500">Total Bookings</div>
+        <div id="stat-total" class="mt-1 text-2xl font-semibold">0</div>
     </div>
-
     <div class="rounded-lg border bg-white p-4">
-        <div class="text-sm text-gray-500">Monthly Spend</div>
-        <div class="mt-1 text-2xl font-semibold">$187.20</div>
+        <div class="text-sm text-gray-500">Pending</div>
+        <div id="stat-pending" class="mt-1 text-2xl font-semibold">0</div>
     </div>
-
     <div class="rounded-lg border bg-white p-4">
-        <div class="text-sm text-gray-500">Avg. CPU</div>
-        <div class="mt-1 text-2xl font-semibold">42%</div>
+        <div class="text-sm text-gray-500">Active</div>
+        <div id="stat-active" class="mt-1 text-2xl font-semibold">0</div>
     </div>
-
     <div class="rounded-lg border bg-white p-4">
-        <div class="text-sm text-gray-500">Uptime</div>
-        <div class="mt-1 text-2xl font-semibold">99.95%</div>
+        <div class="text-sm text-gray-500">Past</div>
+        <div id="stat-past" class="mt-1 text-2xl font-semibold">0</div>
     </div>
 </div>
 
-{% if user.role == "provider" %}
-<!-- CREATE LISTING MODAL -->
-<div id="createListingModal"
-     tabindex="-1"
-     aria-hidden="true"
-     class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full h-full bg-black/40">
+<!--Tabs-->
+<div class="mb-4 border-b border-gray-200">
+    <ul class="flex flex-wrap -mb-px text-sm font-medium text-center"
+        data-tabs-toggle="#dashboardTabsContent"
+        role="tablist">
 
-    <div class="relative p-4 w-full max-w-md">
-        <div class="relative bg-white rounded-lg shadow">
+        <li class="mr-2" role="presentation">
+            <button
+                class="inline-block p-4 border-b-2 rounded-t-lg"
+                id="pending-tab"
+                data-tabs-target="#pending"
+                type="button"
+                role="tab"
+                aria-controls="pending"
+                aria-selected="true">
+                Pending
+            </button>
+        </li>
 
-            <div class="flex items-center justify-between p-4 border-b">
-                <h3 class="text-lg font-semibold">
-                    Create a New Listing
-                </h3>
-                <button type="button"
-                        class="text-gray-400 hover:text-gray-900"
-                        data-modal-toggle="createListingModal">
-                    ✕
-                </button>
-            </div>
+        <li class="mr-2" role="presentation">
+            <button
+                class="inline-block p-4 border-b-2 rounded-t-lg"
+                id="past-tab"
+                data-tabs-target="#past"
+                type="button"
+                role="tab"
+                aria-controls="past"
+                aria-selected="false">
+                Past
+            </button>
+        </li>
 
-            <form id="create-listing-form" class="p-6 space-y-4">
-                <div>
-                    <label class="block mb-2 text-sm font-medium">Title</label>
-                    <input name="title"
-                           type="text"
-                           required
-                           class="bg-gray-50 border border-gray-300 text-sm rounded-lg block w-full p-2.5" />
-                </div>
+    </ul>
+</div>
 
-                <div>
-                    <label class="block mb-2 text-sm font-medium">Price per hour</label>
-                    <input name="price"
-                           type="number"
-                           step="0.01"
-                           required
-                           class="bg-gray-50 border border-gray-300 text-sm rounded-lg block w-full p-2.5" />
-                </div>
+<div id="dashboardTabsContent">
 
-                <button type="submit"
-                        class="w-full text-white bg-blue-600 hover:bg-blue-700 font-medium rounded-lg text-sm px-4 py-2">
-                    Create Listing
-                </button>
-            </form>
-
+    <!--Pending bookings-->
+    <div id="pending" role="tabpanel" aria-labelledby="pending-tab">
+        <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
+            <table class="w-full text-sm text-left">
+                <thead class="text-xs uppercase bg-gray-100 border-b">
+                    <tr>
+                        <th class="px-6 py-3">Booking</th>
+                        <th class="px-6 py-3">Listing</th>
+                        <th class="px-6 py-3">User</th>
+                        <th class="px-6 py-3">Schedule</th>
+                        <th class="px-6 py-3">Status</th>
+                    </tr>
+                </thead>
+                <tbody id="pendingBody"></tbody>
+            </table>
         </div>
     </div>
+
+    <!--Past bookings-->
+    <div id="past" class="hidden" role="tabpanel" aria-labelledby="past-tab">
+        <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
+            <table class="w-full text-sm text-left">
+                <thead class="text-xs uppercase bg-gray-100 border-b">
+                    <tr>
+                        <th class="px-6 py-3">Booking</th>
+                        <th class="px-6 py-3">Listing</th>
+                        <th class="px-6 py-3">User</th>
+                        <th class="px-6 py-3">Schedule</th>
+                        <th class="px-6 py-3">Status</th>
+                    </tr>
+                </thead>
+                <tbody id="pastBody"></tbody>
+            </table>
+        </div>
+    </div>
+
 </div>
-{% endif %}
 
-<!-- Dashboard JS -->
 <script type="module" src="/static/js/dashboard.js"></script>
-
 {% endblock %}

@@ -12,6 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const password = document.getElementById("password").value;
         const confirm = document.getElementById("confirm").value;
 
+        //Password match confirmation, separate from Supabase confirmation methods
         if (password !== confirm) {
             errorBox.textContent = "Passwords do not match.";
             return;
@@ -36,7 +37,7 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        // Store as HttpOnly cookie
+        //Store as an HttpOnly cookie
         await fetch("/auth/store-session", {
             method: "POST",
             headers: { "Content-Type": "application/json" },

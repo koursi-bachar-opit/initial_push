@@ -1,54 +1,114 @@
 import { apiGetListings, apiRequestBooking } from "./api.js";
 
-document.addEventListener("DOMContentLoaded", async () => {
-    const container = document.getElementById("listings");
-    const role = localStorage.getItem("user_role");
+const listingsGrid = document.getElementById("listingsGrid");
+const myListingsGrid = document.getElementById("myListingsGrid");
+const role = localStorage.getItem("user_role");
+const userId = localStorage.getItem("user_id");
 
-    let listings = [];
+let listings = [];
+let selectedListing = null;
+
+//modal DOM references (Flowbite)
+const modalEl = document.getElementById("listingDetailsModal");
+const modalTitle = document.getElementById("modalTitle");
+const modalDescription = document.getElementById("modalDescription");
+const modalPrice = document.getElementById("modalPrice");
+const modalMeta = document.getElementById("modalMeta");
+const modalBookButton = document.getElementById("modalBookButton");
+
+//Flowbite modal instance is constructed after Flowbite loads
+let modal;
+
+document.addEventListener("DOMContentLoaded", async () => {
+    //create modal instance safely
+    modal = new Modal(modalEl);
+
     try {
         listings = await apiGetListings();
-    } catch (e) {
-        container.innerHTML = `<p class="text-red-600">${e.message}</p>`;
+    } catch (err) {
+        listingsGrid.innerHTML = `<p class="text-red-600">${err.message}</p>`;
         return;
     }
 
-    container.innerHTML = listings
-        .map(
-            (l) => `
-        <div class="p-4 bg-white border rounded-lg shadow">
-            <h3 class="font-semibold">${l.title}</h3>
-            <p class="text-gray-600">$${l.price}/hr</p>
+    renderListings();
+});
 
-            ${
-                role === "buyer"
-                    ? `<button class="mt-2 bg-blue-600 text-white px-3 py-1 rounded book-btn" data-id="${l.id}">
-                        Request Booking
-                    </button>`
-                    : ""
-            }
-        </div>
-    `
-        )
+
+//render listings
+function renderListings() {
+    listingsGrid.innerHTML = listings
+        .map((l) => listingCardHTML(l))
         .join("");
 
-    document.querySelectorAll(".book-btn").forEach((btn) => {
-        btn.addEventListener("click", async () => {
-            const id = btn.dataset.id;
+    if (myListingsGrid) {
+        const mine = listings.filter((l) => String(l.provider_user_id) === userId);
+        myListingsGrid.innerHTML = mine.map((l) => listingCardHTML(l)).join("");
+    }
 
-            const now = new Date();
-            const end = new Date(now.getTime() + 60 * 60 * 1000);
-
-            try {
-                await apiRequestBooking({
-                    listing_id: Number(id),
-                    start_time: now.toISOString(),
-                    end_time: end.toISOString(),
-                });
-
-                alert("Booking request sent!");
-            } catch (e) {
-                alert("Error: " + e.message);
-            }
-        });
+    document.querySelectorAll(".btn-view-details").forEach((btn) => {
+        btn.addEventListener("click", () => openDetailsModal(btn.dataset.id));
     });
-});
+}
+
+
+//Card UI to format listing boxes
+function listingCardHTML(l) {
+    return `
+        <div class="bg-white shadow border rounded-lg overflow-hidden hover:shadow-lg transition">
+            <div class="p-5">
+                <h3 class="text-lg font-bold mb-1">${l.title}</h3>
+                <p class="text-gray-600 text-sm line-clamp-2 mb-3">
+                    ${l.description || "No description provided."}
+                </p>
+                <p class="text-blue-600 font-semibold mb-2">$${l.price}/hr</p>
+
+                <button 
+                    data-id="${l.id}"
+                    class="btn-view-details w-full mt-2 px-4 py-2 bg-gray-900 text-white rounded hover:bg-black transition text-sm"
+                    data-modal-target="listingDetailsModal"
+                    data-modal-toggle="listingDetailsModal">
+                    View Details
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+//Open modal (check listing description)
+function openDetailsModal(id) {
+    selectedListing = listings.find((l) => String(l.id) === String(id));
+    if (!selectedListing) return;
+
+    modalTitle.textContent = selectedListing.title;
+    modalDescription.textContent = selectedListing.description || "No description.";
+    modalPrice.textContent = `$${selectedListing.price}/hr`;
+    modalMeta.textContent = `Listing ID: ${selectedListing.id}`;
+
+    if (modalBookButton) {
+        modalBookButton.onclick = handleBookingRequest;
+    }
+
+    modal.show();
+}
+
+
+//Booking request selection (booking window one hour default for test)
+async function handleBookingRequest() {
+    if (!selectedListing) return;
+
+    const now = new Date();
+    const end = new Date(now.getTime() + 60 * 60 * 1000);
+
+    try {
+        await apiRequestBooking({
+            listing_id: selectedListing.id,
+            start_time: now.toISOString(),
+            end_time: end.toISOString(),
+        });
+
+        alert("Booking request sent!");
+        modal.hide();
+    } catch (err) {
+        alert("Error: " + err.message);
+    }
+}

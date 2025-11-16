@@ -5,6 +5,7 @@ from typing import Optional
 
 
 class ListingCreate(BaseModel):
+    """Payload sent by providers or admins when creating a new listing."""
     title: str = Field(min_length=1)
     price: float = Field(ge=0)
 
@@ -25,10 +26,9 @@ class BookingStatus(str, Enum):
 class BookingCreate(BaseModel):
     """
     Booking creation payload.
-
-    - For normal buyers, buyer_user_id is NOT sent by the frontend; it is
-      derived from the authenticated user (get_current_user) on the server.
-    - For admin primitives, buyer_user_id can be provided explicitly.
+    For normal buyers, buyer_user_id is not sent by the frontend. It is
+    currently derived from the authenticated user on the server. (subject to change)
+    For admin primitives, buyer_user_id can be provided explicitly.
     """
     listing_id: int
     start_time: datetime
@@ -38,7 +38,8 @@ class BookingCreate(BaseModel):
 
 class BookingRead(BaseModel):
     """
-    Full booking details returned to the frontend.
+    This is the full booking object.
+    Includes raw DB fields and conveniece fields
     """
     id: int
     listing_id: int
@@ -51,5 +52,10 @@ class BookingRead(BaseModel):
     active_session_end: Optional[datetime] = None
     actual_price_charged: Optional[float] = None
     usage_seconds: Optional[float] = None
+
+    """API responses for now"""
+    listing_title: Optional[str] = None
+    buyer_email: Optional[str] = None
+
 
     model_config = ConfigDict(from_attributes=True)

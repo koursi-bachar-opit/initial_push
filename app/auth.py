@@ -8,30 +8,27 @@ from jwt import InvalidTokenError
 from app.config import settings
 from app.database import get_db
 from app import models
+from app.repositories import user_repository
 
 security = HTTPBearer(auto_error=False)
 
-# INTERNAL HELPERS
+
 def _get_or_create_user(db: Session, sub: str, email: str, role: str | None) -> models.User:
-    user = db.query(models.User).filter_by(supabase_id=sub).first()
-
-    if user:
-        return user
-
-    role_enum = models.UserRole(role.lower()) if role else models.UserRole.BUYER
-
-    new_user = models.User(
-        supabase_id=sub,
+    """Get user from user_repository"""
+    """Load or create from JWT ident"""
+    return user_repository.get_or_create_user_by_supabase_id(
+        db=db,
+        sub=sub,
         email=email,
-        role=role_enum,
+        role=role,
     )
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-    return new_user
 
 
 def _decode_supabase_jwt(token: str) -> dict:
+    """
+    Decode the JWT we get from Supabase. This uses the shared HS256 secret from Supabase.
+    If someone gives us an invalid or expired token, fail fast with a 401.
+    """
     secret = settings.SUPABASE_JWT_SECRET
     if not secret:
         raise HTTPException(status_code=500, detail="Supabase JWT secret missing")
@@ -47,47 +44,57 @@ def _decode_supabase_jwt(token: str) -> dict:
         raise HTTPException(status_code=401, detail="Invalid or expired JWT")
 
 
-def _parse_mock_token(token: str) -> models.User:
+def _parse_mock_token_and_create_user(db: Session, token: str) -> models.User:
+    """
+    When running locally without Supabase, allow tokens like provider:alice@example.com. 
+    This allows impersonating a user quickly without going through OAuth.
+    """
     if ":" not in token:
         raise HTTPException(status_code=401, detail="Invalid mock token")
 
     role_str, email = token.split(":", 1)
-    return models.User(
-        id=999,
-        supabase_id=f"mock-{email}",
+
+    #Auto-create or fetch a DB user
+    user = user_repository.get_or_create_user_by_supabase_id(
+        db=db,
+        sub = email,
         email=email,
-        role=models.UserRole(role_str.lower()),
+        role=role_str.lower(),
     )
 
+    return user
 
 
-# AUTH REQUIREMENTS
 def get_current_user(
     creds: HTTPAuthorizationCredentials = Depends(security),
     access_token: str | None = Cookie(default=None),
     db: Session = Depends(get_db),
 ):
     """
-    Full authentication required.
-    Checks header first, then cookie.
+    1. Check the Bearer header (Supabase uses it)
+    2. If no header, use cookie.
+    3. If token has "role:email" format, consider as mock local creds
+    4. Otherwise, decode the real JWT
     """
     token = None
 
-    # Priority 1: Bearer header
+    #Request ordering
+    #1: Bearer header
     if creds:
         token = creds.credentials.strip()
 
-    # Priority 2: HttpOnly cookie
+    #2: Cookie
     elif access_token:
         token = access_token
 
     if not token:
         raise HTTPException(status_code=401, detail="Missing bearer token")
 
-    # mock token
+    #3: Mock token
     if ":" in token:
-        return _parse_mock_token(token)
+        return _parse_mock_token_and_create_user(db, token)
 
+    #Must look like a JWT
     if token.count(".") != 2:
         raise HTTPException(status_code=401, detail="Invalid bearer token")
 
@@ -103,11 +110,9 @@ def get_current_user(
 
     return _get_or_create_user(db, sub, email, role)
 
+
 def require_roles(*allowed: models.UserRole):
-    """
-    Dependency to enforce role-based access.
-    Used in routes such as @router.post(..., dependencies=[Depends(require_roles(...))])
-    """
+    """Use this dependency to protect routes so only certain roles can reach them."""
     def dep(user: models.User = Depends(get_current_user)):
         if user.role not in allowed:
             raise HTTPException(status_code=403, detail="Forbidden")
@@ -122,26 +127,21 @@ def optional_user(
     db: Session = Depends(get_db),
 ):
     """
-    Returns a user if a valid token (header or cookie) is provided.
-    Returns None if unauthenticated.
-    Perfect for Jinja2 pages.
+    Returns a user if a valid token is provided.
+    Returns a None type if it's not authenticated.
     """
     token = None
 
-    # Header first
     if creds:
         token = creds.credentials.strip()
-
-    # Cookie second
     elif access_token:
         token = access_token
-
     else:
         return None
 
-    # mock tokens
+    #Mock token
     if ":" in token:
-        return _parse_mock_token(token)
+        return _parse_mock_token_and_create_user(db, token)
 
     if token.count(".") != 2:
         return None
