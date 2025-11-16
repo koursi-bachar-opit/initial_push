@@ -20,13 +20,12 @@ jobs:
           POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
 
     env:
-      DATABASE_URL: ${{ secrets.DATABASE_URL }}
       TEST_DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
 
     steps:
       - name: Fail fast if required secrets are missing
         run: |
-          req=(DATABASE_URL POSTGRES_USER POSTGRES_PASSWORD POSTGRES_DB)
+          req=(TEST_DATABASE_URL POSTGRES_USER POSTGRES_PASSWORD POSTGRES_DB)
           for k in "${req[@]}"; do
             if [ -z "${!k}" ]; then
               echo "::error::Missing required secret: $k"
@@ -34,12 +33,10 @@ jobs:
             fi
           done
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
           TEST_DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
           POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
-        
 
       - name: Checkout code
         uses: actions/checkout@v4
@@ -62,12 +59,12 @@ jobs:
 
       - name: Run migrations
         env:
-          DATABASE_URL: ${{ env.DATABASE_URL }}
+          DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
         run: alembic upgrade head
 
       - name: Run tests with coverage
         env:
-          DATABASE_URL: ${{ env.DATABASE_URL }}
+          DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
           TEST_DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
         run: pytest
 
@@ -80,3 +77,10 @@ jobs:
               raise SystemExit(f"Coverage {cov:.1%} below 80%")
           print(f"Coverage OK ({cov:.1%})")
           PY
+
+      - name: Upload coverage.xml
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.xml
