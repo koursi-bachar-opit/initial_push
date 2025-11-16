@@ -1,17 +1,20 @@
-import { apiGetBookings } from "./api.js";
+import { apiGetBookings, apiCreateListing } from "./api.js";
 
-//body targets
+// body targets
 const pendingBody = document.getElementById("pendingBody");
 const pastBody = document.getElementById("pastBody");
 
-//dashboard stats
+// dashboard stats
 const statTotal = document.getElementById("stat-total");
 const statPending = document.getElementById("stat-pending");
 const statActive = document.getElementById("stat-active");
 const statPast = document.getElementById("stat-past");
 
-//Check booking history type (pending or past)
+// provider-only create listing form
+const createListingForm = document.getElementById("create-listing-form");
+
 document.addEventListener("DOMContentLoaded", async () => {
+    // Fetch bookings as before
     let bookings = [];
 
     try {
@@ -22,18 +25,17 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
     }
 
-    const pending = bookings.filter(b =>
+    const pending = bookings.filter((b) =>
         ["requested", "confirmed", "active"].includes(b.status)
     );
 
-    const past = bookings.filter(b =>
+    const past = bookings.filter((b) =>
         ["cancelled", "completed"].includes(b.status)
     );
 
-    //stats
     statTotal.textContent = bookings.length;
     statPending.textContent = pending.length;
-    statActive.textContent = bookings.filter(b => b.status === "active").length;
+    statActive.textContent = bookings.filter((b) => b.status === "active").length;
     statPast.textContent = past.length;
 
     pendingBody.innerHTML = pending.length
@@ -43,9 +45,36 @@ document.addEventListener("DOMContentLoaded", async () => {
     pastBody.innerHTML = past.length
         ? past.map(rowHTML).join("")
         : emptyRow(5, "No past bookings.");
+
+    // ---- CREATE LISTING (provider only) ----
+    if (createListingForm) {
+        createListingForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const fd = new FormData(createListingForm);
+            const payload = {
+                title: fd.get("title"),
+                price: Number(fd.get("price")),
+            };
+
+            try {
+                await apiCreateListing(payload);
+                alert("Listing created!");
+
+                // Close modal using Flowbite toggle
+                document.querySelector('[data-modal-hide="createListingModal"]')?.click();
+
+                createListingForm.reset();
+                location.reload();
+
+            } catch (err) {
+                alert("Error: " + err.message);
+            }
+        });
+    }
 });
 
-//Helpers
+// Helpers (unchanged)
 function rowHTML(b) {
     return `
         <tr class="bg-white border-b hover:bg-gray-50">

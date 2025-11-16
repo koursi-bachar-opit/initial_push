@@ -2,10 +2,25 @@
 {% block content %}
 
 <h1 class="text-3xl font-bold mb-8">
-    {% if user.role == "buyer" %}Buyer Dashboard{% else %}Provider Dashboard{% endif %}
+    {% if user.role == "buyer" %}
+        Buyer Dashboard
+    {% else %}
+        Provider Dashboard
+    {% endif %}
 </h1>
 
-<!--Stats-->
+{% if user.role == "provider" %}
+<div class="mb-8">
+    <button
+        data-modal-target="createListingModal"
+        data-modal-toggle="createListingModal"
+        class="inline-flex items-center gap-2 text-white bg-blue-600 hover:bg-blue-700 font-medium rounded-lg text-sm px-4 py-2">
+        + Create Listing
+    </button>
+</div>
+{% endif %}
+
+<!-- Stats -->
 <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
     <div class="rounded-lg border bg-white p-4">
         <div class="text-sm text-gray-500">Total Bookings</div>
@@ -25,7 +40,7 @@
     </div>
 </div>
 
-<!--Tabs-->
+<!-- Tabs -->
 <div class="mb-4 border-b border-gray-200">
     <ul class="flex flex-wrap -mb-px text-sm font-medium text-center"
         data-tabs-toggle="#dashboardTabsContent"
@@ -60,9 +75,10 @@
     </ul>
 </div>
 
+<!-- Tab Panels -->
 <div id="dashboardTabsContent">
 
-    <!--Pending bookings-->
+    <!-- Pending bookings -->
     <div id="pending" role="tabpanel" aria-labelledby="pending-tab">
         <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
             <table class="w-full text-sm text-left">
@@ -80,7 +96,7 @@
         </div>
     </div>
 
-    <!--Past bookings-->
+    <!-- Past bookings -->
     <div id="past" class="hidden" role="tabpanel" aria-labelledby="past-tab">
         <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
             <table class="w-full text-sm text-left">
@@ -100,5 +116,57 @@
 
 </div>
 
+<!-- PROVIDER: Create Listing Modal -->
+{% if user.role == "provider" %}
+<div id="createListingModal"
+     tabindex="-1"
+     aria-hidden="true"
+     class="hidden overflow-y-auto overflow-x-hidden fixed inset-0 z-50 flex justify-center items-center bg-black/40">
+
+    <div class="relative p-4 w-full max-w-md">
+        <div class="relative bg-white rounded-lg shadow">
+
+            <div class="flex items-center justify-between p-4 border-b">
+                <h3 class="text-lg font-semibold">
+                    Create a New Listing
+                </h3>
+                <button type="button"
+                        class="text-gray-400 hover:text-gray-900"
+                        data-modal-hide="createListingModal">
+                    X
+                </button>
+            </div>
+
+            <form id="create-listing-form" class="p-6 space-y-4">
+                <div>
+                    <label class="block mb-2 text-sm font-medium">Title</label>
+                    <input name="title"
+                           type="text"
+                           required
+                           class="bg-gray-50 border border-gray-300 text-sm rounded-lg block w-full p-2.5" />
+                </div>
+
+                <div>
+                    <label class="block mb-2 text-sm font-medium">Price per hour</label>
+                    <input name="price"
+                           type="number"
+                           step="0.01"
+                           min="0"
+                           required
+                           class="bg-gray-50 border border-gray-300 text-sm rounded-lg block w-full p-2.5" />
+                </div>
+
+                <button type="submit"
+                        class="w-full text-white bg-blue-600 hover:bg-blue-700 font-medium rounded-lg text-sm px-4 py-2">
+                    Create Listing
+                </button>
+            </form>
+
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <script type="module" src="/static/js/dashboard.js"></script>
+
 {% endblock %}
