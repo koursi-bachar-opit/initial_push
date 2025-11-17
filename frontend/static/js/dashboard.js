@@ -1,20 +1,135 @@
-import { apiGetBookings, apiCreateListing } from "./api.js";
+import {
+    apiGetBookings,
+    apiCreateListing,
+    apiGetMachines,
+    apiCreateMachine,
+} from "./api.js";
 
-// body targets
+//body targets
 const pendingBody = document.getElementById("pendingBody");
 const pastBody = document.getElementById("pastBody");
 
-// dashboard stats
+//dashboard stats
 const statTotal = document.getElementById("stat-total");
 const statPending = document.getElementById("stat-pending");
 const statActive = document.getElementById("stat-active");
 const statPast = document.getElementById("stat-past");
 
-// provider-only create listing form
+//listing form (provider access only)
 const createListingForm = document.getElementById("create-listing-form");
+const machineSelect = document.getElementById("machineSelect");
+const openCreateListingBtn = document.getElementById("openCreateListingModal");
+const noMachinesWarning = document.getElementById("no-machines-warning");
+
+//machine form
+const createMachineForm = document.getElementById("create-machine-form");
+
+//internal machine cache
+let machines = [];
 
 document.addEventListener("DOMContentLoaded", async () => {
-    // Fetch bookings as before
+    //Load machines first
+    await loadMachines();
+
+    //Load bookings
+    await loadBookings();
+
+    //Listing creation handler
+    if (createListingForm) {
+        createListingForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const fd = new FormData(createListingForm);
+            const payload = {
+                machine_id: Number(fd.get("machine_id")),
+                title: fd.get("title"),
+                price: Number(fd.get("price")),
+            };
+
+            try {
+                await apiCreateListing(payload);
+                alert("Listing created!");
+
+                //Close modal
+                document
+                    .querySelector('[data-modal-hide="createListingModal"]')
+                    ?.click();
+
+                createListingForm.reset();
+                location.reload(); //reload to update tables
+            } catch (err) {
+                alert("Error: " + err.message);
+            }
+        });
+    }
+
+    //Machine creation handler
+    if (createMachineForm) {
+        createMachineForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const fd = new FormData(createMachineForm);
+            const payload = {
+                hostname: fd.get("hostname"),
+            };
+
+            try {
+                await apiCreateMachine(payload);
+                alert("Machine added!");
+
+                //Close modal
+                document
+                    .querySelector('[data-modal-hide="createMachineModal"]')
+                    ?.click();
+
+                createMachineForm.reset();
+
+                //Refresh machines list and repopulate dropdown
+                await loadMachines();
+            } catch (err) {
+                alert("Error: " + err.message);
+            }
+        });
+    }
+});
+
+
+//Load machines and update UI state
+async function loadMachines() {
+    if (!machineSelect) return; //buyer dashboard
+
+    try {
+        machines = await apiGetMachines();
+    } catch (err) {
+        console.error("Failed to load machines:", err);
+        machines = [];
+    }
+
+    //Machines UI state
+    if (machines.length === 0) {
+        openCreateListingBtn.disabled = true;
+        noMachinesWarning.classList.remove("hidden");
+        machineSelect.innerHTML = "";
+        return;
+    }
+
+    openCreateListingBtn.disabled = false;
+    noMachinesWarning.classList.add("hidden");
+
+    //dropdown
+    machineSelect.innerHTML = machines
+        .map(
+            (m) =>
+                `<option value="${m.id}">
+                    ${m.hostname || "Machine #" + m.id}
+                 </option>`
+        )
+        .join("");
+}
+
+
+//Load bookings
+async function loadBookings() {
     let bookings = [];
 
     try {
@@ -45,36 +160,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     pastBody.innerHTML = past.length
         ? past.map(rowHTML).join("")
         : emptyRow(5, "No past bookings.");
+}
 
-    // ---- CREATE LISTING (provider only) ----
-    if (createListingForm) {
-        createListingForm.addEventListener("submit", async (e) => {
-            e.preventDefault();
 
-            const fd = new FormData(createListingForm);
-            const payload = {
-                title: fd.get("title"),
-                price: Number(fd.get("price")),
-            };
-
-            try {
-                await apiCreateListing(payload);
-                alert("Listing created!");
-
-                // Close modal using Flowbite toggle
-                document.querySelector('[data-modal-hide="createListingModal"]')?.click();
-
-                createListingForm.reset();
-                location.reload();
-
-            } catch (err) {
-                alert("Error: " + err.message);
-            }
-        });
-    }
-});
-
-// Helpers (unchanged)
+//Helper fxns
 function rowHTML(b) {
     return `
         <tr class="bg-white border-b hover:bg-gray-50">

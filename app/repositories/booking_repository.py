@@ -77,6 +77,19 @@ def list_bookings_for_user(db: Session, user_id: int):
     )
 
 
+def list_bookings_for_provider(db: Session, provider_id: int):
+    """
+    Providers only see the bookings that have been made on their machines.
+    """
+    return (
+        db.query(models.Booking)
+        .join(models.Listing, models.Booking.listing_id == models.Listing.id)
+        .join(models.Machine, models.Listing.machine_id == models.Machine.id)
+        .filter(models.Machine.provider_id == provider_id)
+        .all()
+    )
+
+
 def get_booking_by_id(db: Session, booking_id: int) -> models.Booking | None:
     """Fetches a booking by its primary key."""
     return db.get(models.Booking, booking_id)
