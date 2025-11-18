@@ -166,11 +166,11 @@ async function loadBookings() {
 //Helper fxns
 function rowHTML(b) {
     return `
-        <tr class="bg-white border-b hover:bg-gray-50">
-            <td class="px-6 py-4 font-medium">#${b.id}</td>
-            <td class="px-6 py-4">${b.listing_title || "Listing " + b.listing_id}</td>
-            <td class="px-6 py-4">${b.buyer_email || "Unknown"}</td>
-            <td class="px-6 py-4">${scheduleHTML(b)}</td>
+        <tr class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+            <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">#${b.id}</td>
+            <td class="px-6 py-4 text-gray-900 dark:text-white">${b.listing_title || "Listing " + b.listing_id}</td>
+            <td class="px-6 py-4 text-gray-900 dark:text-white">${b.buyer_email || "Unknown"}</td>
+            <td class="px-6 py-4 text-gray-900 dark:text-white">${scheduleHTML(b)}</td>
             <td class="px-6 py-4">${statusBadge(b.status)}</td>
         </tr>
     `;
@@ -187,21 +187,21 @@ function scheduleHTML(b) {
 
 function statusBadge(status) {
     const colors = {
-        requested: "bg-yellow-100 text-yellow-800",
-        confirmed: "bg-blue-100 text-blue-800",
-        active: "bg-green-100 text-green-800",
-        completed: "bg-gray-100 text-gray-800",
-        cancelled: "bg-red-100 text-red-800",
+        requested: "bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-300",
+        confirmed: "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300",
+        active: "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300",
+        completed: "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300",
+        cancelled: "bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-300",
     };
     return `<span class="px-2.5 py-0.5 text-xs rounded ${colors[status]}">${status}</span>`;
 }
 
 function emptyRow(colspan, text) {
-    return `<tr><td colspan="${colspan}" class="px-6 py-6 text-center text-gray-500">${text}</td></tr>`;
+    return `<tr><td colspan="${colspan}" class="px-6 py-6 text-center text-gray-500 dark:text-gray-400">${text}</td></tr>`;
 }
 
 function errorRow(msg) {
-    return `<tr><td colspan="5" class="px-6 py-6 text-center text-red-600">${msg}</td></tr>`;
+    return `<tr><td colspan="5" class="px-6 py-6 text-center text-red-600 dark:text-red-400">${msg}</td></tr>`;
 }
 
 function formatDate(str) {

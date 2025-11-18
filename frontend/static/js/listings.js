@@ -54,17 +54,17 @@ function renderListings() {
 //Card UI to format listing boxes
 function listingCardHTML(l) {
     return `
-        <div class="bg-white shadow border rounded-lg overflow-hidden hover:shadow-lg transition">
+        <div class="bg-white dark:bg-gray-800 shadow border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:shadow-lg transition">
             <div class="p-5">
-                <h3 class="text-lg font-bold mb-1">${l.title}</h3>
-                <p class="text-gray-600 text-sm line-clamp-2 mb-3">
+                <h3 class="text-lg font-bold mb-1 text-gray-900 dark:text-white">${l.title}</h3>
+                <p class="text-gray-600 dark:text-gray-300 text-sm line-clamp-2 mb-3">
                     ${l.description || "No description provided."}
                 </p>
-                <p class="text-blue-600 font-semibold mb-2">$${l.price}/hr</p>
+                <p class="text-blue-600 dark:text-blue-400 font-semibold mb-2">$${l.price}/hr</p>
 
                 <button 
                     data-id="${l.id}"
-                    class="btn-view-details w-full mt-2 px-4 py-2 bg-gray-900 text-white rounded hover:bg-black transition text-sm"
+                    class="btn-view-details w-full mt-2 px-4 py-2 bg-gray-900 text-white rounded hover:bg-black dark:hover:bg-gray-700 transition text-sm"
                     data-modal-target="listingDetailsModal"
                     data-modal-toggle="listingDetailsModal">
                     View Details

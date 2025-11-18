@@ -56,7 +56,7 @@ def delete_machine(
     db.commit()
 
 
-@router.post("/", response_model=schemas.MachineRead)
+@router.post("/", response_model=schemas.MachineRead, status_code=201)
 def create_machine(
     payload: schemas.MachineCreate,
     db: Session = Depends(get_db),

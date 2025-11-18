@@ -86,6 +86,13 @@ def confirm_booking(db: Session, booking_id: int):
     session start/end rules apply.
     """
     booking = _get_booking_or_404(db, booking_id)
+
+    #A provider shouldn't be able to confirm a booking after its end time (start time for accurate window)
+    now = datetime.now(timezone.utc)
+
+    if now > booking.end_time:
+        raise HTTPException(status_code=400, detail="Cannot confirm after booking end_time")
+    
     booking.status = models.BookingStatus.CONFIRMED
     db.commit()
     db.refresh(booking)

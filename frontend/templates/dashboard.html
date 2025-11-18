@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 
-<h1 class="text-3xl font-bold mb-8">
+<h1 class="text-3xl font-bold mb-8 text-gray-900 dark:text-white">
     {% if user.role == "buyer" %}
         Buyer Dashboard
     {% else %}
@@ -43,33 +43,33 @@
 
 <!--Stats-->
 <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
-    <div class="rounded-lg border bg-white p-4">
-        <div class="text-sm text-gray-500">Total Bookings</div>
-        <div id="stat-total" class="mt-1 text-2xl font-semibold">0</div>
+    <div class="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+        <div class="text-sm text-gray-500 dark:text-gray-400">Total Bookings</div>
+        <div id="stat-total" class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">0</div>
     </div>
-    <div class="rounded-lg border bg-white p-4">
-        <div class="text-sm text-gray-500">Pending</div>
-        <div id="stat-pending" class="mt-1 text-2xl font-semibold">0</div>
+    <div class="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+        <div class="text-sm text-gray-500 dark:text-gray-400">Total Bookings</div>
+        <div id="stat-pending" class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">0</div>
     </div>
-    <div class="rounded-lg border bg-white p-4">
-        <div class="text-sm text-gray-500">Active</div>
-        <div id="stat-active" class="mt-1 text-2xl font-semibold">0</div>
+    <div class="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+        <div class="text-sm text-gray-500 dark:text-gray-400">Total Bookings</div>
+        <div id="stat-active" class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">0</div>
     </div>
-    <div class="rounded-lg border bg-white p-4">
-        <div class="text-sm text-gray-500">Past</div>
-        <div id="stat-past" class="mt-1 text-2xl font-semibold">0</div>
+    <div class="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+        <div class="text-sm text-gray-500 dark:text-gray-400">Total Bookings</div>
+        <div id="stat-past" class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">0</div>
     </div>
 </div>
 
 <!--Tabs-->
-<div class="mb-4 border-b border-gray-200">
-    <ul class="flex flex-wrap -mb-px text-sm font-medium text-center"
+<div class="mb-4 border-b border-gray-200 dark:border-gray-700">
+    <ul class="flex flex-wrap -mb-px text-sm font-medium text-center text-gray-500 dark:text-gray-400"
         data-tabs-toggle="#dashboardTabsContent"
         role="tablist">
 
         <li class="mr-2" role="presentation">
             <button
-                class="inline-block p-4 border-b-2 rounded-t-lg"
+                class="inline-block p-4 border-b-2 border-transparent rounded-t-lg hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300"
                 id="pending-tab"
                 data-tabs-target="#pending"
                 type="button"
@@ -82,7 +82,7 @@
 
         <li class="mr-2" role="presentation">
             <button
-                class="inline-block p-4 border-b-2 rounded-t-lg"
+                class="inline-block p-4 border-b-2 border-transparent rounded-t-lg hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300"
                 id="past-tab"
                 data-tabs-target="#past"
                 type="button"
@@ -103,7 +103,7 @@
     <div id="pending" role="tabpanel" aria-labelledby="pending-tab">
         <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
             <table class="w-full text-sm text-left">
-                <thead class="text-xs uppercase bg-gray-100 border-b">
+                <thead class="text-xs uppercase bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">
                     <tr>
                         <th class="px-6 py-3">Booking</th>
                         <th class="px-6 py-3">Listing</th>
@@ -121,7 +121,7 @@
     <div id="past" class="hidden" role="tabpanel" aria-labelledby="past-tab">
         <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
             <table class="w-full text-sm text-left">
-                <thead class="text-xs uppercase bg-gray-100 border-b">
+                <thead class="text-xs uppercase bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">
                     <tr>
                         <th class="px-6 py-3">Booking</th>
                         <th class="px-6 py-3">Listing</th>
@@ -145,10 +145,10 @@
      class="hidden overflow-y-auto overflow-x-hidden fixed inset-0 z-50 flex justify-center items-center bg-black/40">
 
     <div class="relative p-4 w-full max-w-md">
-        <div class="relative bg-white rounded-lg shadow">
-
-            <div class="flex items-center justify-between p-4 border-b">
-                <h3 class="text-lg font-semibold">
+        <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+            
+            <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
                     Create a New Listing
                 </h3>
                 <button type="button"
@@ -166,7 +166,8 @@
                     <select name="machine_id"
                             id="machineSelect"
                             required
-                            class="bg-gray-50 border border-gray-300 text-sm rounded-lg block w-full p-2.5">
+                            class="bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 text-sm rounded-lg block w-full p-2.5">
+                    </select>
                         <!--populated dynamically by JS-->
                     </select>
                 </div>
@@ -176,7 +177,7 @@
                     <input name="title"
                            type="text"
                            required
-                           class="bg-gray-50 border border-gray-300 text-sm rounded-lg block w-full p-2.5" />
+                           class="bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-sm rounded-lg block w-full p-2.5 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" />
                 </div>
 
                 <div>
@@ -186,7 +187,7 @@
                            step="0.01"
                            min="0"
                            required
-                           class="bg-gray-50 border border-gray-300 text-sm rounded-lg block w-full p-2.5" />
+                           class="bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-sm rounded-lg block w-full p-2.5 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" />
                 </div>
 
                 <button type="submit"
@@ -208,10 +209,10 @@
      class="hidden overflow-y-auto overflow-x-hidden fixed inset-0 z-50 flex justify-center items-center bg-black/40">
 
     <div class="relative p-4 w-full max-w-md">
-        <div class="relative bg-white rounded-lg shadow">
+        <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
 
-            <div class="flex items-center justify-between p-4 border-b">
-                <h3 class="text-lg font-semibold">
+            <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
                     Add Machine
                 </h3>
                 <button type="button"
@@ -227,7 +228,7 @@
                     <input name="hostname"
                            type="text"
                            required
-                           class="bg-gray-50 border border-gray-300 text-sm rounded-lg block w-full p-2.5" />
+                           class="bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-sm rounded-lg block w-full p-2.5 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" />
                 </div>
 
                 <button type="submit"
