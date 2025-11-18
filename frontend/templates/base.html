@@ -95,7 +95,8 @@
     const userTheme = localStorage.getItem('theme');
     const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
-    if (userTheme === 'dark' || (!userTheme && systemPrefersDark)) {
+    //if (userTheme === 'dark' || (!userTheme && systemPrefersDark)) {  //Pervasive dark mode
+    if (userTheme === 'dark') {
         document.documentElement.classList.add('dark');
     } else {
         document.documentElement.classList.remove('dark');
