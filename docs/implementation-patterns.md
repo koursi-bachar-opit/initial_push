@@ -10,7 +10,7 @@ This document describes common implementation patterns used throughout the codeb
 | ------------------ | ----------------------------- | ------------------------------------------------- |
 | **API Endpoint**   | Creating HTTP endpoints       | [API Endpoint Pattern](#api-endpoint-pattern)     |
 | **Service Layer**  | Business logic & workflows    | [Service Layer Pattern](#service-layer-pattern)   |
-| **CRUD**           | Simple database operations    | [CRUD Pattern](#crud-pattern)                     |
+| **Repository**     | Simple database operations    | [Repository Layer Pattern](#repo-layer-pattern)   |
 | **Error Handling** | Handling errors across layers | [Error Handling Pattern](#error-handling-pattern) |
 | **Authentication** | Protecting endpoints          | [Authentication Pattern](#authentication-pattern) |
 | **State Machine**  | Managing status transitions   | [State Machine Pattern](#state-machine-pattern)   |
@@ -19,7 +19,7 @@ This document describes common implementation patterns used throughout the codeb
 
 1. [API Endpoint Pattern](#api-endpoint-pattern)
 2. [Service Layer Pattern](#service-layer-pattern)
-3. [CRUD Pattern](#crud-pattern)
+3. [Repository Layer Pattern](#repo-layer-pattern)
 4. [Error Handling Pattern](#error-handling-pattern)
 5. [Authentication Pattern](#authentication-pattern)
 6. [Database Session Pattern](#database-session-pattern)
@@ -29,39 +29,6 @@ This document describes common implementation patterns used throughout the codeb
 ---
 
 ## API Endpoint Pattern
-
-### Standard Endpoint Structure
-
-```python
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
-from app import crud, schemas
-from app.database import get_db
-from app.auth import require_roles
-
-router = APIRouter()
-
-@router.post(
-    "/",
-    response_model=schemas.ResourceRead,
-    status_code=201,
-    dependencies=[Depends(require_roles("provider", "admin"))],
-)
-def create_resource(
-    payload: schemas.ResourceCreate,
-    db: Session = Depends(get_db)
-):
-    """
-    Create a new resource.
-
-    Clear description of what this endpoint does, who can use it,
-    and any important behavior or constraints.
-    """
-    try:
-        return crud.create_resource(db, payload)
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-```
 
 ### Pattern Elements
 
@@ -75,31 +42,11 @@ def create_resource(
 
 ### Endpoint Types
 
-**CRUD Endpoints:**
-
-```python
-@router.post("/", response_model=schemas.ResourceRead, status_code=201)
-def create_resource(...): ...
-
-@router.get("/", response_model=list[schemas.ResourceRead])
-def list_resources(...): ...
-
-@router.get("/{resource_id}", response_model=schemas.ResourceRead)
-def get_resource(...): ...
-
-@router.put("/{resource_id}", response_model=schemas.ResourceRead)
-def update_resource(...): ...
-
-@router.delete("/{resource_id}", status_code=204)
-def delete_resource(...): ...
-```
-
 **Action Endpoints:**
 
 ```python
 @router.put("/{booking_id}/confirm", response_model=schemas.BookingRead)
 def confirm_booking(booking_id: int, db: Session = Depends(get_db)):
-    """Provider confirms a pending booking."""
     try:
         return bookings_service.confirm_booking(db, booking_id)
     except ValueError as e:
@@ -181,24 +128,19 @@ if not listing:
 ```python
 # Use HTTPException for HTTP-specific errors (bubbles up unchanged)
 if booking.status != models.BookingStatus.CONFIRMED:
-    raise HTTPException(
-        status_code=409,
-        detail=f"Cannot start; current status is '{booking.status}'"
-    )
+    raise HTTPException(status_code=409, detail=f"Cannot start; current status is '{booking.status}'")
 ```
 
 ---
 
-## CRUD Pattern
+## Repository Layer Pattern
 
 ### Create Operation
 
 ```python
-def create_resource(db: Session, data: schemas.ResourceCreate):
-    """
-    Create a new resource record and persist to the database.
-    """
-    obj = models.Resource(**data.model_dump())
+def create_listing(db: Session, data: schemas.ListingCreate):
+    """Create a new listing record and persist to the database."""
+    obj = models.Listing(**data.model_dump()) #Pydantic model_dump() gives us regular dict data ready to pass to SQLAlchemy
     db.add(obj)
     db.commit()
     db.refresh(obj)
@@ -216,13 +158,13 @@ def create_resource(db: Session, data: schemas.ResourceCreate):
 ### Read Operations
 
 ```python
-def get_resource(db: Session, resource_id: int):
-    """Get a single resource by ID."""
-    return db.get(models.Resource, resource_id)
+def get_listing_by_id(db: Session, listing_id: int) -> models.Listing | None:
+    """Fetch a listing by its primary key so search results are deterministic."""
+    return db.get(models.Listing, listing_id)
 
-def list_resources(db: Session):
-    """Return all resources sorted by ID (ascending)."""
-    return db.query(models.Resource).order_by(models.Resource.id.asc()).all()
+def get_listings(db: Session):
+    """Return all listings sorted by ID."""
+    return db.query(models.Listing).order_by(models.Listing.id.asc()).all()
 ```
 
 **Pattern:**
@@ -286,9 +228,11 @@ if not listing:
 **2. Service Layer (HTTP-Specific):**
 
 ```python
-# Raises HTTPException for HTTP-specific errors
-if booking.status != models.BookingStatus.CONFIRMED:
-    raise HTTPException(status_code=409, detail="Cannot start; booking not confirmed")
+#Validate session timing window
+if now < booking.start_time:
+    raise HTTPException(status_code=400, detail="Cannot start before booking start_time")
+if now > booking.end_time:
+    raise HTTPException(status_code=400, detail="Cannot start; booking window expired")
 ```
 
 **3. API Layer:**
@@ -324,14 +268,13 @@ except Exception as e:
 ### Protected Endpoint
 
 ```python
-from app.auth import require_roles
-
 @router.post(
     "/",
-    dependencies=[Depends(require_roles("provider", "admin"))],
+    response_model=schemas.ListingRead,
+    status_code=201,
+    dependencies=[Depends(require_roles(models.UserRole.PROVIDER, models.UserRole.ADMIN))],
 )
-def create_listing(...):
-    """Only providers and admins can create listings."""
+def create_listing(listing: schemas.ListingCreate, db: Session = Depends(get_db), user: models.User = Depends(get_current_user)):
     ...
 ```
 
@@ -339,10 +282,10 @@ def create_listing(...):
 
 ```python
 # Allow multiple roles
-dependencies=[Depends(require_roles("provider", "admin"))]
+dependencies=[Depends(require_roles(models.UserRole.PROVIDER, models.UserRole.ADMIN))]
 
 # Single role
-dependencies=[Depends(require_roles("admin"))]
+dependencies=[Depends(require_roles(models.UserRole.ADMIN))]
 
 # Public endpoint (no dependency)
 # No dependencies parameter needed
@@ -369,12 +312,14 @@ def get_current_user(identity=Depends(get_current_identity)):
 ### Dependency Injection
 
 ```python
-from app.database import get_db
+from app.repositories import listing_repository
 
-@router.get("/")
-def list_resources(db: Session = Depends(get_db)):
-    """Get all resources."""
-    return crud.list_resources(db)
+def list_listings(db: Session):
+    """
+    The repository only does low-level DB writes.
+    This service layer is where we enforce business rules.
+    """
+    return listing_repository.get_listings(db)
 ```
 
 ### Session Lifecycle
@@ -422,23 +367,33 @@ class BookingStatus(str, Enum):
 
 ```python
 def start_session(db: Session, booking_id: int):
-    """Start session - only from CONFIRMED state."""
-    booking = db.get(models.Booking, booking_id)
+    """
+    A session can only begin during the reserved window.
+    We disallow starting outside it because usage is tied to billing
+    and the hosting provider's capacity planning.
+    """
+    booking = booking_repository.get_booking_by_id(db, booking_id)
     if not booking:
         raise HTTPException(status_code=404, detail="Booking not found")
 
-    # Validate current state
     if booking.status != models.BookingStatus.CONFIRMED:
-        raise HTTPException(
-            status_code=409,
-            detail=f"Cannot start; current status is '{booking.status}'"
-        )
+        raise HTTPException(status_code=409, detail=f"Cannot start; current status is '{booking.status}'")
 
-    # Transition state
+    if booking.active_session_start is not None:
+        raise HTTPException(status_code=409, detail="Session already started")
+
+    now = datetime.now(timezone.utc)
+
+    if now < booking.start_time:
+        raise HTTPException(status_code=400, detail="Cannot start before booking start_time")
+    if now > booking.end_time:
+        raise HTTPException(status_code=400, detail="Cannot start; booking window expired")
+
+    booking.active_session_start = now
     booking.status = models.BookingStatus.ACTIVE
-    booking.active_session_start = datetime.now(timezone.utc)
 
     db.commit()
+    db.refresh(booking)
     return booking
 ```
 
@@ -460,13 +415,14 @@ def start_session(db: Session, booking_id: int):
 from pydantic import BaseModel, Field
 
 class ListingCreate(BaseModel):
-    """Schema for creating a new listing."""
-    title: str = Field(min_length=1, description="Listing title")
-    price: float = Field(ge=0, description="Price per hour")
+    """Payload sent by providers or admins when creating a new listing."""
+    machine_id: int
+    title: str = Field(min_length=1)
+    price: float = Field(ge=0)
 
 class ListingRead(ListingCreate):
-    """Schema for reading listing data."""
     id: int
+    machine: Optional[MachineRead] = None
     model_config = ConfigDict(from_attributes=True)
 ```
 
@@ -474,10 +430,10 @@ class ListingRead(ListingCreate):
 
 ```python
 # String validation
-title: str = Field(min_length=1, max_length=100)
+title: str = Field(min_length=1)
 
 # Number validation
-price: float = Field(ge=0, le=10000)  # >= 0, <= 10000
+price: float = Field(ge=0)
 
 # Optional fields
 description: Optional[str] = None
@@ -489,22 +445,28 @@ status: BookingStatus = BookingStatus.REQUESTED
 ### Business Logic Validation
 
 ```python
-def create_booking(db: Session, data: schemas.BookingCreate):
-    """Create booking with business rule validation."""
-    # Schema validation happens automatically (Pydantic)
-    # Additional business validation:
-
-    if data.end_time <= data.start_time:
-        raise HTTPException(
-            status_code=400,
-            detail="end_time must be after start_time"
-        )
-
+def create_booking(db: Session, data: schemas.BookingCreate) -> models.Booking:
+    """
+    This is the low-level primitive used by the service layer to create a booking.
+    It assumes the caller manages the booking process (separation of concerns),
+    and it performs curcial validation:
+    1. A listing must exist
+    2. The time window must be valid
+    3. Necessitates a buyer id
+    It also computes the estimated price based on whole hours.
+    """
     listing = db.get(models.Listing, data.listing_id)
     if not listing:
         raise HTTPException(status_code=404, detail="Listing not found")
 
-    # Proceed with creation
+    if data.end_time <= data.start_time:
+        raise HTTPException(status_code=400, detail="end_time must be after start_time")
+
+    if data.buyer_user_id is None:
+        raise HTTPException(
+            status_code=400,
+            detail="buyer_user_id is required for admin booking creation",
+        )
     ...
 ```
 
@@ -524,7 +486,7 @@ When implementing a new feature:
 
 - [ ] **API Endpoint**: Follow standard endpoint structure
 - [ ] **Service Function**: Extract business logic to service layer
-- [ ] **CRUD Function**: Use CRUD pattern for database operations
+- [ ] **Repository Function**: Use repository layer pattern for database operations
 - [ ] **Error Handling**: Use appropriate error types and status codes
 - [ ] **Authentication**: Add role-based access control if needed
 - [ ] **Validation**: Use Pydantic schemas and business rule validation
@@ -537,7 +499,7 @@ When implementing a new feature:
 When reviewing code:
 
 - [ ] Follows naming conventions
-- [ ] Uses appropriate layer (API/Service/CRUD)
+- [ ] Uses appropriate layer (API/Service/Repository)
 - [ ] Error handling is consistent
 - [ ] Type hints are present
 - [ ] Docstrings are clear
@@ -553,9 +515,9 @@ These patterns ensure consistency, maintainability, and testability across the c
 
 ## Related Documentation
 
-- 📖 [Coding Standards](./coding-standards.md) - Code conventions and practices
-- 📖 [Architecture Overview](./architecture.md) - System design and patterns
-- 📖 [Documentation Index](./README.md) - Navigation guide
+-  [Coding Standards](./coding-standards.md) - Code conventions and practices
+-  [Architecture Overview](./architecture.md) - System design and patterns
+-  [Documentation Index](./README.md) - Navigation guide
 
 ## Troubleshooting
 
@@ -571,4 +533,4 @@ A: Raise `ValueError` in services, catch and convert to `HTTPException` in API l
 A: Use mock tokens: `headers = {"Authorization": "Bearer provider:alice"}`
 
 **Q: How do I add a new endpoint?**
-A: Follow the [API Endpoint Pattern](#api-endpoint-pattern) - create route, add service function if needed, add CRUD if needed.
+A: Follow the [API Endpoint Pattern](#api-endpoint-pattern) - create route, add service function if needed, add the repository if needed.

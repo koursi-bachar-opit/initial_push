@@ -2,7 +2,7 @@
 
 > **Welcome!** This directory contains comprehensive documentation for the Remote Servers Marketplace API project. All documentation is written in Markdown and optimized for readability, skimming, and AI/agent consumption.
 
-## 📚 Documents
+##  Documents
 
 ### [Coding Standards and Practices](./coding-standards.md)
 
@@ -10,14 +10,14 @@
 
 **Key topics:**
 
-- ✅ Project architecture and code organization
-- ✅ Naming conventions and code style
-- ✅ API design patterns
-- ✅ Database patterns and ORM usage
-- ✅ Error handling strategies
-- ✅ Authentication and authorization
-- ✅ Testing practices
-- ✅ Configuration management
+-  Project architecture and code organization
+-  Naming conventions and code style
+-  API design patterns
+-  Database patterns and ORM usage
+-  Error handling strategies
+-  Authentication and authorization
+-  Testing practices
+-  Configuration management
 
 **Use when:** Writing new code, reviewing PRs, onboarding developers, understanding conventions.
 
@@ -27,13 +27,13 @@
 
 **Key topics:**
 
-- 🏗️ Technology stack
-- 🏗️ Architecture patterns (layered, dependency injection, service layer)
-- 🏗️ Data flow and request processing
-- 🏗️ Database schema and relationships
-- 🏗️ Security architecture
-- 🏗️ Testing architecture
-- 🏗️ Deployment considerations
+- ️ Technology stack
+- ️ Architecture patterns (layered, dependency injection, service layer)
+- ️ Data flow and request processing
+- ️ Database schema and relationships
+- ️ Security architecture
+- ️ Testing architecture
+- ️ Deployment considerations
 
 **Use when:** Understanding system design, planning features, troubleshooting, making architectural decisions.
 
@@ -43,17 +43,17 @@
 
 **Key topics:**
 
-- 💻 API endpoint structure
-- 💻 Service layer functions
-- 💻 CRUD operations
-- 💻 Error handling patterns
-- 💻 Authentication patterns
-- 💻 State machine patterns
-- 💻 Validation patterns
+-  API endpoint structure
+-  Service layer functions
+-  Repositoy layer operations
+-  Error handling patterns
+-  Authentication patterns
+-  State machine patterns
+-  Validation patterns
 
 **Use when:** Implementing new features, learning patterns, troubleshooting common issues.
 
-## 🚀 Quick Reference
+##  Quick Reference
 
 ### Code Organization
 
@@ -61,7 +61,6 @@
 app/
 ├── api/          # HTTP endpoints (thin controllers)
 ├── services/     # Business logic (workflows, rules)
-├── crud.py       # Database operations
 ├── models.py     # SQLAlchemy ORM models
 ├── schemas.py    # Pydantic validation schemas
 └── ...
@@ -108,7 +107,7 @@ def create_resource(db: Session, data: schemas.ResourceCreate):
     return obj
 ```
 
-## 📖 For AI Assistants
+##  For AI Assistants
 
 This documentation is optimized for AI consumption:
 
@@ -116,17 +115,17 @@ This documentation is optimized for AI consumption:
 - Code examples are copy-paste ready
 - Clear structure with linkable headings
 
-## 🤝 Contributing
+##  Contributing
 
 When adding new features or making changes:
 
-1. ✅ **Follow the coding standards** outlined in [`coding-standards.md`](./coding-standards.md)
-2. ✅ **Maintain the architecture** patterns described in [`architecture.md`](./architecture.md)
-3. ✅ **Update documentation** if you introduce new patterns or conventions
-4. ✅ **Write tests** following the testing practices
-5. ✅ **Update this README** if you add new documentation files
+1.  **Follow the coding standards** outlined in [`coding-standards.md`](./coding-standards.md)
+2.  **Maintain the architecture** patterns described in [`architecture.md`](./architecture.md)
+3.  **Update documentation** if you introduce new patterns or conventions
+4.  **Write tests** following the testing practices
+5.  **Update this README** if you add new documentation files
 
-## ❓ Questions?
+##  Questions?
 
 **Quick answers:**
 
@@ -135,7 +134,7 @@ When adding new features or making changes:
 - **Code examples**: See [Implementation Patterns](./implementation-patterns.md)
 - **Specific implementation**: Check the codebase and inline documentation
 
-## 🔗 Related Links
+##  Related Links
 
 - [Main README](../README.md) - Project overview
 - [Implementation Patterns](./implementation-patterns.md) - Code examples

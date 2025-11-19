@@ -63,49 +63,23 @@ The Remote Servers Marketplace is a RESTful API built with FastAPI that enables:
 
 ## Architecture Patterns
 
-### 1. Layered Architecture
+### 1. Modular Monolith Architecture
 
-The application follows a strict layered architecture:
+The system is organized as a **modular monolith**, where each module encapsulates its own routing, services, repositories, and domain logic. Modules interact through explicit service and repository interfaces, and not through a global Repository layer.
 
-```
-┌─────────────────────────────────────────┐
-│         Presentation Layer               │
-│  FastAPI Routes (app/api/*.py)         │
-│  - HTTP request/response handling       │
-│  - Authentication/authorization         │
-│  - Input validation (Pydantic)          │
-└─────────────────────────────────────────┘
-                    ↓
-┌─────────────────────────────────────────┐
-│         Application Layer                │
-│  Business Logic (app/services/*.py)    │
-│  - Workflow orchestration               │
-│  - Business rules                       │
-│  - State transitions                    │
-└─────────────────────────────────────────┘
-                    ↓
-┌─────────────────────────────────────────┐
-│         Data Access Layer                │
-│  CRUD Operations (app/crud.py)         │
-│  - Database queries                     │
-│  - Basic operations                     │
-└─────────────────────────────────────────┘
-                    ↓
-┌─────────────────────────────────────────┐
-│         Domain Layer                    │
-│  Models (app/models.py)                 │
-│  - SQLAlchemy ORM models                │
-│  - Relationships                        │
-│  - Constraints                          │
-└─────────────────────────────────────────┘
-```
+Key properties:
+
+- **Encapsulation**: Each domain module owns its models, repository logic, and business workflows.
+- **Explicit boundaries**: Modules expose clear entry points (e.g., service functions).
+- **Layer responsibilities** still exist (API → service → repository → database), but enforcement is **not strict-layered**; modules remain the primary unit of structure.
+- **Repositories** replace the former Repository abstraction and handle direct DB interactions.
 
 ### 2. Dependency Injection
 
 FastAPI's dependency injection system is used throughout:
 
 - **Database sessions**: Injected via `get_db()` dependency
-- **Authentication**: Injected via `get_current_identity()` dependency
+- **Authentication**: Injected via `get_current_user()` dependency
 - **Authorization**: Injected via `require_roles()` factory
 
 **Benefits:**
@@ -127,16 +101,16 @@ Business logic is separated into service modules:
 **Example Flow:**
 
 ```
-API Endpoint → Service Function → CRUD Function → Database
+API Endpoint → Service Function → Repository Function → Database
 ```
 
 ### 4. Repository Pattern (Simplified)
 
-CRUD operations are centralized in `crud.py`:
+Repository operations are centralized in `repository modules`:
 
 - **Separation**: Database queries separated from business logic
 - **Consistency**: Standardized query patterns
-- **Maintainability**: Database changes isolated to CRUD layer
+- **Maintainability**: Database changes isolated to Repository layer
 
 ## Data Flow
 
@@ -155,7 +129,7 @@ CRUD operations are centralized in `crud.py`:
    - Validates business constraints
    - Orchestrates workflow
    ↓
-4. CRUD Layer (app/crud.py)
+4. Repository Layer (app/repository/*.py)
    - Builds database queries
    - Executes operations
    - Returns model instances
@@ -191,7 +165,8 @@ REQUESTED → CONFIRMED → ACTIVE → COMPLETED
 │─────────────│    │    │──────────────│
 │ id (PK)     │    │    │ id (PK)      │
 │ title       │    └────│ listing_id   │
-│ price       │         │ buyer_name   │
+│ price       |         |              |
+| machine_id  │         │ buyer_user_id│
 └─────────────┘         │ start_time   │
                         │ end_time     │
                         │ status       │
@@ -206,7 +181,7 @@ REQUESTED → CONFIRMED → ACTIVE → COMPLETED
                         │ actual_price_│
                         │   charged    │
                         │ usage_seconds│
-└──────────────┘
+                        └──────────────┘
 ```
 
 ### Key Relationships
@@ -224,7 +199,7 @@ REQUESTED → CONFIRMED → ACTIVE → COMPLETED
    ↓
 2. FastAPI extracts token from Authorization header
    ↓
-3. get_current_identity() dependency:
+3. get_current_user() dependency:
    - Checks if Supabase JWT key configured
    - If yes: Validates JWT (RS256)
    - If no: Parses mock token (role:username)
@@ -276,12 +251,31 @@ The application supports multiple environments:
 
 ```
 tests/
-├── conftest.py              # Shared fixtures
-├── test_auth.py             # Authentication tests
-├── test_bookings.py         # Booking CRUD tests
-├── test_booking_lifecycle.py # Workflow tests
-├── test_listings.py         # Listing tests
-└── ...
+├── e2e/
+├── factories/
+│   ├── bookings.py
+│   ├── listings.py
+│   ├── machines.py
+│   └── users.py
+├── functional/
+│   └── api/
+│       ├── test_api_booking_lifecycle.py
+│       ├── test_api_bookings.py
+│       ├── test_api_listings.py
+│       ├── test_api_machines.py
+│       ├── test_auth_api.py
+│       └── test_health_endpoint.py
+├── integration/
+├── performance/
+├── regression/
+└── unit/
+    ├── auth/
+    │   └── test_auth_internal.py
+    ├── test_db_lifecycle.py
+    ├── assertions.py
+    ├── conftest.py
+    ├── test_config.py
+    └── test_helpers.py
 ```
 
 ### Test Isolation Strategy
@@ -295,7 +289,6 @@ tests/
 
 - **Unit tests**: Test individual functions in isolation
 - **Integration tests**: Test API endpoints with database
-- **Workflow tests**: Test complete business workflows
 
 ## Deployment Architecture
 
@@ -332,7 +325,7 @@ tests/
 ### Error Propagation
 
 ```
-Database Error → CRUD Layer → Service Layer → API Layer → HTTP Response
+Database Error → Repository Layer → Service Layer → API Layer → HTTP Response
 ```
 
 ### Error Types
@@ -348,7 +341,7 @@ Database Error → CRUD Layer → Service Layer → API Layer → HTTP Response
 
 ### RESTful Design
 
-- **Resource-based URLs**: `/api/v1/listings`, `/api/v1/bookings`
+- **Resource-based URLs**: `/api/v1/listings`, `/api/v1/bookings`, `/api/v1/machines`
 - **HTTP methods**: GET (read), POST (create), PUT (update)
 - **Status codes**: Standard HTTP status codes
 - **JSON**: Request and response bodies in JSON
@@ -374,7 +367,7 @@ Database Error → CRUD Layer → Service Layer → API Layer → HTTP Response
 
 ### API Performance
 
-- **Async support**: FastAPI supports async endpoints (not currently used)
+- **Async support**: FastAPI supports async endpoints
 - **Response serialization**: Efficient Pydantic serialization
 - **Minimal data transfer**: Only required fields in responses
 
@@ -396,12 +389,12 @@ Database Error → CRUD Layer → Service Layer → API Layer → HTTP Response
 
 This architecture provides:
 
-✅ **Separation of concerns** through layered design
-✅ **Testability** through dependency injection
-✅ **Scalability** through stateless design
-✅ **Maintainability** through clear structure
-✅ **Security** through authentication and authorization
-✅ **Flexibility** through configuration management
+ **Separation of concerns** through layered design
+ **Testability** through dependency injection
+ **Scalability** through stateless design
+ **Maintainability** through clear structure
+ **Security** through authentication and authorization
+ **Flexibility** through configuration management
 
 The design follows industry best practices and can evolve to meet future requirements.
 
@@ -409,6 +402,6 @@ The design follows industry best practices and can evolve to meet future require
 
 ## Related Documentation
 
-- 📖 [Coding Standards](./coding-standards.md) - Code conventions and practices
-- 📖 [Implementation Patterns](./implementation-patterns.md) - Code examples and patterns
-- 📖 [Documentation Index](./README.md) - Navigation guide
+-  [Coding Standards](./coding-standards.md) - Code conventions and practices
+-  [Implementation Patterns](./implementation-patterns.md) - Code examples and patterns
+-  [Documentation Index](./README.md) - Navigation guide
