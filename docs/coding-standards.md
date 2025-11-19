@@ -11,7 +11,6 @@ This document outlines the coding standards, architectural patterns, and best pr
 | **File naming**       | `snake_case.py`                                   | [Naming Conventions](#naming-conventions)                        |
 | **Class naming**      | `PascalCase`                                      | [Naming Conventions](#naming-conventions)                        |
 | **Function naming**   | `snake_case()`                                    | [Naming Conventions](#naming-conventions)                        |
-| **API endpoints**     | Thin controllers → Services → CRUD                | [API Design Patterns](#api-design-patterns)                      |
 | **Error handling**    | `ValueError` in services → `HTTPException` in API | [Error Handling](#error-handling)                                |
 | **Database sessions** | Use `get_db()` dependency                         | [Database Patterns](#database-patterns)                          |
 | **Authentication**    | `require_roles("provider", "admin")`              | [Authentication & Authorization](#authentication--authorization) |
@@ -35,36 +34,34 @@ This document outlines the coding standards, architectural patterns, and best pr
 
 ### Layered Architecture
 
-The project follows a **layered architecture** pattern with clear separation of concerns:
+The project follows (with light modular monolith characteristics for future refactors) a **layered architecture** pattern with clear separation of concerns:
 
 ```
-┌─────────────────────────────────────┐
-│         API Layer (FastAPI)         │  ← HTTP endpoints, request/response handling
-│    app/api/listings.py              │
-│    app/api/bookings.py              │
-├─────────────────────────────────────┤
-│      Service Layer (Business Logic)  │  ← Business rules, workflow orchestration
-│    app/services/bookings_service.py │
-├─────────────────────────────────────┤
-│         CRUD Layer                  │  ← Database operations, data access
-│    app/crud.py                      │
-├─────────────────────────────────────┤
-│         Models Layer                │  ← SQLAlchemy ORM models
-│    app/models.py                    │
-├─────────────────────────────────────┤
-│         Schemas Layer               │  ← Pydantic validation schemas
-│    app/schemas.py                   │
-└─────────────────────────────────────┘
+┌──────────────────────────────┐
+│ API Layer (endpoints)        │  ← HTTP endpoints, request/response handling
+│ app/api/                     │
+├──────────────────────────────┤
+│ Schemas (Pydantic DTOs)      │  ← Pydantic validation schemas
+│ app/schemas.py               │
+├──────────────────────────────┤
+│ Service Layer (business)     │  ← Business rules, workflow orchestration
+│ app/services/                │
+├──────────────────────────────┤
+│ Repository Layer (DB access) │  ← Database operations, data access
+│ app/repositories/            │
+├──────────────────────────────┤
+│ Models Layer (ORM)           │  ← SQLAlchemy ORM models
+│ app/models.py                │
+└──────────────────────────────┘
 ```
 
 ### Key Principles
 
-- ✅ **Separation of Concerns**: Each layer has a distinct responsibility
-- ✅ **Dependency Injection**: FastAPI's dependency system used throughout
-- ✅ **Single Responsibility**: Each module/function has one clear purpose
-- ✅ **DRY (Don't Repeat Yourself)**: Shared logic extracted to reusable functions
+-  **Separation of Concerns**: Each layer has a distinct responsibility
+-  **Dependency Injection**: FastAPI's dependency system used throughout
+-  **Single Responsibility**: Each module/function has one clear purpose
+-  **DRY (Don't Repeat Yourself)**: Shared logic extracted to reusable functions
 
-> 💡 **Tip**: When adding a new feature, ask: "Which layer does this belong to?" Keep API routes thin, business logic in services, and database operations in CRUD.
 
 ---
 
@@ -73,23 +70,29 @@ The project follows a **layered architecture** pattern with clear separation of 
 ### Directory Structure
 
 ```
-app/
-├── __init__.py              # Package initialization
-├── main.py                  # FastAPI app entry point
-├── config.py                # Configuration management
-├── database.py              # Database connection & session management
-├── models.py                # SQLAlchemy ORM models
-├── schemas.py               # Pydantic validation schemas
-├── crud.py                  # Basic CRUD operations
-├── auth.py                  # Authentication & authorization logic
-├── seed.py                  # Database seeding utilities
-├── api/                     # API endpoint modules
+app/ 
+├── api/
 │   ├── __init__.py
-│   ├── listings.py          # Listing endpoints
-│   └── bookings.py          # Booking endpoints
-└── services/                # Business logic services
-    ├── __init__.py
-    └── bookings_service.py  # Booking workflow logic
+│   ├── bookings.py
+│   ├── listings.py
+│   ├── machines.py
+│   ├── repositories/
+│   │   ├── __init__.py
+│   │   ├── booking_repository.py
+│   │   ├── listing_repository.py
+│   │   │   ├── machine_repository.py
+│   │   └── user_repository.py
+│   └── services/
+│       ├── __init__.py
+│       ├── bookings_service.py
+│       └── listings_service.py
+├── __init__.py
+├── auth.py
+├── config.py
+├── database.py
+├── main.py
+├── models.py
+└── schemas.py
 ```
 
 ### Module Organization Principles
@@ -108,7 +111,6 @@ app/
    - Cross-model operations
    - Validation beyond schema validation
 
-3. **CRUD** (`app/crud.py`): Simple database operations
 
    - Basic create, read, update, delete
    - Query building
@@ -131,27 +133,27 @@ app/
 
 ### Files and Modules
 
-- ✅ **Snake_case** for all Python files: `bookings_service.py`, `test_auth.py`
-- ✅ **Descriptive names**: Files should clearly indicate their purpose
-- ✅ **Plural for collections**: `listings.py`, `bookings.py` (API routes)
+-  **Snake_case** for all Python files: `bookings_service.py`, `test_auth.py`
+-  **Descriptive names**: Files should clearly indicate their purpose
+-  **Plural for collections**: `listings.py`, `bookings.py` (API routes)
 
 **Examples:**
 
 ```python
-# ✅ Good
+#  Good
 bookings_service.py
-test_booking_lifecycle.py
+test_api_booking_lifecycle.py
 
-# ❌ Bad
+#  Bad
 service.py
 test1.py
 ```
 
 ### Classes
 
-- ✅ **PascalCase**: `Listing`, `Booking`, `BookingStatus`, `Settings`
-- ✅ **Descriptive nouns**: Classes represent entities or concepts
-- ✅ **Suffix conventions**:
+-  **PascalCase**: `Listing`, `Booking`, `BookingStatus`, `Settings`
+-  **Descriptive nouns**: Classes represent entities or concepts
+-  **Suffix conventions**:
   - **Models**: `Listing`, `Booking` (no suffix)
   - **Schemas**: `ListingCreate`, `ListingRead`, `BookingCreate` (action suffix)
   - **Enums**: `BookingStatus` (descriptive name)
@@ -159,31 +161,31 @@ test1.py
 **Examples:**
 
 ```python
-# ✅ Good
+#  Good
 class Listing(Base): ...
 class ListingCreate(BaseModel): ...
 class BookingStatus(str, Enum): ...
 
-# ❌ Bad
+#  Bad
 class listing(Base): ...
 class CreateListing(BaseModel): ...
 ```
 
 ### Functions and Variables
 
-- ✅ **snake_case**: `create_booking()`, `get_listings()`, `buyer_name`
-- ✅ **Verbs for functions**: `create_`, `get_`, `list_`, `update_`, `delete_`
-- ✅ **Nouns for variables**: `booking_id`, `listing`, `db_session`
+-  **snake_case**: `create_booking()`, `get_listings()`, `buyer_name`
+-  **Verbs for functions**: `create_`, `get_`, `list_`, `update_`, `delete_`
+-  **Nouns for variables**: `booking_id`, `listing`, `db_session`
 
 **Examples:**
 
 ```python
-# ✅ Good
+#  Good
 def create_booking(...): ...
 def get_listings(...): ...
 booking_id = 123
 
-# ❌ Bad
+#  Bad
 def CreateBooking(...): ...
 def getListings(...): ...
 bookingId = 123
@@ -197,7 +199,7 @@ bookingId = 123
 ### Database Tables
 
 - **Plural, lowercase**: `listings`, `bookings`
-- **Snake_case** for column names: `buyer_name`, `start_time`, `active_session_start`
+- **Snake_case** for column names: `buyer_user_id`, `start_time`, `active_session_start`
 
 ---
 
@@ -207,7 +209,7 @@ bookingId = 123
 
 The API follows REST principles:
 
-- **Resource-based URLs**: `/api/v1/listings`, `/api/v1/bookings`
+- **Resource-based URLs**: `/api/v1/listings`, `/api/v1/bookings`, `/api/v1/machines`
 - **HTTP methods**: GET (read), POST (create), PUT (update), DELETE (remove)
 - **Status codes**: 200 (success), 201 (created), 400 (bad request), 404 (not found), 409 (conflict)
 
@@ -218,14 +220,18 @@ The API follows REST principles:
     "/",
     response_model=schemas.ListingRead,
     status_code=201,
-    dependencies=[Depends(require_roles("provider", "admin"))],
+    dependencies=[Depends(require_roles(models.UserRole.PROVIDER, models.UserRole.ADMIN))],
 )
-def create_listing(listing: schemas.ListingCreate, db: Session = Depends(get_db)):
+def create_listing(
+    listing: schemas.ListingCreate,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user),
+):
     """
-    Create a new listing (only allowed for providers or admins).
-    Listings represent available resources or servers that buyers can book.
+    Create a new listing.
+    Only providers and admins are allowed this function.
     """
-    return crud.create_listing(db, listing)
+    return listings_service.create_listing(db, user.id, listing)
 ```
 
 **Pattern Elements:**
@@ -251,13 +257,14 @@ Example:
 
 ```python
 class ListingCreate(BaseModel):
-    """Schema for creating a new listing."""
+    """Payload sent by providers or admins when creating a new listing."""
+    machine_id: int
     title: str = Field(min_length=1)
     price: float = Field(ge=0)
 
 class ListingRead(ListingCreate):
-    """Schema for reading listing data from DB."""
     id: int
+    machine: Optional[MachineRead] = None
     model_config = ConfigDict(from_attributes=True)
 ```
 
@@ -271,14 +278,27 @@ class ListingRead(ListingCreate):
 
 ```python
 class Listing(Base):
-    """Represents a rentable compute resource or server."""
+    """
+    A listing is something a provider offers for rent.
+    For example, a VM, GPU instance, or small compute server.
+    Buyers can browse listings and book them for a time window.
+    """
     __tablename__ = "listings"
 
     id = Column(Integer, primary_key=True, index=True)
+
+    #The listing links to the underlying machine being rented
+    machine_id = Column(
+        Integer,
+        ForeignKey("machines.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
     title = Column(String, nullable=False)
     price = Column(Float, nullable=False)
 
-    # Relationships
+    #Listing has cardinal relationships to machine and bookings
+    machine = relationship("Machine", back_populates="listings")
     bookings = relationship("Booking", back_populates="listing")
 ```
 
@@ -314,8 +334,8 @@ class BookingStatus(str, Enum):
 ```python
 def get_db():
     """
-    FastAPI dependency for providing a scoped database session.
-    Ensures session is closed after request completes.
+    The FastAPI dependency for providing a scoped database session.
+    Ensures that the session is closed after request completes.
     """
     db = SessionLocal()
     try:
@@ -368,7 +388,6 @@ except ValueError as e:
 3. **API Layer**: Catches `ValueError` and converts to appropriate HTTP status
 4. **API Layer**: Allows `HTTPException` to bubble up unchanged
 
-> 💡 **Common mistake**: Don't raise `HTTPException` in CRUD functions. Use `ValueError` and let the API layer handle HTTP concerns.
 
 ### Status Code Conventions
 
@@ -403,22 +422,45 @@ except ValueError as e:
 **Implementation Pattern:**
 
 ```python
-def get_current_identity(
+def get_current_user(
     creds: HTTPAuthorizationCredentials = Depends(security),
+    access_token: str | None = Cookie(default=None),
+    db: Session = Depends(get_db),
 ):
     """
-    Main dependency used by all protected endpoints.
-    Automatically selects between:
-    - Real JWT validation (if Supabase key set)
-    - Mock parsing for local/testing environments
+    1. Check the Bearer header (Supabase uses it)
+    2. If no header, use cookie.
+    3. If token has "role:email" format, consider as mock local creds
+    4. Otherwise, decode the real JWT
     """
-    if not creds:
+    token = None
+
+    if creds:
+        token = creds.credentials.strip()
+
+    elif access_token:
+        token = access_token
+
+    if not token:
         raise HTTPException(status_code=401, detail="Missing bearer token")
 
-    token = creds.credentials
-    if settings.SUPABASE_JWT_PUBLIC_KEY:
-        return _decode_jwt_token(token)
-    return _parse_mock_token(token)
+    if ":" in token:
+        return _parse_mock_token_and_create_user(db, token)
+
+    if token.count(".") != 2:
+        raise HTTPException(status_code=401, detail="Invalid bearer token")
+
+    decoded = _decode_supabase_jwt(token)
+    sub = decoded.get("sub")
+    email = decoded.get("email") or decoded.get("user_metadata", {}).get("email")
+
+    if not sub or not email:
+        raise HTTPException(status_code=401, detail="Invalid JWT payload")
+
+    metadata = decoded.get("user_metadata") or {}
+    role = metadata.get("role")
+
+    return _get_or_create_user(db, sub, email, role)
 ```
 
 ### Role-Based Access Control
@@ -426,16 +468,14 @@ def get_current_identity(
 **Factory Pattern for Role Requirements:**
 
 ```python
-def require_roles(*allowed_roles):
-    """
-    Factory dependency generator.
-    Restricts endpoint access to users whose 'role' is in allowed_roles.
-    """
-    def dependency(identity=Depends(get_current_identity)):
-        if identity["role"] not in allowed_roles:
+def require_roles(*allowed: models.UserRole):
+    """Use this dependency to protect routes so only certain roles can reach them."""
+    def dep(user: models.User = Depends(get_current_user)):
+        if user.role not in allowed:
             raise HTTPException(status_code=403, detail="Forbidden")
-        return identity
-    return dependency
+        return user
+
+    return dep
 ```
 
 **Usage:**
@@ -443,7 +483,9 @@ def require_roles(*allowed_roles):
 ```python
 @router.post(
     "/",
-    dependencies=[Depends(require_roles("provider", "admin"))],
+    response_model=schemas.ListingRead,
+    status_code=201,
+    dependencies=[Depends(require_roles(models.UserRole.PROVIDER, models.UserRole.ADMIN))],
 )
 def create_listing(...):
     ...
@@ -466,12 +508,31 @@ def create_listing(...):
 
 ```
 tests/
-├── conftest.py              # Shared fixtures and test configuration
-├── test_auth.py             # Authentication tests
-├── test_bookings.py         # Booking CRUD tests
-├── test_booking_lifecycle.py # Workflow tests
-├── test_listings.py         # Listing tests
-└── ...
+├── e2e/
+├── factories/
+│   ├── bookings.py
+│   ├── listings.py
+│   ├── machines.py
+│   └── users.py
+├── functional/
+│   └── api/
+│       ├── test_api_booking_lifecycle.py
+│       ├── test_api_bookings.py
+│       ├── test_api_listings.py
+│       ├── test_api_machines.py
+│       ├── test_auth_api.py
+│       └── test_health_endpoint.py
+├── integration/
+├── performance/
+├── regression/
+└── unit/
+    ├── auth/
+    │   └── test_auth_internal.py
+    ├── test_db_lifecycle.py
+    ├── assertions.py
+    ├── conftest.py
+    ├── test_config.py
+    └── test_helpers.py
 ```
 
 ### Test Fixtures
@@ -481,7 +542,6 @@ tests/
 ```python
 @pytest.fixture(scope="session", autouse=True)
 def apply_migrations():
-    """Apply Alembic migrations once before tests."""
     alembic_cfg = Config("alembic.ini")
     alembic_cfg.set_main_option("sqlalchemy.url", DATABASE_URL)
     command.upgrade(alembic_cfg, "head")
@@ -489,7 +549,6 @@ def apply_migrations():
 
 @pytest.fixture()
 def db_session():
-    """Create a transactional session for each test (isolated)."""
     connection = engine.connect()
     transaction = connection.begin()
     session = TestingSessionLocal(bind=connection)
@@ -508,14 +567,6 @@ def db_session():
 
 ### Test Markers
 
-**Integration Tests:**
-
-```python
-@pytest.mark.integration
-def test_create_and_read_booking(client):
-    ...
-```
-
 **Markers defined in `pytest.ini`:**
 
 - `integration`: Marks tests that require database/external services
@@ -523,8 +574,7 @@ def test_create_and_read_booking(client):
 ### Test Coverage
 
 - **Coverage reporting**: Configured via `pytest-cov`
-- **Coverage targets**: Aim for high coverage of business logic
-- **Exclusions**: `app/seed.py` excluded from coverage (utility script)
+- **Coverage targets**: Aim for 80% total coverage, high coverage of business logic
 
 ### Testing Patterns
 
@@ -543,19 +593,20 @@ def test_create_and_read_booking(client):
 
 ```python
 class Settings(BaseSettings):
-    """
-    Centralized configuration class.
-    Automatically loads values from environment variables
-    (including GitHub Secrets during CI/CD runs).
-    """
+    """This class defines every setting our backend needs.
+    Pydantic automatically loads them from the environment (such as Github secrets),
+    .env files, or Docker env vars. This way, we avoid hard-coded secrets and keep configuration centralized."""
+
     model_config = ConfigDict(
-        env_file=".env",
-        case_sensitive=True,
-        extra="ignore"
+        env_file=".env",      
+        env_file_encoding="utf-8",
+        extra="ignore",
+        case_sensitive=True
     )
 
     ENV: str = Field(default="local")
-    DATABASE_URL: str | None = os.getenv("DATABASE_URL")
+    DATABASE_URL: str | None = None
+    TEST_DATABASE_URL: str | None = None
     ...
 ```
 
@@ -583,25 +634,24 @@ class Settings(BaseSettings):
 
 ```python
 """
-This service layer file handles all business logic related to Bookings.
-Each function corresponds to an action in the booking lifecycle:
-request → confirm → cancel → start → end
+This service defines how bookings behave, including they move from REQUESTED,
+to CONFIRMED, become ACTIVE, and then COMPLETE or CANCELLED.
+
+The router calls into this layer whenever the user tries to perform
+an action. The repository only reads/writes to the DB. The rules
+for what is allowed live here.
 """
 ```
 
 **Function Docstrings:**
 
 ```python
-def request_booking(db: Session, listing_id: int, buyer_name: str, start_time: datetime, end_time: datetime):
+def request_booking(db: Session, listing_id: int, buyer_user_id: int, start_time: datetime, end_time: datetime):
     """
-    Create a new booking request for a specific listing.
-
-    Steps:
-    1. Fetch the listing from the database using its ID.
-    2. Validate that the listing exists.
-    3. Calculate the estimated total price based on duration (in hours * price).
-    4. Create a new Booking record with 'REQUESTED' status.
-    5. Persist and return the new booking.
+    This is the flow buyers use when they request a booking.
+    We calculate the estimated price up front so the buyer can
+    preview what they'll pay, but the final billing happens once the
+    active session ends.
     """
 ```
 
@@ -609,7 +659,11 @@ def request_booking(db: Session, listing_id: int, buyer_name: str, start_time: d
 
 ```python
 class Listing(Base):
-    """Represents a rentable compute resource or server."""
+    """
+    A listing is something a provider offers for rent.
+    For example, a VM, GPU instance, or small compute server.
+    Buyers can browse listings and book them for a time window.
+    """
 ```
 
 ### Documentation Practices
@@ -667,16 +721,16 @@ class Listing(Base):
 
 This codebase follows industry-standard practices for Python/FastAPI development:
 
-- ✅ **Layered architecture** with clear separation of concerns
-- ✅ **Type safety** through comprehensive type hints
-- ✅ **Validation** via Pydantic schemas
-- ✅ **Testing** with pytest and high coverage
-- ✅ **Documentation** with docstrings and comments
-- ✅ **Error handling** with appropriate HTTP status codes
-- ✅ **Security** through authentication and authorization
-- ✅ **Configuration** via environment variables
-- ✅ **Database** migrations with Alembic
-- ✅ **Code quality** tools (Black, Ruff, mypy)
+-  **Layered architecture** with clear separation of concerns
+-  **Type safety** through comprehensive type hints
+-  **Validation** via Pydantic schemas
+-  **Testing** with pytest and high coverage
+-  **Documentation** with docstrings and comments
+-  **Error handling** with appropriate HTTP status codes
+-  **Security** through authentication and authorization
+-  **Configuration** via environment variables
+-  **Database** migrations with Alembic
+-  **Code quality** tools (Black, Ruff, mypy)
 
 These standards ensure maintainability, testability, and scalability of the codebase.
 
@@ -684,9 +738,9 @@ These standards ensure maintainability, testability, and scalability of the code
 
 ## Related Documentation
 
-- 📖 [Architecture Overview](./architecture.md) - System design and patterns
-- 📖 [Implementation Patterns](./implementation-patterns.md) - Code examples and patterns
-- 📖 [Documentation Index](./README.md) - Navigation guide
+-  [Architecture Overview](./architecture.md) - System design and patterns
+-  [Implementation Patterns](./implementation-patterns.md) - Code examples and patterns
+-  [Documentation Index](./README.md) - Navigation guide
 
 ## Feedback
 

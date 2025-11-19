@@ -1,14 +1,3 @@
-## Documentation
-
-Comprehensive documentation of coding standards and practices is available in the [`/docs`](./docs/) directory:
-
-- **[Coding Standards and Practices](./docs/coding-standards.md)**: Detailed guide covering architecture, naming conventions, API design, database patterns, error handling, authentication, testing, and more.
-- **[Architecture Overview](./docs/architecture.md)**: High-level system architecture, technology stack, design patterns, and scalability considerations.
-- **[Implementation Patterns](./docs/implementation-patterns.md)**: Common code patterns with examples for API endpoints, services, CRUD operations, error handling, and more.
-- **[Documentation Index](./docs/README.md)**: Quick reference and navigation guide for all documentation.
-
----
-
 ### Part 3: Implementation and Coding
 Objectives: Implement core features, follow coding standards and best practices, use Git and GitHub for source control and collaboration, and integrate continuous integration (CI).
 
@@ -63,5 +52,13 @@ Combined Deliverables:
      - History of pull requests and code reviews.
      - CI/CD pipeline configuration and setup details.
 
+---
 
+## Documentation
 
+Comprehensive documentation of coding standards and practices is available in the [`/docs`](./docs/) directory:
+
+- **[Coding Standards and Practices](./docs/coding-standards.md)**: Detailed guide covering architecture, naming conventions, API design, database patterns, error handling, authentication, testing, and more.
+- **[Architecture Overview](./docs/architecture.md)**: High-level system architecture, technology stack, design patterns, and scalability considerations.
+- **[Implementation Patterns](./docs/implementation-patterns.md)**: Common code patterns with examples for API endpoints, services, CRUD operations, error handling, and more.
+- **[Documentation Index](./docs/README.md)**: Quick reference and navigation guide for all documentation.
