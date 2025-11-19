@@ -20,7 +20,7 @@ def get_machine(
     if not machine:
         raise HTTPException(404, "Machine not found")
 
-    # Providers can only see their own machines
+    #Providers can only see their own machines
     if user.role == models.UserRole.PROVIDER and machine.provider_id != user.id:
         raise HTTPException(403, "Not allowed")
 
