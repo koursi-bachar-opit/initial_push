@@ -10,25 +10,25 @@ from app.database import Base, get_db
 from app.config import settings
 
 
-# DATABASE_URL
-DATABASE_URL = settings.DATABASE_URL
+#settings.DATABASE_URL for production
+DATABASE_URL = settings.TEST_DATABASE_URL
 
-# Engine & Session setup
+#Engine & Session setup
 engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 TestingSessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
 
-# Apply Alembic migrations once before tests (session-scoped)
+#Apply Alembic migrations once before tests (session-scoped)
 @pytest.fixture(scope="session", autouse=True)
 def apply_migrations():
     alembic_cfg = Config("alembic.ini")
     alembic_cfg.set_main_option("sqlalchemy.url", DATABASE_URL)
     command.upgrade(alembic_cfg, "head")
     yield
-    # No downgrade; tests run on latest schema
+    #No downgrade, tests run on latest schema
 
 
-# Create a transactional session for each test (isolated)
+#Create a transactional session for each test (isolated)
 @pytest.fixture()
 def db_session():
     connection = engine.connect()
@@ -40,7 +40,7 @@ def db_session():
     connection.close()
 
 
-# Override FastAPI DB dependency
+#Override FastAPI DB dependency
 @pytest.fixture()
 def client(db_session):
     def override_get_db():

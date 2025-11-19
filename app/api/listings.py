@@ -1,29 +1,37 @@
 from fastapi import Depends, APIRouter
 from sqlalchemy.orm import Session
-from app import crud, schemas
+
+from app import schemas, models
 from app.database import get_db
 from app.auth import require_roles
+from app.services import listings_service
 
-# Router for all listing-related endpoints
 router = APIRouter()
 
+
+"""
+Endpoints served for listing servers.
+Providers and Admins can create listings.
+Everyone (including anonymous users) can browse listings publicly.
+"""
 @router.post(
     "/",
     response_model=schemas.ListingRead,
     status_code=201,
-    dependencies=[Depends(require_roles("provider", "admin"))],
+    dependencies=[Depends(require_roles(models.UserRole.PROVIDER, models.UserRole.ADMIN))],
 )
 def create_listing(listing: schemas.ListingCreate, db: Session = Depends(get_db)):
     """
-    Create a new listing (only allowed for providers or admins).
-    Listings represent available resources or servers that buyers can book.
+    Create a new listing.
+    Only providers and admins are allowed this function.
     """
-    return crud.create_listing(db, listing)
+    return listings_service.create_listing(db, listing)
+
 
 @router.get("/", response_model=list[schemas.ListingRead])
 def list_listings(db: Session = Depends(get_db)):
     """
-    Retrieve all available listings.
-    This is the main endpoint used by buyers to browse rentable resources.
+    Public listings endpoint.
+    This includes anonymous users - listings are public.
     """
-    return crud.get_listings(db)
+    return listings_service.list_listings(db)

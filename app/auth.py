@@ -1,69 +1,159 @@
-import jwt
-from fastapi import Depends, HTTPException, status
+import os
+from fastapi import Depends, HTTPException, Cookie
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from sqlalchemy.orm import Session
+import jwt
 from jwt import InvalidTokenError
-from app.config import settings
 
-# HTTPBearer allows token-based auth (Authorization: Bearer <token>)
+from app.config import settings
+from app.database import get_db
+from app import models
+from app.repositories import user_repository
+
 security = HTTPBearer(auto_error=False)
 
-def _parse_mock_token(token: str):
-    """
-    Parse a mock token in the format 'role:username'.
-    Used for local/testing environments when no Supabase JWT is configured.
-    """
-    try:
-        role, username = token.split(":", 1)
-        role = role.strip().lower()
-        if role not in {"buyer", "provider", "admin", "org_admin"}:
-            raise ValueError
-        return {"role": role, "username": username.strip()}
-    except Exception:
-        raise HTTPException(status_code=401, detail="Invalid mock token format")
 
-def _decode_jwt_token(token: str):
+def _get_or_create_user(db: Session, sub: str, email: str, role: str | None) -> models.User:
+    """Get user from user_repository"""
+    """Load or create from JWT ident"""
+    return user_repository.get_or_create_user_by_supabase_id(
+        db=db,
+        sub=sub,
+        email=email,
+        role=role,
+    )
+
+
+def _decode_supabase_jwt(token: str) -> dict:
     """
-    Decode and verify a real JWT using the Supabase public key (RS256).
-    Falls back to a safe failure mode if verification fails.
+    Decode the JWT we get from Supabase. This uses the shared HS256 secret from Supabase.
+    If someone gives us an invalid or expired token, fail fast with a 401.
     """
+    secret = settings.SUPABASE_JWT_SECRET
+    if not secret:
+        raise HTTPException(status_code=500, detail="Supabase JWT secret missing")
+
     try:
-        decoded = jwt.decode(
+        return jwt.decode(
             token,
-            settings.SUPABASE_JWT_PUBLIC_KEY,
-            algorithms=["RS256"],
+            secret,
+            algorithms=["HS256"],
             options={"verify_aud": False},
         )
-        return {
-            "role": decoded.get("role", "buyer"),
-            "username": decoded.get("email") or decoded.get("sub"),
-        }
     except InvalidTokenError:
         raise HTTPException(status_code=401, detail="Invalid or expired JWT")
 
-def get_current_identity(
+
+def _parse_mock_token_and_create_user(db: Session, token: str) -> models.User:
+    """
+    When running locally without Supabase, allow tokens like provider:alice@example.com. 
+    This allows impersonating a user quickly without going through OAuth.
+    """
+    if ":" not in token:
+        raise HTTPException(status_code=401, detail="Invalid mock token")
+
+    role_str, email = token.split(":", 1)
+
+    #Auto-create or fetch a DB user
+    user = user_repository.get_or_create_user_by_supabase_id(
+        db=db,
+        sub = email,
+        email=email,
+        role=role_str.lower(),
+    )
+
+    return user
+
+
+def get_current_user(
     creds: HTTPAuthorizationCredentials = Depends(security),
+    access_token: str | None = Cookie(default=None),
+    db: Session = Depends(get_db),
 ):
     """
-    Main dependency used by all protected endpoints.
-    Automatically selects between:
-    - Real JWT validation (if Supabase key set)
-    - Mock parsing for local/testing environments
+    1. Check the Bearer header (Supabase uses it)
+    2. If no header, use cookie.
+    3. If token has "role:email" format, consider as mock local creds
+    4. Otherwise, decode the real JWT
     """
-    if not creds:
-        return {"role": "provider", "username": "demo_user"} #Later (when connecting Supabase) revert to: raise HTTPException(status_code=401, detail="Missing bearer token")
+    token = None
 
-    token = creds.credentials
-    if settings.SUPABASE_JWT_PUBLIC_KEY:
-        return _decode_jwt_token(token)
-    return _parse_mock_token(token)
+    #Request ordering
+    #1: Bearer header
+    if creds:
+        token = creds.credentials.strip()
 
-def require_roles(*allowed_roles):
-    """
-    Factory dependency generator.
-    Restricts endpoint access to users whose 'role' is in allowed_roles.
-    """
-    def dependency(identity=Depends(get_current_identity)):
-        if identity["role"] not in allowed_roles:
+    #2: Cookie
+    elif access_token:
+        token = access_token
+
+    if not token:
+        raise HTTPException(status_code=401, detail="Missing bearer token")
+
+    #3: Mock token
+    if ":" in token:
+        return _parse_mock_token_and_create_user(db, token)
+
+    #Must look like a JWT
+    if token.count(".") != 2:
+        raise HTTPException(status_code=401, detail="Invalid bearer token")
+
+    decoded = _decode_supabase_jwt(token)
+    sub = decoded.get("sub")
+    email = decoded.get("email") or decoded.get("user_metadata", {}).get("email")
+
+    if not sub or not email:
+        raise HTTPException(status_code=401, detail="Invalid JWT payload")
+
+    metadata = decoded.get("user_metadata") or {}
+    role = metadata.get("role")
+
+    return _get_or_create_user(db, sub, email, role)
+
+
+def require_roles(*allowed: models.UserRole):
+    """Use this dependency to protect routes so only certain roles can reach them."""
+    def dep(user: models.User = Depends(get_current_user)):
+        if user.role not in allowed:
             raise HTTPException(status_code=403, detail="Forbidden")
-        return identity
-    return dependency
+        return user
+
+    return dep
+
+
+def optional_user(
+    creds: HTTPAuthorizationCredentials = Depends(security),
+    access_token: str | None = Cookie(default=None),
+    db: Session = Depends(get_db),
+):
+    """
+    Returns a user if a valid token is provided.
+    Returns a None type if it's not authenticated.
+    """
+    token = None
+
+    if creds:
+        token = creds.credentials.strip()
+    elif access_token:
+        token = access_token
+    else:
+        return None
+
+    #Mock token
+    if ":" in token:
+        return _parse_mock_token_and_create_user(db, token)
+
+    if token.count(".") != 2:
+        return None
+
+    decoded = _decode_supabase_jwt(token)
+    sub = decoded.get("sub")
+    email = decoded.get("email") or decoded.get("user_metadata", {}).get("email")
+
+    if not sub or not email:
+        return None
+
+    metadata = decoded.get("user_metadata") or {}
+    role = metadata.get("role")
+
+    return _get_or_create_user(db, sub, email, role)

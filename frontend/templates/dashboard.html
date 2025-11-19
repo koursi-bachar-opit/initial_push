@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1 class="text-3xl font-bold mb-8">
+    {% if user.role == "buyer" %}Buyer Dashboard{% else %}Provider Dashboard{% endif %}
+</h1>
+
+<!--Stats-->
+<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+    <div class="rounded-lg border bg-white p-4">
+        <div class="text-sm text-gray-500">Total Bookings</div>
+        <div id="stat-total" class="mt-1 text-2xl font-semibold">0</div>
+    </div>
+    <div class="rounded-lg border bg-white p-4">
+        <div class="text-sm text-gray-500">Pending</div>
+        <div id="stat-pending" class="mt-1 text-2xl font-semibold">0</div>
+    </div>
+    <div class="rounded-lg border bg-white p-4">
+        <div class="text-sm text-gray-500">Active</div>
+        <div id="stat-active" class="mt-1 text-2xl font-semibold">0</div>
+    </div>
+    <div class="rounded-lg border bg-white p-4">
+        <div class="text-sm text-gray-500">Past</div>
+        <div id="stat-past" class="mt-1 text-2xl font-semibold">0</div>
+    </div>
+</div>
+
+<!--Tabs-->
+<div class="mb-4 border-b border-gray-200">
+    <ul class="flex flex-wrap -mb-px text-sm font-medium text-center"
+        data-tabs-toggle="#dashboardTabsContent"
+        role="tablist">
+
+        <li class="mr-2" role="presentation">
+            <button
+                class="inline-block p-4 border-b-2 rounded-t-lg"
+                id="pending-tab"
+                data-tabs-target="#pending"
+                type="button"
+                role="tab"
+                aria-controls="pending"
+                aria-selected="true">
+                Pending
+            </button>
+        </li>
+
+        <li class="mr-2" role="presentation">
+            <button
+                class="inline-block p-4 border-b-2 rounded-t-lg"
+                id="past-tab"
+                data-tabs-target="#past"
+                type="button"
+                role="tab"
+                aria-controls="past"
+                aria-selected="false">
+                Past
+            </button>
+        </li>
+
+    </ul>
+</div>
+
+<div id="dashboardTabsContent">
+
+    <!--Pending bookings-->
+    <div id="pending" role="tabpanel" aria-labelledby="pending-tab">
+        <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
+            <table class="w-full text-sm text-left">
+                <thead class="text-xs uppercase bg-gray-100 border-b">
+                    <tr>
+                        <th class="px-6 py-3">Booking</th>
+                        <th class="px-6 py-3">Listing</th>
+                        <th class="px-6 py-3">User</th>
+                        <th class="px-6 py-3">Schedule</th>
+                        <th class="px-6 py-3">Status</th>
+                    </tr>
+                </thead>
+                <tbody id="pendingBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!--Past bookings-->
+    <div id="past" class="hidden" role="tabpanel" aria-labelledby="past-tab">
+        <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
+            <table class="w-full text-sm text-left">
+                <thead class="text-xs uppercase bg-gray-100 border-b">
+                    <tr>
+                        <th class="px-6 py-3">Booking</th>
+                        <th class="px-6 py-3">Listing</th>
+                        <th class="px-6 py-3">User</th>
+                        <th class="px-6 py-3">Schedule</th>
+                        <th class="px-6 py-3">Status</th>
+                    </tr>
+                </thead>
+                <tbody id="pastBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<script type="module" src="/static/js/dashboard.js"></script>
+{% endblock %}
