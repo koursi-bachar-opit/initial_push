@@ -22,9 +22,8 @@ Below is a step-by-step breakdown with space for screenshots.
 - Page loads correctly, displays company information, and provides navigation text for sign‑up and login.
 
 **Screenshot:**
-```
+
 ![Homepage](images/homepage.png)
-```
 
 ---
 
@@ -33,9 +32,8 @@ Below is a step-by-step breakdown with space for screenshots.
 - Error message was visible with a "User already registered" red text display and prevented duplicate accounts.
 
 **Screenshot:**
-```
+
 ![Signup Existing Error](images/signup-existing-error.png)
-```
 
 ---
 
@@ -45,10 +43,9 @@ Below is a step-by-step breakdown with space for screenshots.
 - Account type selection accepted an input.
 
 **Screenshot:**
-```
+
 ![Signup New Provider](images/signup-new-1.png)
 ![Signup New Provider - Successful](images/signup-new-2.png)
-```
 
 ---
 
@@ -58,9 +55,8 @@ Below is a step-by-step breakdown with space for screenshots.
 - Clearly labeled provider action buttons are displayed.
 
 **Screenshot:**
-```
+
 ![Provider Dashboard](images/provider-dashboard.png)
-```
 
 ---
 
@@ -69,10 +65,9 @@ Below is a step-by-step breakdown with space for screenshots.
 - Hostname input requirement accepted.
 
 **Screenshot:**
-```
+
 ![Add Machine](images/add-machine-1.png)
 ![Add Machine - Confirmation](images/add-machine-2.png)
-```
 
 ---
 
@@ -81,9 +76,8 @@ Below is a step-by-step breakdown with space for screenshots.
 - Title and price fields were accepted.
 
 **Screenshot:**
-```
+
 ![Create Listing](images/create-listing.png)
-```
 
 ---
 
@@ -92,9 +86,8 @@ Below is a step-by-step breakdown with space for screenshots.
 - Publishing workflow is intuitive.
 
 **Screenshot:**
-```
+
 ![Publish Listing](images/publish-listing.png)
-```
 
 ---
 
@@ -102,9 +95,8 @@ Below is a step-by-step breakdown with space for screenshots.
 - Logout successfully invalidates session and redirects back to homepage.
 
 **Screenshot:**
-```
+
 ![Provider Logout](images/provider-logout.png)
-```
 
 ---
 
@@ -113,9 +105,8 @@ Below is a step-by-step breakdown with space for screenshots.
 - Messaging was clear and user‑friendly.
 
 **Screenshot:**
-```
+
 ![Buyer Login Error](images/buyer-login-error.png)
-```
 
 ---
 
@@ -124,10 +115,9 @@ Below is a step-by-step breakdown with space for screenshots.
 - Redirects back to the home page.
 
 **Screenshot:**
-```
+
 ![Buyer Login Success](images/buyer-login-success-1.png)
 ![Buyer Login Success - Successful](images/buyer-login-success-2.png)
-```
 
 ---
 
@@ -136,9 +126,8 @@ Below is a step-by-step breakdown with space for screenshots.
 - Buyer can view the details of a listing.
 
 **Screenshot:**
-```
+
 ![Browse Listings](images/browse-listings.png)
-```
 
 ---
 
@@ -147,9 +136,8 @@ Below is a step-by-step breakdown with space for screenshots.
 - JavaScript dialog box displays "Booking request sent!"
 
 **Screenshot:**
-```
+
 ![Book Server](images/book-server.png)
-```
 
 ---
 
@@ -158,9 +146,8 @@ Below is a step-by-step breakdown with space for screenshots.
 - Details (listing name, user email, time block, status) are accurate.
 
 **Screenshot:**
-```
+
 ![View Booking](images/view-booking.png)
-```
 
 ---
 
@@ -169,10 +156,9 @@ Below is a step-by-step breakdown with space for screenshots.
 - Cancel booking prompts the confirmation "Are you sure you want to cancel this booking?"
 
 **Screenshot:**
-```
+
 ![Cancel Booking](images/cancel-booking-1.png)
 ![Cancel Booking - Confirmation](images/cancel-booking-2.png)
-```
 
 ---
 
@@ -181,9 +167,8 @@ Below is a step-by-step breakdown with space for screenshots.
 - Booking is now listed as cancelled.
 
 **Screenshot:**
-```
+
 ![Booking Cancelled](images/booking-cancelled.png)
-```
 
 ---
 
