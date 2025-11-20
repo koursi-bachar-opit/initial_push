@@ -107,6 +107,118 @@ def create_resource(db: Session, data: schemas.ResourceCreate):
     return obj
 ```
 
+## Project Structure 
+
+```
+assignment-3-supervision/
+├── .github/
+│   └── workflows/
+│       └── ci.yml
+│
+├── alembic/
+│   ├── versions/
+│   │   └── 017509d8e5d3_initial_schema.py
+│   ├── env.py
+│   ├── README
+│   └── script.py.mako
+│
+├── app/
+│   ├── api/
+│   │   ├── __init__.py
+│   │   ├── bookings.py
+│   │   ├── listings.py
+│   │   └── machines.py
+│   │
+│   ├── repositories/
+│   │   ├── __init__.py
+│   │   ├── booking_repository.py
+│   │   ├── listing_repository.py
+│   │   ├── machine_repository.py
+│   │   └── user_repository.py
+│   │
+│   ├── services/
+│   │   ├── __init__.py
+│   │   ├── bookings_service.py
+│   │   └── listings_service.py
+│   │
+│   ├── __init__.py
+│   ├── auth.py
+│   ├── config.py
+│   ├── database.py
+│   ├── main.py
+│   ├── models.py
+│   └── schemas.py
+│
+├── docs/
+│   ├── architecture.md
+│   ├── coding-standards.md
+│   ├── implementation-patterns.md
+│   └── README.md
+│
+├── frontend/
+│   ├── static/
+│   │   ├── css/
+│   │   └── js/
+│   │       ├── api.js
+│   │       ├── auth.js
+│   │       ├── bookings.js
+│   │       ├── dashboard.js
+│   │       ├── listings.js
+│   │       ├── login.js
+│   │       ├── signup.js
+│   │       └── supabaseClient.js
+│   │
+│   └── templates/
+│       ├── base.html
+│       ├── bookings.html
+│       ├── dashboard.html
+│       ├── index.html
+│       ├── listings.html
+│       ├── login.html
+│       └── signup.html
+│
+├── tests/
+│   ├── e2e/
+│   │
+│   ├── factories/
+│   │   ├── bookings.py
+│   │   ├── listings.py
+│   │   ├── machines.py
+│   │   └── users.py
+│   │
+│   ├── integration/
+│   │   └── api/
+│   │       ├── test_api_booking_lifecycle.py
+│   │       ├── test_api_bookings.py
+│   │       ├── test_api_listings.py
+│   │       ├── test_api_machines.py
+│   │       ├── test_auth_api.py
+│   │       └── test_health_endpoint.py
+│   ├── performance/
+│   ├── regression/
+│   ├── unit/
+│   │   └── auth/
+│   │       ├── test_auth_internal.py
+│   │       └── test_db_lifecycle.py
+│   │
+│   ├── assertions.py
+│   ├── conftest.py
+│   ├── test_config.py
+│   └── test_helpers.py
+│
+├── .coverage
+├── .env
+├── .env.example
+├── .gitignore
+├── alembic.ini
+├── coverage.xml
+├── docker-compose.yml
+├── Dockerfile
+├── pytest.ini
+├── README.md
+└── requirements.txt
+```
+
 ##  For AI Assistants
 
 This documentation is optimized for AI consumption:
