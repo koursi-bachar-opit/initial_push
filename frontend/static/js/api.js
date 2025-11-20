@@ -22,6 +22,7 @@ async function request(path, options = {}) {
     return resp.json();
 }
 
+
 //Listings
 export function apiGetListings() {
     return request("/listings");
@@ -33,6 +34,7 @@ export function apiCreateListing(payload) {
         body: JSON.stringify(payload),
     });
 }
+
 
 //Bookings
 export function apiGetBookings() {
@@ -60,4 +62,16 @@ export function apiStartSession(id) {
 
 export function apiEndSession(id) {
     return request(`/bookings/${id}/end`, { method: "PUT" });
+}
+
+//Machines
+export function apiGetMachines() {
+    return request("/machines");
+}
+
+export function apiCreateMachine(payload) {
+    return request("/machines", {
+        method: "POST",
+        body: JSON.stringify(payload),
+    });
 }

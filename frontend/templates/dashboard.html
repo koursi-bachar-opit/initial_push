@@ -1,39 +1,75 @@
 {% extends "base.html" %}
 {% block content %}
 
-<h1 class="text-3xl font-bold mb-8">
-    {% if user.role == "buyer" %}Buyer Dashboard{% else %}Provider Dashboard{% endif %}
+<h1 class="text-3xl font-bold mb-8 text-gray-900 dark:text-white">
+    {% if user.role == "buyer" %}
+        Buyer Dashboard
+    {% else %}
+        Provider Dashboard
+    {% endif %}
 </h1>
+
+{% if user.role == "provider" %}
+
+<!--Provider machine and listing controls-->
+<div class="mb-8">
+
+    <!--Add Machine Button-->
+    <button
+        id="openCreateMachineModal"
+        data-modal-target="createMachineModal"
+        data-modal-toggle="createMachineModal"
+        class="inline-flex items-center gap-2 text-white bg-green-600 hover:bg-green-700 font-medium rounded-lg text-sm px-4 py-2">
+        + Add Machine
+    </button>
+
+    <!--Create listing button (initially disabled if no machines exist)-->
+    <button
+        id="openCreateListingModal"
+        data-modal-target="createListingModal"
+        data-modal-toggle="createListingModal"
+        class="ml-2 inline-flex items-center gap-2 text-white bg-blue-600 hover:bg-blue-700 font-medium rounded-lg text-sm px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed">
+        + Create Listing
+    </button>
+
+    <!--Warning when no machines exist-->
+    <div id="no-machines-warning" class="hidden mt-2 text-red-600 font-medium">
+        You must create a machine before you can create a listing.
+    </div>
+
+</div>
+
+{% endif %}
 
 <!--Stats-->
 <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
-    <div class="rounded-lg border bg-white p-4">
-        <div class="text-sm text-gray-500">Total Bookings</div>
-        <div id="stat-total" class="mt-1 text-2xl font-semibold">0</div>
+    <div class="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+        <div class="text-sm text-gray-500 dark:text-gray-400">Total Bookings</div>
+        <div id="stat-total" class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">0</div>
     </div>
-    <div class="rounded-lg border bg-white p-4">
-        <div class="text-sm text-gray-500">Pending</div>
-        <div id="stat-pending" class="mt-1 text-2xl font-semibold">0</div>
+    <div class="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+        <div class="text-sm text-gray-500 dark:text-gray-400">Total Bookings</div>
+        <div id="stat-pending" class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">0</div>
     </div>
-    <div class="rounded-lg border bg-white p-4">
-        <div class="text-sm text-gray-500">Active</div>
-        <div id="stat-active" class="mt-1 text-2xl font-semibold">0</div>
+    <div class="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+        <div class="text-sm text-gray-500 dark:text-gray-400">Total Bookings</div>
+        <div id="stat-active" class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">0</div>
     </div>
-    <div class="rounded-lg border bg-white p-4">
-        <div class="text-sm text-gray-500">Past</div>
-        <div id="stat-past" class="mt-1 text-2xl font-semibold">0</div>
+    <div class="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+        <div class="text-sm text-gray-500 dark:text-gray-400">Total Bookings</div>
+        <div id="stat-past" class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">0</div>
     </div>
 </div>
 
 <!--Tabs-->
-<div class="mb-4 border-b border-gray-200">
-    <ul class="flex flex-wrap -mb-px text-sm font-medium text-center"
+<div class="mb-4 border-b border-gray-200 dark:border-gray-700">
+    <ul class="flex flex-wrap -mb-px text-sm font-medium text-center text-gray-500 dark:text-gray-400"
         data-tabs-toggle="#dashboardTabsContent"
         role="tablist">
 
         <li class="mr-2" role="presentation">
             <button
-                class="inline-block p-4 border-b-2 rounded-t-lg"
+                class="inline-block p-4 border-b-2 border-transparent rounded-t-lg hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300"
                 id="pending-tab"
                 data-tabs-target="#pending"
                 type="button"
@@ -46,7 +82,7 @@
 
         <li class="mr-2" role="presentation">
             <button
-                class="inline-block p-4 border-b-2 rounded-t-lg"
+                class="inline-block p-4 border-b-2 border-transparent rounded-t-lg hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300"
                 id="past-tab"
                 data-tabs-target="#past"
                 type="button"
@@ -60,13 +96,14 @@
     </ul>
 </div>
 
+<!--Tab Panels-->
 <div id="dashboardTabsContent">
 
     <!--Pending bookings-->
     <div id="pending" role="tabpanel" aria-labelledby="pending-tab">
         <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
             <table class="w-full text-sm text-left">
-                <thead class="text-xs uppercase bg-gray-100 border-b">
+                <thead class="text-xs uppercase bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">
                     <tr>
                         <th class="px-6 py-3">Booking</th>
                         <th class="px-6 py-3">Listing</th>
@@ -84,7 +121,7 @@
     <div id="past" class="hidden" role="tabpanel" aria-labelledby="past-tab">
         <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
             <table class="w-full text-sm text-left">
-                <thead class="text-xs uppercase bg-gray-100 border-b">
+                <thead class="text-xs uppercase bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">
                     <tr>
                         <th class="px-6 py-3">Booking</th>
                         <th class="px-6 py-3">Listing</th>
@@ -100,5 +137,111 @@
 
 </div>
 
+<!--PROVIDER: Create Listing Modal-->
+{% if user.role == "provider" %}
+<div id="createListingModal"
+     tabindex="-1"
+     aria-hidden="true"
+     class="hidden overflow-y-auto overflow-x-hidden fixed inset-0 z-50 flex justify-center items-center bg-black/40">
+
+    <div class="relative p-4 w-full max-w-md">
+        <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+            
+            <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                    Create a New Listing
+                </h3>
+                <button type="button"
+                        class="text-gray-400 hover:text-gray-900"
+                        data-modal-hide="createListingModal">
+                    X
+                </button>
+            </div>
+
+            <form id="create-listing-form" class="p-6 space-y-4">
+
+                <!--NEW MACHINE SELECT-->
+                <div>
+                    <label class="block mb-2 text-sm font-medium">Machine</label>
+                    <select name="machine_id"
+                            id="machineSelect"
+                            required
+                            class="bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 text-sm rounded-lg block w-full p-2.5">
+                    </select>
+                        <!--populated dynamically by JS-->
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block mb-2 text-sm font-medium">Title</label>
+                    <input name="title"
+                           type="text"
+                           required
+                           class="bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-sm rounded-lg block w-full p-2.5 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" />
+                </div>
+
+                <div>
+                    <label class="block mb-2 text-sm font-medium">Price per hour</label>
+                    <input name="price"
+                           type="number"
+                           step="0.01"
+                           min="0"
+                           required
+                           class="bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-sm rounded-lg block w-full p-2.5 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" />
+                </div>
+
+                <button type="submit"
+                        class="w-full text-white bg-blue-600 hover:bg-blue-700 font-medium rounded-lg text-sm px-4 py-2">
+                    Create Listing
+                </button>
+            </form>
+
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!--Provider create machine modal-->
+{% if user.role == "provider" %}
+<div id="createMachineModal"
+     tabindex="-1"
+     aria-hidden="true"
+     class="hidden overflow-y-auto overflow-x-hidden fixed inset-0 z-50 flex justify-center items-center bg-black/40">
+
+    <div class="relative p-4 w-full max-w-md">
+        <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+
+            <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                    Add Machine
+                </h3>
+                <button type="button"
+                        class="text-gray-400 hover:text-gray-900"
+                        data-modal-hide="createMachineModal">
+                    X
+                </button>
+            </div>
+
+            <form id="create-machine-form" class="p-6 space-y-4">
+                <div>
+                    <label class="block mb-2 text-sm font-medium">Hostname</label>
+                    <input name="hostname"
+                           type="text"
+                           required
+                           class="bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-sm rounded-lg block w-full p-2.5 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" />
+                </div>
+
+                <button type="submit"
+                        class="w-full text-white bg-green-600 hover:bg-green-700 font-medium rounded-lg text-sm px-4 py-2">
+                    Create Machine
+                </button>
+            </form>
+
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <script type="module" src="/static/js/dashboard.js"></script>
+
 {% endblock %}

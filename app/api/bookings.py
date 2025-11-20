@@ -11,12 +11,13 @@ router = APIRouter()
 """
 Routes for managing the booking lifecycle.
 Buyers:
-  - Can request a booking (`POST /request`)
-  - Can see their own bookings
-Admins/Providers:
-  - Can view bookings
+    - Can request a booking (`POST /request`)
+    - Can see their own bookings
+Providers:
+    - Can view bookings on their own machines
 Admins:
-  - Can create bookings manually
+    - Can view all bookings
+    - Can create bookings manually
 All business logic lives in bookings_service.py.
 """
 
@@ -45,21 +46,15 @@ def list_bookings(
     db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user),
 ):
-    """
-    List bookings visible to the current user.
-
-    - BUYER: only bookings where buyer_user_id == current user's id.
-    - PROVIDER: all bookings (until provider scoping is added).
-    - ADMIN / ORG_ADMIN: all bookings.
-    """
+    #Buyer sees only their own bookings
     if user.role == models.UserRole.BUYER:
         return bookings_service.list_bookings_for_user(db, user.id)
 
-    """
-    Eventually providers will only see bookings related to their listings
-    when connected to buyers by the remote server Machine object. For first testing,
-    we allow them to see all bookings for simplicity.
-    """
+    #Provider sees bookings only for their own machines
+    if user.role == models.UserRole.PROVIDER:
+        return bookings_service.list_bookings_for_provider(db, user.id)
+
+    # Admin and org admins see everything
     return bookings_service.list_all_bookings(db)
 
 

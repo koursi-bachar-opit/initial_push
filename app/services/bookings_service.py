@@ -17,17 +17,22 @@ for what is allowed live here.
 
 
 def admin_create_booking(db: Session, payload: schemas.BookingCreate):
-    """Admin-only primitive for creating bookings directly."""
+    #Admin-only primitive for creating bookings directly.
     return booking_repository.create_booking(db, payload)
 
 
 def list_bookings_for_user(db: Session, user_id: int):
-    """List bookings belonging to a single buyer."""
+    #List bookings belonging to a single buyer.
     return booking_repository.list_bookings_for_user(db, user_id)
 
 
+def list_bookings_for_provider(db: Session, provider_id: int):
+    #List bookings belonging to a single provider's machines.
+    return booking_repository.list_bookings_for_provider(db, provider_id)
+
+
 def list_all_bookings(db: Session):
-    """List ALL bookings. Intended for admin/provider usage."""
+    #List ALL bookings. Intended for admin usage.
     return booking_repository.list_bookings(db)
 
 
@@ -81,6 +86,13 @@ def confirm_booking(db: Session, booking_id: int):
     session start/end rules apply.
     """
     booking = _get_booking_or_404(db, booking_id)
+
+    #A provider shouldn't be able to confirm a booking after its end time (start time for accurate window)
+    now = datetime.now(timezone.utc)
+
+    if now > booking.end_time:
+        raise HTTPException(status_code=400, detail="Cannot confirm after booking end_time")
+    
     booking.status = models.BookingStatus.CONFIRMED
     db.commit()
     db.refresh(booking)

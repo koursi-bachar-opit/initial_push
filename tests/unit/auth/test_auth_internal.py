@@ -1,18 +1,23 @@
 import pytest
 from fastapi import HTTPException
+from datetime import datetime, timedelta, timezone
+import jwt
 
 from app import auth
 
-import jwt
-from datetime import datetime, timedelta
-
 
 def test_parse_mock_token_bad_format(db_session):
+    """
+    Bad mock token should raise an HTTPException.
+    """
     with pytest.raises(HTTPException):
         auth._parse_mock_token_and_create_user(db_session, "badtoken")
 
 
 def test_parse_mock_token_valid_provider(db_session):
+    """
+    "provider:email" should create a provider user.
+    """
     user = auth._parse_mock_token_and_create_user(
         db_session,
         "provider:alice@example.com",
@@ -22,7 +27,9 @@ def test_parse_mock_token_valid_provider(db_session):
 
 
 def test_decode_supabase_jwt_missing_secret(monkeypatch):
-    #Remove secret
+    """
+    No JWT secret should return 500 from _decode_supabase_jwt().
+    """
     monkeypatch.setattr("app.auth.settings.SUPABASE_JWT_SECRET", None)
 
     with pytest.raises(HTTPException) as exc:
@@ -32,6 +39,9 @@ def test_decode_supabase_jwt_missing_secret(monkeypatch):
 
 
 def test_decode_supabase_jwt_invalid_signature(monkeypatch):
+    """
+    An invalid JWT signature should return 401.
+    """
     monkeypatch.setattr("app.auth.settings.SUPABASE_JWT_SECRET", "TESTSECRET")
 
     with pytest.raises(HTTPException) as exc:
@@ -41,10 +51,9 @@ def test_decode_supabase_jwt_invalid_signature(monkeypatch):
 
 
 def test_decode_supabase_jwt_valid(monkeypatch):
-    import jwt
-    from app import auth
-    from datetime import datetime, timedelta, timezone
-
+    """
+    A JWT should be decoded successfully.
+    """
     secret = "TESTSECRET"
     monkeypatch.setattr("app.auth.settings.SUPABASE_JWT_SECRET", secret)
 
@@ -52,11 +61,11 @@ def test_decode_supabase_jwt_valid(monkeypatch):
         "sub": "123",
         "email": "user@example.com",
         "user_metadata": {"role": "provider"},
-        "exp": int((datetime.now(timezone.utc) + timedelta(hours=1)).timestamp())
+        "exp": int((datetime.now(timezone.utc) + timedelta(hours=1)).timestamp()),
     }
 
     token = jwt.encode(payload, secret, algorithm="HS256")
-
     decoded = auth._decode_supabase_jwt(token)
+
     assert decoded["sub"] == "123"
     assert decoded["email"] == "user@example.com"
