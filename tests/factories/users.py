@@ -1,6 +1,3 @@
-"""
-Enhanced user factories with role-based creation and config awareness.
-"""
 from app.repositories import user_repository
 from app.models import UserRole
 from test_config import TestConfig
@@ -36,15 +33,15 @@ def auth_headers_by_role(role):
 
 
 def create_admin_user(db_session):
-    """Convenience function for creating admin user."""
+    """Convenience function for creating an admin user."""
     return create_user_by_role(db_session, "admin")
 
 
 def create_provider_user(db_session):
-    """Convenience function for creating provider user."""
+    """Convenience function for creating a provider user."""
     return create_user_by_role(db_session, "provider")
 
 
 def create_buyer_user(db_session):
-    """Convenience function for creating buyer user."""
+    """Convenience function for creating a buyer user."""
     return create_user_by_role(db_session, "buyer")

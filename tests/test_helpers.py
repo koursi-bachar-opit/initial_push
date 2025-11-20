@@ -1,13 +1,10 @@
-"""
-Test helpers for constructing the API endpoints across tests (common operations).
-"""
 from test_config import TestConfig
 from factories.users import auth_headers_for, create_user
 
 
 class ApiClient:
     """
-    Use these wrappers around test client to provide
+    We use these wrappers around test client to provide
     consistent endpoint construction and common operations.
     """
     def __init__(self, client):

@@ -257,7 +257,7 @@ tests/
 │   ├── listings.py
 │   ├── machines.py
 │   └── users.py
-├── functional/
+├── integration/
 │   └── api/
 │       ├── test_api_booking_lifecycle.py
 │       ├── test_api_bookings.py
@@ -265,17 +265,16 @@ tests/
 │       ├── test_api_machines.py
 │       ├── test_auth_api.py
 │       └── test_health_endpoint.py
-├── integration/
 ├── performance/
 ├── regression/
-└── unit/
-    ├── auth/
-    │   └── test_auth_internal.py
-    ├── test_db_lifecycle.py
-    ├── assertions.py
-    ├── conftest.py
-    ├── test_config.py
-    └── test_helpers.py
+├── unit/
+│    ├── auth/
+│    │   └── test_auth_internal.py
+│    ├── test_db_lifecycle.py
+├── assertions.py
+├── conftest.py
+├── test_config.py
+└── test_helpers.py
 ```
 
 ### Test Isolation Strategy

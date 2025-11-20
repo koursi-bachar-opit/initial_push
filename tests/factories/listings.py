@@ -36,7 +36,9 @@ def valid_listing_payload(client, db_session, provider_role="provider", **overri
 
 
 def create_listing_with_machine(client, db_session, machine_payload_overrides=None, listing_payload_overrides=None):
-    """Create a listing with custom machine and listing parameters."""
+    """
+    Create a listing with custom machine and listing parameters.
+    """
     machine_overrides = machine_payload_overrides or {}
     listing_overrides = listing_payload_overrides or {}
     

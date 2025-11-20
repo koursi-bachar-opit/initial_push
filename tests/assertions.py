@@ -1,5 +1,5 @@
 """
-Reusable assertion helpers for consistent test validation.
+Reusable assertion helpers to run consistent test validation.
 """
 
 
@@ -13,7 +13,6 @@ def _get_response_data(response):
 def assert_status_code(response, expected_code=200, message=None):
     """
     Assert response status code with optional custom message.
-    
     Usage:
         assert_status_code(resp, 201)
         assert_status_code(resp, 200, "Should return OK")
@@ -62,7 +61,6 @@ def assert_response_contains(response, field, expected_value=None):
 def assert_response_contains_fields(response, *fields):
     """
     Assert response contains multiple fields.
-    
     Usage:
         assert_response_contains_fields(resp, "id", "status", "listing_id")
     """
@@ -74,7 +72,6 @@ def assert_response_contains_fields(response, *fields):
 def assert_is_list(response, min_length=1):
     """
     Assert response is a list with minimum length.
-    
     Usage:
         assert_is_list(resp)  #At least 1 item
         assert_is_list(resp, 3)  #At least 3 items
@@ -87,7 +84,6 @@ def assert_is_list(response, min_length=1):
 def assert_any_item_contains(response, field, value):
     """
     Assert any item in a list response contains field with value.
-    
     Usage:
         assert_any_item_contains(resp, "title", "Default Title")
     """
@@ -99,7 +95,6 @@ def assert_any_item_contains(response, field, value):
 def assert_timestamp_field_exists(response, field):
     """
     Assert a timestamp field exists and is not None.
-    
     Usage:
         assert_timestamp_field_exists(resp, "active_session_start")
     """
