@@ -208,7 +208,7 @@ Below is a section that demonstrates fulfilment of the project rubric. This sect
 
 ### 3. Pull Requests and Code Reviews
 - Latest PR includes reviewer comments
-- Review summaries included in `code-review-summary.md`
+- Review summaries included in `docs/code-review-summary.md`
 - PR-based workflow used for feature merges
 
 ### 4. CI/CD Pipeline
@@ -216,7 +216,7 @@ Below is a section that demonstrates fulfilment of the project rubric. This sect
 - Automated tests with coverage enforcement
 - PostgreSQL service launched automatically
 - Workflow located in `.github/workflows/`
-- CI/CD setup details documented in `ci-cd-setup.md`
+- CI/CD setup details documented in `docs/ci-cd-setup.md`
 
 ---
 
