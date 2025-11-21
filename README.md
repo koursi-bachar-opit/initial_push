@@ -137,7 +137,7 @@ pytest --cov=app
 
 ## CI/CD Pipeline (GitHub Actions)
 
-![CI](https://github.com/OPIT-CS/assignment-3-supervision/actions/workflows/ci.yml/badge.svg
+![CI](https://github.com/OPIT-CS/assignment-3-supervision/actions/workflows/ci.yml/badge.svg)
 
 The CI pipeline runs on all push and pull request events targeting the `main` and `dev` branches.
 
