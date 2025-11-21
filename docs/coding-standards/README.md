@@ -82,7 +82,7 @@ app/
 ```python
 @router.post("/", response_model=schemas.ResourceRead, status_code=201)
 def create_resource(data: schemas.ResourceCreate, db: Session = Depends(get_db)):
-    return crud.create_resource(db, data)
+    return repository.create_resource(db, data)
 ```
 
 **Service Function:**
@@ -97,7 +97,7 @@ def business_operation(db: Session, resource_id: int):
     return resource
 ```
 
-**CRUD Function:**
+**Repository Function:**
 
 ```python
 def create_resource(db: Session, data: schemas.ResourceCreate):
