@@ -1,4 +1,4 @@
-# Remote Servers Marketplace
+# SuperVision Remote Servers
 
 A full-stack platform for renting high-performance computing (HPC) and AI/ML servers.  
 Providers can list dedicated machines, and buyers can securely book compute resources.  
@@ -8,7 +8,7 @@ Built with FastAPI, PostgreSQL, Supabase Auth, Tailwind/Flowbite, pytest, and Gi
 
 ## Overview
 
-Remote Servers Marketplace is a fully functional HPC server-rental platform that supports:
+The SuperVision Remote Servers marketplace is a fully functional HPC server-rental platform that supports:
 
 - Provider onboarding and server listings
 - Secure authentication via Supabase JWT (HS256) stored in HTTP-only cookies
@@ -137,7 +137,7 @@ pytest --cov=app
 
 ## CI/CD Pipeline (GitHub Actions)
 
-![CI](https://github.com/OPIT-CS/assignment-3-supervision/actions/workflows/ci.yml/badge.svg
+![CI](https://github.com/OPIT-CS/assignment-3-supervision/actions/workflows/ci.yml/badge.svg)
 
 The CI pipeline runs on all push and pull request events targeting the `main` and `dev` branches.
 
