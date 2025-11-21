@@ -60,6 +60,7 @@
 ```
 app/
 ├── api/          # HTTP endpoints (thin controllers)
+├── repositories/ # Data access layer (queries and persistence logic).
 ├── services/     # Business logic (workflows, rules)
 ├── models.py     # SQLAlchemy ORM models
 ├── schemas.py    # Pydantic validation schemas
