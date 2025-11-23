@@ -1,5 +1,5 @@
-from app.repositories import user_repository
-from app.models import UserRole
+from app.users import user_repository
+from app.users.models import UserRole
 from test_config import TestConfig
 
 

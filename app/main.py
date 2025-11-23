@@ -7,7 +7,10 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
-from app.api import bookings, listings, machines
+from app.bookings.routes import router as bookings_router
+from app.listings.routes import router as listings_router
+from app.machines.routes import router as machines_router
+
 from app.auth.auth import optional_user
 
 
@@ -35,9 +38,9 @@ app.add_middleware(
 
 
 #Routers
-app.include_router(listings.router, prefix="/api/v1/listings", tags=["listings"])
-app.include_router(bookings.router, prefix="/api/v1/bookings", tags=["bookings"])
-app.include_router(machines.router, prefix="/api/v1/machines", tags=["machines"])
+app.include_router(listings_router, prefix="/api/v1/listings", tags=["listings"])
+app.include_router(bookings_router, prefix="/api/v1/bookings", tags=["bookings"])
+app.include_router(machines_router, prefix="/api/v1/machines", tags=["machines"])
 
 
 #App health endpoint

@@ -1,8 +1,18 @@
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
-from app import models, schemas
-from app.repositories import booking_repository, listing_repository
+from .models import Booking
+from .schemas import (
+    BookingRead,
+    BookingRequest,
+    BookingAdminCreate,
+    BookingStatus
+)
+from .repository import booking_repository
+from app.listings.repository import listing_repository
+from app.listings.models import Listing
+
+
 from fastapi import Depends
 from app.database import get_db
 
@@ -57,18 +67,18 @@ class BookingsService:
 
 
     def build_booking_model(self, payload, buyer_user_id, start_utc, end_utc, total_price):
-        booking = models.Booking( 
+        booking = Booking( 
             listing_id=payload.listing_id,
             buyer_user_id=buyer_user_id,
             start_time=start_utc,
             end_time=end_utc,
             total_price_estimate=total_price,
-            status=models.BookingStatus.REQUESTED,  #Status transitions eventually will be used in state machine
+            status=BookingStatus.REQUESTED,  #Status transitions eventually will be used in state machine
         )
         return booking
 
 
-    def admin_create_booking(self, payload: schemas.BookingAdminCreate):
+    def admin_create_booking(self, payload: BookingAdminCreate):
         start_utc, end_utc = self.normalize_times(payload.start_time, payload.end_time)
         
         self.validate_booking_window(start_utc, end_utc)
@@ -87,7 +97,7 @@ class BookingsService:
         return booking_repository.create_booking(self.db, booking)
 
 
-    def request_booking(self, buyer_user_id, payload: schemas.BookingRequest):
+    def request_booking(self, buyer_user_id, payload: BookingRequest):
         start_utc, end_utc = self.normalize_times(payload.start_time, payload.end_time)
         
         if buyer_user_id is None:
@@ -122,7 +132,7 @@ class BookingsService:
         return booking_repository.list_bookings(self.db)
 
 
-    def _get_booking_or_raise(self, booking_id: int) -> models.Booking:
+    def _get_booking_or_raise(self, booking_id: int) -> Booking:
         """Get a booking or return an error if not possible"""
         booking = booking_repository.get_booking_by_id(self.db, booking_id)
         if not booking:
@@ -134,7 +144,7 @@ class BookingsService:
         return self._get_booking_or_raise(booking_id)
 
 
-    def confirm_booking(self, booking_id: int, booking: models.Booking | None = None):
+    def confirm_booking(self, booking_id: int, booking: Booking | None = None):
         """
         Providers/admins call this when approving a buyer's request.
         A booking can only be confirmed once. After that point,
@@ -153,16 +163,16 @@ class BookingsService:
             raise ValueError("Cannot confirm booking after booking end_time") #TODO: convert to domain exception later
         
         #Only a REQUESTED booking can be confirmed - validates a valid state transition
-        if booking.status != models.BookingStatus.REQUESTED:
+        if booking.status != BookingStatus.REQUESTED:
             raise ValueError("Bookings can only be confirmed from a requested state") #TODO: convert to domain exception later
         
-        booking.status = models.BookingStatus.CONFIRMED    
+        booking.status = BookingStatus.CONFIRMED    
 
         return booking_repository.update_booking(self.db, booking)
         #TODO: authorization checks for booking confirmation if admin uses the same function
 
 
-    def cancel_booking(self, booking_id: int, booking: models.Booking | None = None):
+    def cancel_booking(self, booking_id: int, booking: Booking | None = None):
         """
         Cancel only an existing booking.
         """
@@ -187,16 +197,16 @@ class BookingsService:
         # else:
         #     raise unauthorized
 
-        if booking.status not in {models.BookingStatus.REQUESTED, models.BookingStatus.CONFIRMED}:
+        if booking.status not in {BookingStatus.REQUESTED, BookingStatus.CONFIRMED}:
             raise ValueError("Booking must be requested or confirmed in order to cancel.")  #TODO: convert to domain exception later
 
-        booking.status = models.BookingStatus.CANCELLED
+        booking.status = BookingStatus.CANCELLED
         return booking_repository.update_booking(self.db, booking)
         
         #Verify that booking can be cancelled 
 
 
-    def start_session(self, booking_id: int, booking: models.Booking | None = None):
+    def start_session(self, booking_id: int, booking: Booking | None = None):
         """
         A session can only begin during the reserved window.
         We disallow starting outside it because usage is tied to billing
@@ -209,7 +219,7 @@ class BookingsService:
             raise ValueError("Listing not attached to booking") #TODO: convert to domain exception later
 
         #Can only start from confirmed state
-        if booking.status != models.BookingStatus.CONFIRMED:
+        if booking.status != BookingStatus.CONFIRMED:
             raise ValueError("Only a confirmed booking can be started.") #TODO: convert to domain exception later
 
         #Disallow multiple active sessions
@@ -226,12 +236,12 @@ class BookingsService:
 
         #Mark as active
         booking.active_session_start = now
-        booking.status = models.BookingStatus.ACTIVE
+        booking.status = BookingStatus.ACTIVE
 
         return booking_repository.update_booking(self.db, booking)
 
 
-    def end_session(self, booking_id: int, booking: models.Booking | None = None):
+    def end_session(self, booking_id: int, booking: Booking | None = None):
         """
         Final billing is based on exact session duration, not the planned window.
         We compute the per-second cost using the listing's hourly price and round
@@ -244,7 +254,7 @@ class BookingsService:
             raise ValueError("Listing not attached to booking") #TODO: convert to domain exception later
 
         #Must be currently active
-        if booking.status != models.BookingStatus.ACTIVE:
+        if booking.status != BookingStatus.ACTIVE:
             raise ValueError("Cannot end, current status is not active") #TODO: convert to domain exception later
 
         #Prevent ending twice
@@ -261,7 +271,7 @@ class BookingsService:
 
         #Calculate duration and exact charge
         booking.actual_price_charged = self.calculate_price(booking.active_session_start, booking.active_session_end, booking.listing.price)
-        booking.status = models.BookingStatus.COMPLETED
+        booking.status = BookingStatus.COMPLETED
 
         return booking_repository.update_booking(self.db, booking)
     

@@ -4,7 +4,13 @@ from sqlalchemy import engine_from_config, pool
 from alembic import context
 
 from app.database import Base
-from app import models
+
+#from app import models
+from app.users.models import User
+from app.machines.models import Machine
+from app.listings.models import Listing
+from app.bookings.models import Booking
+
 
 from dotenv import load_dotenv
 load_dotenv()

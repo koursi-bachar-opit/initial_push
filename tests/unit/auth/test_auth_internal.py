@@ -30,7 +30,7 @@ def test_decode_supabase_jwt_missing_secret(monkeypatch):
     """
     No JWT secret should return 500 from _decode_supabase_jwt().
     """
-    monkeypatch.setattr("app.auth.auth.settings.SUPABASE_JWT_SECRET", None)
+    monkeypatch.setattr("app.auth.service.settings.SUPABASE_JWT_SECRET", None)
 
     with pytest.raises(HTTPException) as exc:
         auth._decode_supabase_jwt("abc.def.ghi")
@@ -42,7 +42,7 @@ def test_decode_supabase_jwt_invalid_signature(monkeypatch):
     """
     An invalid JWT signature should return 401.
     """
-    monkeypatch.setattr("app.auth.auth.settings.SUPABASE_JWT_SECRET", "TESTSECRET")
+    monkeypatch.setattr("app.auth.service.settings.SUPABASE_JWT_SECRET", "TESTSECRET")
 
     with pytest.raises(HTTPException) as exc:
         auth._decode_supabase_jwt("invalid.jwt.token")
@@ -55,7 +55,7 @@ def test_decode_supabase_jwt_valid(monkeypatch):
     A JWT should be decoded successfully.
     """
     secret = "TESTSECRET"
-    monkeypatch.setattr("app.auth.auth.settings.SUPABASE_JWT_SECRET", secret)
+    monkeypatch.setattr("app.auth.service.settings.SUPABASE_JWT_SECRET", secret)
 
     payload = {
         "sub": "123",

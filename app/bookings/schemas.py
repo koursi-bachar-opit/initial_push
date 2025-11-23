@@ -1,42 +1,9 @@
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, ConfigDict
+from typing import Optional
 from datetime import datetime
 from enum import Enum
-from typing import Optional
-#import uuid
 
-class MachineCreate(BaseModel):
-    provider_id: int | None = None
-    hostname: str | None = None
-    location_region: str | None = None
-    gpu_model: str | None = None
-    gpu_count: int | None = None
-    vram_gb: int | None = None
-    cpu_model: str | None = None
-    cpu_cores: int | None = None
-    ram_gb: int | None = None
-    storage_gb: int | None = None
-    network_mbps: int | None = None
-    notes: str | None = None
-
-
-class MachineRead(MachineCreate):
-    id: int
-    created_at: datetime
-    updated_at: datetime
-    model_config = ConfigDict(from_attributes=True)
-
-
-class ListingCreate(BaseModel):
-    """Payload sent by providers or admins when creating a new listing."""
-    machine_id: int
-    title: str = Field(min_length=1)
-    price: float = Field(ge=0)
-
-
-class ListingRead(ListingCreate):
-    id: int
-    machine: Optional[MachineRead] = None
-    model_config = ConfigDict(from_attributes=True)
+from app.listings.schemas import ListingRead
 
 
 class BookingStatus(str, Enum):
@@ -56,6 +23,7 @@ class BookingAdminCreate(BaseModel):
     start_time: datetime
     end_time: datetime
     buyer_user_id: int
+
 
 class BookingRequest(BaseModel):
     """
@@ -79,6 +47,7 @@ class BookingRead(BaseModel):
     start_time: datetime
     end_time: datetime
     status: BookingStatus
+
     total_price_estimate: Optional[float] = None
     active_session_start: Optional[datetime] = None
     active_session_end: Optional[datetime] = None

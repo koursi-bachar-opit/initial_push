@@ -1,11 +1,10 @@
 from fastapi import Depends, APIRouter, HTTPException
-from app import schemas, models
+
+from app.users.models import User, UserRole
 from app.auth.auth import require_roles, get_current_user
 
-from app.services.listings_service import (
-    ListingsService,
-    get_listings_service,
-)
+from .schemas import ListingCreate, ListingRead
+from .service import ListingsService, get_listings_service
 
 router = APIRouter()
 
@@ -17,13 +16,13 @@ Everyone (including anonymous users) can browse listings.
 
 @router.post(
     "/",
-    response_model=schemas.ListingRead,
+    response_model=ListingRead,
     status_code=201,
-    dependencies=[Depends(require_roles(models.UserRole.PROVIDER, models.UserRole.ADMIN))],
+    dependencies=[Depends(require_roles(UserRole.PROVIDER, UserRole.ADMIN))],
 )
 def create_listing(
-    listing: schemas.ListingCreate,
-    user: models.User = Depends(get_current_user),
+    listing: ListingCreate,
+    user: User = Depends(get_current_user),
     service: ListingsService = Depends(get_listings_service),
 ):
     """
@@ -38,7 +37,7 @@ def create_listing(
         raise HTTPException(status_code=403)
 
 
-@router.get("/", response_model=list[schemas.ListingRead])
+@router.get("/", response_model=list[ListingRead])
 def list_listings(service: ListingsService = Depends(get_listings_service)):
     """
     Public listings endpoint.
