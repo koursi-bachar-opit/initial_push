@@ -1,10 +1,18 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
 
-from app.database import get_db
 from app import schemas, models
-from app.services import bookings_service
-from app.auth import get_current_user
+from app.auth.auth import get_current_user
+from app.auth.permissions import (
+    can_confirm_booking,
+    can_cancel_booking,
+    can_start_session,
+    can_end_session,
+)
+
+from app.services.bookings_service import (
+    BookingsService,
+    get_bookings_service,
+)
 
 router = APIRouter()
 
@@ -23,9 +31,9 @@ All business logic lives in bookings_service.py.
 
 @router.post("/", response_model=schemas.BookingRead, status_code=201)
 def create_booking(
-    payload: schemas.BookingCreate,
-    db: Session = Depends(get_db),
+    booking: schemas.BookingAdminCreate,
     user: models.User = Depends(get_current_user),
+    service: BookingsService = Depends(get_bookings_service),
 ):
     """
     Admins sometimes need to create bookings manually 
@@ -33,50 +41,50 @@ def create_booking(
     Regular buyers won't call this route. They use the /request endpoint, 
     which pulls their user id automatically.
     """
-    try:
-        return bookings_service.admin_create_booking(db, payload)
-    except HTTPException:
-        raise
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+    if user.role == models.UserRole.ADMIN:
+        try:
+            return service.admin_create_booking(payload=booking)
+        except ValueError as e: #NotFound -> 404 ValidationError ||| InvalidStateTransition → 400 / 409
+            raise HTTPException(status_code=404, detail=str(e)) 
+    #explicitly reject non admins
+    else:
+        raise HTTPException(403)
 
 
 @router.get("/", response_model=list[schemas.BookingRead])
 def list_bookings(
-    db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user),
+    service: BookingsService = Depends(get_bookings_service),
 ):
     #Buyer sees only their own bookings
     if user.role == models.UserRole.BUYER:
-        return bookings_service.list_bookings_for_user(db, user.id)
+        return service.list_bookings_for_user(user.id)
 
     #Provider sees bookings only for their own machines
     if user.role == models.UserRole.PROVIDER:
-        return bookings_service.list_bookings_for_provider(db, user.id)
+        return service.list_bookings_for_provider(user.id)
 
-    # Admin and org admins see everything
-    return bookings_service.list_all_bookings(db)
+    # Admins see everything
+    if user.role == models.UserRole.ADMIN:
+        return service.list_all_bookings()
+    
+    else:   #Add route for org admins (should see all bookings in their organization only)
+        raise HTTPException(403)
 
 
 @router.post("/request", response_model=schemas.BookingRead)
 def request_booking(
-    payload: schemas.BookingCreate,
-    db: Session = Depends(get_db),
+    booking: schemas.BookingRequest,
     user: models.User = Depends(get_current_user),
+    service: BookingsService = Depends(get_bookings_service),
 ):
     """
     Buyers don't send their own ID in the request.
     This is configured to trust the authenticated user to decide the buyer identity.
     """
     try:
-        return bookings_service.request_booking(
-            db=db,
-            listing_id=payload.listing_id,
-            buyer_user_id=user.id,
-            start_time=payload.start_time,
-            end_time=payload.end_time,
-        )
-    except ValueError as e:
+        return service.request_booking(user.id, payload=booking)
+    except ValueError as e: #NotFound -> 404 ValidationError ||| InvalidStateTransition → 400 / 409
         raise HTTPException(status_code=404, detail=str(e))
 
 
@@ -88,36 +96,52 @@ start_booking_session() -> ACTIVE
 end_booking_session() -> COMPLETED
 """
 @router.put("/{booking_id}/confirm", response_model=schemas.BookingRead)
-def confirm_booking(booking_id: int, db: Session = Depends(get_db)):
+def confirm_booking(booking_id: int, service: BookingsService = Depends(get_bookings_service), user: models.User = Depends(get_current_user)):
     try:
-        return bookings_service.confirm_booking(db, booking_id)
+        booking = service.get_booking_readonly(booking_id)
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(404, str(e))
+
+    if can_confirm_booking(user, booking):
+        return service.confirm_booking(booking_id, booking=booking)
+    else:
+        raise HTTPException(403)
 
 
 @router.put("/{booking_id}/cancel", response_model=schemas.BookingRead)
-def cancel_booking(booking_id: int, db: Session = Depends(get_db)):
+def cancel_booking(booking_id: int, service: BookingsService = Depends(get_bookings_service), user: models.User = Depends(get_current_user)):
     try:
-        return bookings_service.cancel_booking(db, booking_id)
+        booking = service.get_booking_readonly(booking_id)
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(404, str(e))
+    
+    if can_cancel_booking(user, booking):
+        return service.cancel_booking(booking_id, booking=booking)
+    else:
+        raise HTTPException(403)
 
 
 @router.put("/{booking_id}/start", response_model=schemas.BookingRead)
-def start_booking_session(booking_id: int, db: Session = Depends(get_db)):
+def start_booking_session(booking_id: int, service: BookingsService = Depends(get_bookings_service), user: models.User = Depends(get_current_user)):
     try:
-        return bookings_service.start_session(db, booking_id)
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        booking = service.get_booking_readonly(booking_id)
+    except ValueError as e:
+        raise HTTPException(404, str(e))
+    
+    if can_start_session(user, booking):
+        return service.start_session(booking_id, booking=booking)
+    else:
+        raise HTTPException(403)
 
 
 @router.put("/{booking_id}/end", response_model=schemas.BookingRead)
-def end_booking_session(booking_id: int, db: Session = Depends(get_db)):
+def end_booking_session(booking_id: int, service: BookingsService = Depends(get_bookings_service), user: models.User = Depends(get_current_user)):
     try:
-        return bookings_service.end_session(db, booking_id)
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        booking = service.get_booking_readonly(booking_id)
+    except ValueError as e:
+        raise HTTPException(404, str(e))
+    
+    if can_end_session(user, booking):
+        return service.end_session(booking_id, booking=booking)
+    else:
+        raise HTTPException(403)

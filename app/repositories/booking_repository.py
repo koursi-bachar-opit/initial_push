@@ -1,64 +1,31 @@
-from datetime import timedelta
 from sqlalchemy.orm import Session
-from fastapi import HTTPException
 
-from app import models, schemas
+from app import models
 
-"""
-Repository methods for interacting with Booking objects.
-This layer handles direct DB reads/writes and lightweight validation.
-State transitions happen in bookings_service.py.
-"""
-
-def create_booking(db: Session, data: schemas.BookingCreate) -> models.Booking:
+def create_booking(db: Session, booking: models.Booking) -> models.Booking: 
     """
-    This is the low-level primitive used by the service layer to create a booking.
-    It assumes the caller manages the booking process (separation of concerns),
-    and it performs curcial validation:
-    1. A listing must exist
-    2. The time window must be valid
-    3. Necessitates a buyer id
-    It also computes the estimated price based on whole hours.
+    Persist a fully constructed Booking ORM instance.
+    All validation and domain rules must be handled by the service layer.
     """
-    listing = db.get(models.Listing, data.listing_id)
-    if not listing:
-        raise HTTPException(status_code=404, detail="Listing not found")
-
-    if data.end_time <= data.start_time:
-        raise HTTPException(status_code=400, detail="end_time must be after start_time")
-
-    if data.buyer_user_id is None:
-        raise HTTPException(
-            status_code=400,
-            detail="buyer_user_id is required for admin booking creation",
-        )
-
-    #Compute the duration in hours.
-    #A booking is charged in whole hours, so times are rounded up in hour.
-    delta: timedelta = data.end_time - data.start_time
-    hours = (delta.total_seconds() + 3599) // 3600
-    total = int(hours) * int(listing.price)
-
-    b = models.Booking(
-        listing_id=listing.id,
-        buyer_user_id=data.buyer_user_id,
-        start_time=data.start_time,
-        end_time=data.end_time,
-        status=models.BookingStatus.REQUESTED,
-        total_price_estimate=total,
-    )
-    db.add(b)
+    db.add(booking)
     db.commit()
-    db.refresh(b)
-    return b
+    db.refresh(booking)
+    return booking
+
+
+def update_booking(db: Session, booking: models.Booking) -> models.Booking:
+    """
+    Return bookings whose states have been changed
+    """
+    db.commit()
+    db.refresh(booking)
+    return booking
 
 
 def list_bookings(db: Session):
     """
-    Return every booking in the system. 
-    The router/service layer ensures only 
-    admins or providers can call this.
-    Should be refactored to consider provider access limitations.
+    in future: list_all_bookings, list_bookings_for_admin
+    Repository returns all records; filtering by user/provider/admin occurs in service.
     """
     return (
         db.query(models.Booking)
@@ -68,7 +35,10 @@ def list_bookings(db: Session):
 
 
 def list_bookings_for_user(db: Session, user_id: int):
-    """Buyers only see their own bookings, filtered by buyer_user_id."""
+    """
+    Return all bookings where buyer_user_id == user_id.
+    Caller is responsible for access control
+    """
     return (
         db.query(models.Booking)
         .filter(models.Booking.buyer_user_id == user_id)
@@ -79,13 +49,14 @@ def list_bookings_for_user(db: Session, user_id: int):
 
 def list_bookings_for_provider(db: Session, provider_id: int):
     """
-    Providers only see the bookings that have been made on their machines.
+    Return all bookings associated with machines owned by the given provider_id.
     """
     return (
         db.query(models.Booking)
-        .join(models.Listing, models.Booking.listing_id == models.Listing.id)
-        .join(models.Machine, models.Listing.machine_id == models.Machine.id)
+        .join(models.Booking.listing)
+        .join(models.Listing.machine)
         .filter(models.Machine.provider_id == provider_id)
+        .order_by(models.Booking.id.asc())  #consider ordering by start_time or created_at
         .all()
     )
 

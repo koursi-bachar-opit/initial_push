@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app import schemas, models
 from app.database import get_db
-from app.auth import get_current_user
+from app.auth.auth import get_current_user
 from app.repositories.machine_repository import machine_repository
 
 router = APIRouter()
@@ -56,6 +56,9 @@ def delete_machine(
     db.commit()
 
 
+"""
+Machines.py changed to pass provider_id forcefully
+"""
 @router.post("/", response_model=schemas.MachineRead, status_code=201)
 def create_machine(
     payload: schemas.MachineCreate,
@@ -65,4 +68,7 @@ def create_machine(
     if user.role != models.UserRole.PROVIDER:
         raise HTTPException(403, "Only providers can create machines")
 
-    return machine_repository.create_machine(db, user.id, payload)
+    #Force provider_id to the authenticated provider's user ID
+    payload.provider_id = user.id
+
+    return machine_repository.create_machine(db, payload)

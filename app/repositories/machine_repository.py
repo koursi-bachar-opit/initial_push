@@ -3,9 +3,9 @@ from app import models, schemas
 
 
 class MachineRepository:
-    def create_machine(self, db: Session, provider_id: int, machine_data: schemas.MachineCreate):
+    def create_machine(self, db: Session, machine_data: schemas.MachineCreate):
         db_machine = models.Machine(
-            provider_id=provider_id,              #legacy: provider_id=machine_data.provider_id,
+            provider_id=machine_data.provider_id,              #legacy: provider_id=machine_data.provider_id,
             hostname=machine_data.hostname,
             location_region=machine_data.location_region,
             gpu_model=machine_data.gpu_model,

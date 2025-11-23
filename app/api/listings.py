@@ -1,18 +1,18 @@
-from fastapi import Depends, APIRouter
-from sqlalchemy.orm import Session
-
+from fastapi import Depends, APIRouter, HTTPException
 from app import schemas, models
-from app.database import get_db
-from app.auth import require_roles, get_current_user
-from app.services import listings_service
+from app.auth.auth import require_roles, get_current_user
+
+from app.services.listings_service import (
+    ListingsService,
+    get_listings_service,
+)
 
 router = APIRouter()
 
-
 """
-Endpoints served for listing servers.
+Endpoints for listing servers.
 Providers and Admins can create listings.
-Everyone (including anonymous users) can browse listings publicly.
+Everyone (including anonymous users) can browse listings.
 """
 
 @router.post(
@@ -23,20 +23,25 @@ Everyone (including anonymous users) can browse listings publicly.
 )
 def create_listing(
     listing: schemas.ListingCreate,
-    db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user),
+    service: ListingsService = Depends(get_listings_service),
 ):
     """
     Create a new listing.
-    Only providers and admins are allowed this function.
+    Providers use this to publish a server. We validate ownership and domain
+    rules in the service layer. Any domain errors are translated here into
+    proper HTTP responses.
     """
-    return listings_service.create_listing(db, user.id, listing)
+    try:
+        return service.create_listing(provider_id=user.id, payload=listing)
+    except ValueError as e:
+        raise HTTPException(status_code=403)
 
 
 @router.get("/", response_model=list[schemas.ListingRead])
-def list_listings(db: Session = Depends(get_db)):
+def list_listings(service: ListingsService = Depends(get_listings_service)):
     """
     Public listings endpoint.
-    This includes anonymous users - listings are public.
+    Accessible even to anonymous users.
     """
-    return listings_service.list_listings(db)
+    return service.list_listings()

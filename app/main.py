@@ -8,7 +8,7 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
 from app.api import bookings, listings, machines
-from app.auth import optional_user
+from app.auth.auth import optional_user
 
 
 """This is the entrypoint of the FastAPI application.

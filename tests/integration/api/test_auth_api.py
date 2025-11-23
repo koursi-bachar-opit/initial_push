@@ -37,7 +37,7 @@ def test_auth_forbids_buyer_on_provider_only_endpoint(client, db_session):
 
 
 def test_auth_cookie_token(client, monkeypatch):
-    monkeypatch.setattr("app.auth.settings.SUPABASE_JWT_SECRET", "TESTSECRET")
+    monkeypatch.setattr("app.auth.auth.settings.SUPABASE_JWT_SECRET", "TESTSECRET")
 
     token = jwt.encode(
         {

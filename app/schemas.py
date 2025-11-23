@@ -2,9 +2,10 @@ from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime
 from enum import Enum
 from typing import Optional
-
+#import uuid
 
 class MachineCreate(BaseModel):
+    provider_id: int | None = None
     hostname: str | None = None
     location_region: str | None = None
     gpu_model: str | None = None
@@ -16,20 +17,6 @@ class MachineCreate(BaseModel):
     storage_gb: int | None = None
     network_mbps: int | None = None
     notes: str | None = None
-
-# class MachineCreate(BaseModel):
-#     provider_id: int  #provider's User.id
-#     hostname: Optional[str] = None
-#     location_region: Optional[str] = None
-#     gpu_model: Optional[str] = None
-#     gpu_count: Optional[int] = None
-#     vram_gb: Optional[int] = None
-#     cpu_model: Optional[str] = None
-#     cpu_cores: Optional[int] = None
-#     ram_gb: Optional[int] = None
-#     storage_gb: Optional[int] = None
-#     network_mbps: Optional[int] = None
-#     notes: Optional[str] = None
 
 
 class MachineRead(MachineCreate):
@@ -60,17 +47,25 @@ class BookingStatus(str, Enum):
     CANCELLED = "cancelled"
 
 
-class BookingCreate(BaseModel):
+class BookingAdminCreate(BaseModel):
     """
-    Booking creation payload.
-    For normal buyers, buyer_user_id is not sent by the frontend. It is
-    currently derived from the authenticated user on the server. (subject to change)
-    For admin primitives, buyer_user_id can be provided explicitly.
+    For admins. Buyers should never use this schema. 
+    Includes buyer_user_id because admins assign the target buyer explicitly.
     """
     listing_id: int
     start_time: datetime
     end_time: datetime
-    buyer_user_id: Optional[int] = None
+    buyer_user_id: int
+
+class BookingRequest(BaseModel):
+    """
+    Booking creation payload.
+    For normal buyers, buyer_user_id is not sent by the frontend. It is
+    currently derived from the authenticated user on the server. (subject to change)
+    """
+    listing_id: int
+    start_time: datetime
+    end_time: datetime
 
 
 class BookingRead(BaseModel):
