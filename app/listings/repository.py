@@ -1,3 +1,4 @@
+from uuid import UUID
 from sqlalchemy.orm import Session
 
 from .models import Listing
@@ -21,8 +22,6 @@ class ListingRepository:
         return listing
 
 
-    def get_listing_by_id(self, db: Session, listing_id: int) -> Listing | None:
+    def get_listing_by_id(self, db: Session, listing_id: UUID) -> Listing | None:
         """Fetch a listing by its primary key so search results are deterministic."""
         return db.get(Listing, listing_id)
-    
-listing_repository = ListingRepository()

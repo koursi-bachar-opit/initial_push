@@ -2,11 +2,13 @@ from sqlalchemy.orm import Session
 from fastapi import Depends
 
 from app.database import get_db
-from app.machines import machine_repository   # OK — points to domain module
-from .repository import listing_repository
+from app.machines.public import MachinesPublic, get_machines_public
+
+from .repository import ListingRepository
 from .schemas import ListingCreate
 from .models import Listing
 
+from uuid import UUID
 
 # class MachineOwnershipError(Exception):
 #     """Raised when a provider tries to list a machine they do not own."""
@@ -14,30 +16,50 @@ from .models import Listing
 
 
 class ListingsService:
-    def __init__(self, db: Session):
+    def __init__(
+        self,
+        db: Session,
+        listing_repo: ListingRepository,
+        machines_public: MachinesPublic,
+    ):
         self.db = db
+        self.listing_repo = listing_repo
+        self.machines_public = machines_public
 
-    def create_listing(self, provider_id: int, payload: ListingCreate):
+    def create_listing(self, provider_id: UUID, payload: ListingCreate):
         """
         Business logic + validation for creating listings.
         """
-        # Validate machine ownership
-        #machine repository call will be delegated to public interface
-        if not machine_repository.provider_owns_machine(self.db, provider_id, payload.machine_id):
+        #validate machine ownership
+
+        #refactor: machine repository call will be delegated to public interface
+        
+        if not self.machines_public.provider_owns_machine(
+            provider_id, payload.machine_id
+        ):
             raise ValueError()
             # raise MachineOwnershipError()
 
         # Create listing in repository
         listing = Listing(**payload.model_dump())
-        listing = listing_repository.create_listing(self.db, listing)
+        listing = self.listing_repo.create_listing(self.db, listing)
         return listing
+    
+    def get_listing_by_id(self, listing_id: UUID) -> Listing | None:
+        """Get a single listing by ID."""
+        return self.listing_repo.get_listing_by_id(self.db, listing_id)
 
     def list_listings(self):
         """
         Public listing retrieval.
         """
-        return listing_repository.get_listings(self.db)
+        return self.listing_repo.get_listings(self.db)
 
 
-def get_listings_service(db: Session = Depends(get_db)) -> ListingsService:
-    return ListingsService(db)
+def get_listings_service(
+    db: Session = Depends(get_db),
+    machines_public: MachinesPublic = Depends(get_machines_public),
+) -> ListingsService:
+
+    repo = ListingRepository()
+    return ListingsService(db=db, listing_repo=repo, machines_public=machines_public)

@@ -1,74 +1,27 @@
-from app.users.models import UserRole
+from fastapi import Depends
+from uuid import UUID
 
-def booking_has_valid_relationships(booking):
-    if booking.listing is None:
-        return False
-    if booking.listing.machine is None:
-        return False
-    if booking.listing.machine.provider_id is None:
-        return False
-    return True
+from app.auth.auth import get_current_user
+from app.auth.public import AuthPublic, get_auth_public
 
 
-def can_confirm_booking(user, booking):
-    if not booking_has_valid_relationships(booking):
-        return False
-
-    if user.role == UserRole.ADMIN:
-        return True
-
-    provider_id = booking.listing.machine.provider_id
-
-    if user.role == UserRole.PROVIDER and user.id == provider_id:
-        return True
-
-    return False
+def require_buyer_role(
+    current_user = Depends(get_current_user),
+    auth_public: AuthPublic = Depends(get_auth_public),
+):
+    """
+    Dependency ensuring the current user has the BUYER role.
+    """
+    auth_public.ensure_buyer(current_user.id)
+    return current_user
 
 
-def can_cancel_booking(user, booking):
-    if not booking_has_valid_relationships(booking):
-        return False
-
-    #Buyer can cancel their own bookings before start
-    if user.role == UserRole.BUYER and user.id == booking.buyer_user_id:
-        return True
-
-    #Provider can cancel bookings for machines they own before start
-    provider_id = booking.listing.machine.provider_id
-    if user.role == UserRole.PROVIDER and user.id == provider_id:
-        return True
-
-    #Admin can cancel always
-    if user.role == UserRole.ADMIN:
-        return True
-
-    return False
-
-
-def can_start_session(user, booking):
-    if not booking_has_valid_relationships(booking):
-        return False
-
-    if user.role == UserRole.ADMIN:
-        return True
-
-    provider_id = booking.listing.machine.provider_id
-    if user.role == UserRole.PROVIDER and user.id == provider_id:
-        return True
-
-    #Buyers never allowed
-    return False
-
-
-def can_end_session(user, booking):
-    if not booking_has_valid_relationships(booking):
-        return False
-
-    if user.role == UserRole.ADMIN:
-        return True
-
-    provider_id = booking.listing.machine.provider_id
-    if user.role == UserRole.PROVIDER and user.id == provider_id:
-        return True
-
-    return False
+def require_provider_role(
+    current_user = Depends(get_current_user),
+    auth_public: AuthPublic = Depends(get_auth_public),
+):
+    """
+    Dependency ensuring the current user has the PROVIDER role.
+    """
+    auth_public.ensure_provider(current_user.id)
+    return current_user

@@ -1,10 +1,8 @@
-# #CHANGE
-
-# __all__ = ["User", "UserRole"]
-
 from sqlalchemy import Column, Integer, String, DateTime, Enum as SQLEnum, func
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from enum import Enum
+import uuid
 
 from app.database import Base
 
@@ -22,11 +20,11 @@ class User(Base):
     """
     __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     supabase_id = Column(String, unique=True, index=True, nullable=False)
     email = Column(String, unique=True, index=True, nullable=False)
     role = Column(SQLEnum(UserRole, native_enum=False), nullable=False, default=UserRole.BUYER)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
-    # A provider can own multiple machines
-    machines = relationship("Machine", back_populates="provider")
+    #A provider can own multiple machines (casecasde delete for data integrity)
+    machines = relationship("Machine", back_populates="provider", cascade="all, delete")

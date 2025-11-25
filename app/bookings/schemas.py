@@ -1,6 +1,7 @@
 from pydantic import BaseModel, ConfigDict
 from typing import Optional
 from datetime import datetime
+from uuid import UUID
 from enum import Enum
 
 from app.listings.schemas import ListingRead
@@ -16,34 +17,32 @@ class BookingStatus(str, Enum):
 
 class BookingAdminCreate(BaseModel):
     """
-    For admins. Buyers should never use this schema. 
+    For admins only. Buyers should never use this schema. 
     Includes buyer_user_id because admins assign the target buyer explicitly.
     """
-    listing_id: int
+    listing_id: UUID
     start_time: datetime
     end_time: datetime
-    buyer_user_id: int
+    buyer_user_id: UUID
 
 
 class BookingRequest(BaseModel):
     """
-    Booking creation payload.
-    For normal buyers, buyer_user_id is not sent by the frontend. It is
-    currently derived from the authenticated user on the server. (subject to change)
+    Buery booking creation payload.
     """
-    listing_id: int
+    listing_id: UUID
     start_time: datetime
     end_time: datetime
 
 
 class BookingRead(BaseModel):
     """
-    This is the full booking object.
-    Includes raw DB fields and conveniece fields
+    Full booking object.
+    Includes raw DB fields and conveniece fields for API responses
     """
-    id: int
-    listing_id: int
-    buyer_user_id: int
+    id: UUID
+    listing_id: UUID
+    buyer_user_id: UUID
     start_time: datetime
     end_time: datetime
     status: BookingStatus

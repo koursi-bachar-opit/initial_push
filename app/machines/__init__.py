@@ -4,7 +4,7 @@ Public interface for the Machines domain module.
 
 from .models import Machine
 from .schemas import MachineCreate, MachineRead
-from .repository import MachineRepository, machine_repository
+from .repository import MachineRepository
 from .service import MachinesService, get_machines_service
 
 __all__ = [
@@ -14,7 +14,6 @@ __all__ = [
 
     #Repository
     "MachineRepository",
-    "machine_repository",
 
     #Schemas
     "MachineCreate",

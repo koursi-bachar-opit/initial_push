@@ -3,7 +3,7 @@ Public interface for the Bookings domain module.
 """
 
 from .service import BookingsService, get_bookings_service
-from .repository import BookingRepository, booking_repository
+from .repository import BookingRepository
 from .schemas import (
     BookingRead,
     BookingRequest,
@@ -18,7 +18,6 @@ __all__ = [
     "get_bookings_service",
 
     # Repository
-    "booking_repository",
     "BookingRepository",
 
     # Schemas

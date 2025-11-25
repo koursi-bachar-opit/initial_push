@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.auth.auth import get_current_user
-from app.auth.permissions import (
+from .permissions import (
     can_confirm_booking,
     can_cancel_booking,
     can_start_session,
@@ -18,14 +18,8 @@ from .service import (
     get_bookings_service,
 )
 from app.users.models import User, UserRole  #until users domain migration
-from app.listings.models import Listing
-from app.listings.schemas import ListingRead
-from app.auth.permissions import (
-    can_confirm_booking,
-    can_cancel_booking,
-    can_start_session,
-    can_end_session,
-)
+
+from uuid import UUID
 
 router = APIRouter()
 
@@ -49,9 +43,8 @@ def create_booking(
     service: BookingsService = Depends(get_bookings_service),
 ):
     """
-    Admins sometimes need to create bookings manually 
-    (verification checks or manual corrections if not using a PATCH request).
-    Regular buyers won't call this route. They use the /request endpoint, 
+    Admins use this to create bookings manually 
+    Regular buyers will use use the /request endpoint, 
     which pulls their user id automatically.
     """
     if user.role == UserRole.ADMIN:
@@ -77,11 +70,11 @@ def list_bookings(
     if user.role == UserRole.PROVIDER:
         return service.list_bookings_for_provider(user.id)
 
-    # Admins see everything
+    #Admins see everything
     if user.role == UserRole.ADMIN:
         return service.list_all_bookings()
     
-    else:   #Add route for org admins (should see all bookings in their organization only)
+    else:   #Add route for org admins (should see all bookings in their ORGANIZATION only)
         raise HTTPException(403)
 
 
@@ -93,7 +86,7 @@ def request_booking(
 ):
     """
     Buyers don't send their own ID in the request.
-    This is configured to trust the authenticated user to decide the buyer identity.
+    Verify the authenticated user to decide the buyer identity.
     """
     try:
         return service.request_booking(user.id, payload=booking)
@@ -108,8 +101,8 @@ cancel_booking() -> CANCELLED
 start_booking_session() -> ACTIVE
 end_booking_session() -> COMPLETED
 """
-@router.put("/{booking_id}/confirm", response_model=BookingRead)
-def confirm_booking(booking_id: int, service: BookingsService = Depends(get_bookings_service), user: User = Depends(get_current_user)):
+@router.put("/{booking_id:uuid}/confirm", response_model=BookingRead)
+def confirm_booking(booking_id: UUID, service: BookingsService = Depends(get_bookings_service), user: User = Depends(get_current_user)):
     try:
         booking = service.get_booking_readonly(booking_id)
     except ValueError as e:
@@ -121,8 +114,8 @@ def confirm_booking(booking_id: int, service: BookingsService = Depends(get_book
         raise HTTPException(403)
 
 
-@router.put("/{booking_id}/cancel", response_model=BookingRead)
-def cancel_booking(booking_id: int, service: BookingsService = Depends(get_bookings_service), user: User = Depends(get_current_user)):
+@router.put("/{booking_id:uuid}/cancel", response_model=BookingRead)
+def cancel_booking(booking_id: UUID, service: BookingsService = Depends(get_bookings_service), user: User = Depends(get_current_user)):
     try:
         booking = service.get_booking_readonly(booking_id)
     except ValueError as e:
@@ -134,8 +127,8 @@ def cancel_booking(booking_id: int, service: BookingsService = Depends(get_booki
         raise HTTPException(403)
 
 
-@router.put("/{booking_id}/start", response_model=BookingRead)
-def start_booking_session(booking_id: int, service: BookingsService = Depends(get_bookings_service), user: User = Depends(get_current_user)):
+@router.put("/{booking_id:uuid}/start", response_model=BookingRead)
+def start_booking_session(booking_id: UUID, service: BookingsService = Depends(get_bookings_service), user: User = Depends(get_current_user)):
     try:
         booking = service.get_booking_readonly(booking_id)
     except ValueError as e:
@@ -147,8 +140,8 @@ def start_booking_session(booking_id: int, service: BookingsService = Depends(ge
         raise HTTPException(403)
 
 
-@router.put("/{booking_id}/end", response_model=BookingRead)
-def end_booking_session(booking_id: int, service: BookingsService = Depends(get_bookings_service), user: User = Depends(get_current_user)):
+@router.put("/{booking_id:uuid}/end", response_model=BookingRead)
+def end_booking_session(booking_id: UUID, service: BookingsService = Depends(get_bookings_service), user: User = Depends(get_current_user)):
     try:
         booking = service.get_booking_readonly(booking_id)
     except ValueError as e:

@@ -1,6 +1,8 @@
-from sqlalchemy import Column, Integer, Float, DateTime, ForeignKey, Enum as SQLEnum
+from sqlalchemy import Column, Float, DateTime, ForeignKey, Enum as SQLEnum, func
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from enum import Enum
+import uuid
 
 from app.database import Base
 
@@ -19,26 +21,31 @@ class Booking(Base):
     """
     __tablename__ = "bookings"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
     #Link buyer_user_id to buyer's account creds
     buyer_user_id = Column(
-        Integer,
+        UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
+        index=True,
     )
 
     listing_id = Column(
-        Integer,
+        UUID(as_uuid=True),
         ForeignKey("listings.id", ondelete="CASCADE"),
         nullable=False,
+        index=True,
     )
 
     #Booking window
     start_time = Column(DateTime(timezone=True), nullable=False)
     end_time = Column(DateTime(timezone=True), nullable=False)
 
+    #Pricing
     total_price_estimate = Column(Float, nullable=False)
+    actual_price_charged = Column(Float, nullable=True)
+    usage_seconds = Column(Float, nullable=True)
 
     #Enum value stored as VARCHAR data
     status = Column(
@@ -47,14 +54,19 @@ class Booking(Base):
         default=BookingStatus.REQUESTED,
     )
 
+    #Session window for active state
+    active_session_start = Column(DateTime(timezone=True), nullable=True)
+    active_session_end = Column(DateTime(timezone=True), nullable=True)
+
     #Relationships
     listing = relationship("Listing", back_populates="bookings")
     buyer = relationship("User")
 
-    active_session_start = Column(DateTime(timezone=True), nullable=True)
-    active_session_end = Column(DateTime(timezone=True), nullable=True)
-    actual_price_charged = Column(Float, nullable=True)
-    usage_seconds = Column(Float, nullable=True)
+    access_credentials = relationship(
+        "AccessCredential",
+        back_populates="booking",
+        cascade="all, delete-orphan"
+    )
 
 
     """

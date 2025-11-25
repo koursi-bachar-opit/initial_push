@@ -10,6 +10,7 @@ from app.users.models import User
 from app.machines.models import Machine
 from app.listings.models import Listing
 from app.bookings.models import Booking
+from app.credentials.models import AccessCredential
 
 
 from dotenv import load_dotenv

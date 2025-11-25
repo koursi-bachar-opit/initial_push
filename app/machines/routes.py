@@ -6,12 +6,14 @@ from app.users.models import User, UserRole
 from .schemas import MachineCreate, MachineRead
 from .service import MachinesService, get_machines_service#, MachineNotFoundError, NotProviderMachineError
 
+from uuid import UUID
+
 router = APIRouter()
 
 
-@router.get("/{machine_id}", response_model=MachineRead)
+@router.get("/{machine_id:uuid}", response_model=MachineRead)
 def get_machine(
-    machine_id: int,
+    machine_id: UUID,
     user: User = Depends(get_current_user),
     service: MachinesService = Depends(get_machines_service),
 ):
@@ -39,9 +41,9 @@ def list_machines(
     return service.list_machines_for_provider(user.id)
 
 
-@router.delete("/{machine_id}", status_code=204)
+@router.delete("/{machine_id:uuid}", status_code=204)
 def delete_machine(
-    machine_id: int,
+    machine_id: UUID,
     user: User = Depends(get_current_user),
     service: MachinesService = Depends(get_machines_service),
 ):

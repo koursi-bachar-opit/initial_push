@@ -1,3 +1,4 @@
+from uuid import UUID
 from sqlalchemy.orm import Session
 
 from .models import Booking
@@ -8,8 +9,7 @@ from app.listings.models import Listing
 class BookingRepository:
     def create_booking(self, db: Session, booking: Booking) -> Booking: 
         """
-        Persist a fully constructed Booking ORM instance.
-        All validation and domain rules must be handled by the service layer.
+        Persist the newly created Booking ORM instance.
         """
         db.add(booking)
         db.commit()
@@ -38,7 +38,7 @@ class BookingRepository:
         )
 
 
-    def list_bookings_for_user(self, db: Session, user_id: int):
+    def list_bookings_for_user(self, db: Session, user_id: UUID):
         """
         Return all bookings where buyer_user_id == user_id.
         Caller is responsible for access control
@@ -51,7 +51,7 @@ class BookingRepository:
         )
 
 
-    def list_bookings_for_provider(self, db: Session, provider_id: int):
+    def list_bookings_for_provider(self, db: Session, provider_id: UUID):
         """
         Return all bookings associated with machines owned by the given provider_id.
         """
@@ -65,9 +65,6 @@ class BookingRepository:
         )
 
 
-    def get_booking_by_id(self, db: Session, booking_id: int) -> Booking | None:
+    def get_booking_by_id(self, db: Session, booking_id: UUID) -> Booking | None:
         """Fetches a booking by its primary key."""
         return db.get(Booking, booking_id)
-
-
-booking_repository = BookingRepository()

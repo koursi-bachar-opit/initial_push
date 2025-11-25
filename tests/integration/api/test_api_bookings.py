@@ -17,7 +17,7 @@ def test_admin_create_booking_endpoint(client, db_session):
     
     listing = create_listing(client, db_session)
 
-    payload = booking_payload(listing_id=listing["id"], buyer_user_id=buyer.id)
+    payload = booking_payload(listing_id=listing["id"], buyer_user_id=str(buyer.id))
 
     resp = client.post(
         "/api/v1/bookings/",

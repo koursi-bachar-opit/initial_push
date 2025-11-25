@@ -65,5 +65,3 @@ class UserRepository:
         """
         role_enum = UserRole(role.lower()) if role else UserRole.BUYER
         return self.create_user(db, supabase_id=sub, email=email, role=role_enum)
-
-user_repository = UserRepository()

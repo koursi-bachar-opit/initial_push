@@ -2,7 +2,7 @@ from factories.users import create_user_by_role, auth_headers_by_role
 from test_config import TestConfig
 
 def machine_payload(**overrides):
-    #Removed provider_user_id from base (it comes from auth context)
+    #Removed provider_user_id from base (comes from auth context)
     base = {
         "name": TestConfig.DEFAULT_MACHINE_NAME,
         "cpu": "4 vCPU",

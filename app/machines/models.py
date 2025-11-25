@@ -1,5 +1,7 @@
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, func
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
+import uuid
 
 from app.database import Base
 
@@ -11,13 +13,14 @@ class Machine(Base):
     """
     __tablename__ = "machines"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
     #Link to the provider's user account
     provider_id = Column(
-        Integer,
+        UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
+        index=True,
     )
 
     #Hardware and descriptive attributes (note: to be non nullable later)
@@ -40,4 +43,4 @@ class Machine(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
     provider = relationship("User", back_populates="machines")
-    listings = relationship("Listing", back_populates="machine")
+    listings = relationship("Listing", back_populates="machine", cascade="all, delete")
