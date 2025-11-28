@@ -169,8 +169,6 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
-<<<<<<< HEAD
-=======
 
 # --- For this project ---
 # env / secrets
@@ -189,4 +187,3 @@ dist/
 # OS junk
 .DS_Store
 Thumbs.db
->>>>>>> origin/dev
