@@ -100,6 +100,7 @@ class AuthService:
         metadata = payload.get("user_metadata") or {}
         role = metadata.get("role")
 
+
         if not sub or not email:
             raise ValueError("Invalid JWT payload: missing 'sub' or 'email'.")
 

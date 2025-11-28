@@ -5,6 +5,7 @@ from .repository import ListingRepository
 from fastapi import Depends
 from app.database import get_db
 from app.machines.public import MachinesPublic, get_machines_public
+from app.providers.public import ProvidersPublic, get_providers_public  #NEW LINE
 
 
 class ListingsPublic:
@@ -29,8 +30,13 @@ class ListingsPublic:
 def get_listings_public(
     db: Session = Depends(get_db),
     machines_public: MachinesPublic = Depends(get_machines_public),
+    providers_public: ProvidersPublic = Depends(get_providers_public),  #NEW LINE
 ) -> ListingsPublic:
-
     repo = ListingRepository()
-    service = ListingsService(db=db, listing_repo=repo, machines_public=machines_public)
+    service = ListingsService(
+        db=db,
+        listing_repo=repo,
+        machines_public=machines_public,
+        providers_public=providers_public,  #NEW LINE
+    )
     return ListingsPublic(service)

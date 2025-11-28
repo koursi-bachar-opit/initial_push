@@ -24,6 +24,7 @@ class BookingAdminCreate(BaseModel):
     start_time: datetime
     end_time: datetime
     buyer_user_id: UUID
+    #organization_id: Optional[UUID] = None  #NEW LINE
 
 
 class BookingRequest(BaseModel):
@@ -43,6 +44,7 @@ class BookingRead(BaseModel):
     id: UUID
     listing_id: UUID
     buyer_user_id: UUID
+    #organization_id: Optional[UUID] = None  #NEW LINE
     start_time: datetime
     end_time: datetime
     status: BookingStatus

@@ -25,6 +25,19 @@ class TestConfig:
     DEFAULT_LISTING_PRICE = 10
     DEFAULT_MACHINE_NAME = "Test Machine"
 
+    # In test_config.py or wherever TestConfig is defined
+
+    #Default machine data
+    DEFAULT_MACHINE_HOSTNAME = "test-machine"
+    DEFAULT_MACHINE_REGION = "us-west"
+    DEFAULT_MACHINE_GPU_MODEL = "RTX 4090"
+    DEFAULT_MACHINE_GPU_COUNT = 1
+    DEFAULT_MACHINE_CPU_MODEL = "Intel i9"
+    DEFAULT_MACHINE_CPU_CORES = 8
+    DEFAULT_MACHINE_RAM_GB = 16
+    DEFAULT_MACHINE_STORAGE_GB = 500
+    DEFAULT_MACHINE_NETWORK_MBPS = 1000
+
 
 def get_email_by_role(role: str) -> str:
     """Get a standardized email for a given role."""

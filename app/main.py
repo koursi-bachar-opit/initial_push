@@ -10,6 +10,18 @@ from pydantic import BaseModel
 from app.bookings.routes import router as bookings_router
 from app.listings.routes import router as listings_router
 from app.machines.routes import router as machines_router
+from app.credentials.routes import router as credentials_router
+from app.payments.routes import router as payments_router
+#
+from app.payments.webhooks import router as payments_webhooks_router
+#
+from app.disputes.routes import router as disputes_router
+from app.organizations.routes import router as organizations_router
+from app.providers.routes import router as providers_router
+from app.compliance.routes import router as compliance_router
+from app.invoices.routes import router as invoices_router
+from app.benchmarks.routes import router as benchmarks_router
+
 
 from app.auth.auth import optional_user
 
@@ -41,6 +53,17 @@ app.add_middleware(
 app.include_router(listings_router, prefix="/api/v1/listings", tags=["listings"])
 app.include_router(bookings_router, prefix="/api/v1/bookings", tags=["bookings"])
 app.include_router(machines_router, prefix="/api/v1/machines", tags=["machines"])
+app.include_router(credentials_router, prefix="/api/v1/credentials", tags=["credentials"])
+app.include_router(payments_router, prefix="/api/v1/payments", tags=["payments"])
+#
+app.include_router(payments_webhooks_router, prefix="/api/v1/payments/webhooks", tags=["payments:webhooks"])
+#
+app.include_router(disputes_router, prefix="/api/v1/disputes", tags=["disputes"])
+app.include_router(organizations_router, prefix="/api/v1/organizations", tags=["organizations"])
+app.include_router(providers_router, prefix="/api/v1/providers", tags=["providers"])
+app.include_router(compliance_router, prefix="/api/v1/compliance", tags=["compliance"])
+app.include_router(invoices_router, prefix="/api/v1/invoices", tags=["invoices"])
+app.include_router(benchmarks_router, prefix="/api/v1/benchmarks", tags=["benchmarks"])
 
 
 #App health endpoint

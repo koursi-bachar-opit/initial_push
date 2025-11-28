@@ -6,7 +6,6 @@ from datetime import datetime
 from .repository import AccessCredentialRepository
 from .issuer import CredentialIssuer
 
-from app.bookings.public import BookingsPublic, get_bookings_public
 from .issuer import get_credential_issuer
 
 from uuid import UUID
@@ -17,22 +16,16 @@ class AccessCredentialService:
         self,
         repo: AccessCredentialRepository,
         issuer: CredentialIssuer,
-        bookings_public: BookingsPublic,
+        
     ):
         self.repo = repo
         self.issuer = issuer
-        self.bookings_public = bookings_public
 
 
-    def issue_for_booking(self, booking_id: UUID):
+    def issue_for_booking(self, booking):
         """
         Issues credentials for a booking, but only if the booking is ACTIVE.
         """
-        booking = self.bookings_public.get_booking(booking_id)
-
-        #Use the public interface to check lifecycle state
-        if not self.bookings_public.is_active(booking):
-            raise ValueError("Cannot issue credentials unless booking is ACTIVE")
 
         #Gather related objects
         user = booking.buyer
@@ -53,16 +46,11 @@ class AccessCredentialService:
         )
 
 
-    def revoke_for_booking(self, booking_id: UUID):
+    def revoke_for_booking(self, booking):
         """
         Revoke credentials for a booking.
         """
-        booking = self.bookings_public.get_booking(booking_id)
-        
         credentials = self.repo.get_by_booking_id(booking.id)
-
-        if not (self.bookings_public.is_cancelled(booking) or self.bookings_public.is_completed(booking)):
-            raise ValueError("Booking must be cancelled or completed in order to revoke")
 
         if not credentials:
             return []
@@ -77,19 +65,15 @@ class AccessCredentialService:
         return revoked_list
 
 
-    def get_for_booking(self, booking_id):
+    def get_for_booking(self, booking):
         """
         Return credentials for displaying or auditing.
         """
-        booking = self.bookings_public.get_booking(booking_id)
-        if not self.bookings_public.is_active(booking):
-            return []
-        return self.repo.get_by_booking_id(booking_id)
+        return self.repo.get_by_booking_id(booking.id)
 
 
 def get_access_credential_service(
     db = Depends(get_db),
-    bookings_public: BookingsPublic = Depends(get_bookings_public),
     issuer: CredentialIssuer = Depends(get_credential_issuer),
 ) -> AccessCredentialService:
 
@@ -98,5 +82,4 @@ def get_access_credential_service(
     return AccessCredentialService(
         repo=repo,
         issuer=issuer,
-        bookings_public=bookings_public,
     )

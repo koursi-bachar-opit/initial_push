@@ -16,6 +16,8 @@ alembic==1.14.0
 pydantic==2.9.2
 pydantic-settings==2.6.1
 
+email-validator
+
 # Testing & coverage
 pytest==8.3.3
 pytest-asyncio==0.24.0

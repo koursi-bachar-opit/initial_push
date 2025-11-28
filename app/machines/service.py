@@ -9,6 +9,8 @@ from app.database import get_db
 
 from uuid import UUID
 
+from app.providers.public import ProvidersPublic, get_providers_public  #NEW LINE
+
 #until: Domain exceptions
 # class MachineNotFoundError(Exception):
 #     pass
@@ -22,9 +24,11 @@ class MachinesService:
     (authorization stays in routes).
     """
 
-    def __init__(self, db: Session, machine_repo: MachineRepository):
+    def __init__(self, db: Session, machine_repo: MachineRepository,
+                 providers_public: ProvidersPublic):  #NEW LINE
         self.db = db
         self.machine_repo = machine_repo
+        self.providers_public = providers_public  #NEW LINE
 
 
     def get_machine(self, machine_id: UUID) -> Machine:
@@ -54,9 +58,13 @@ class MachinesService:
         self.db.commit()
 
 
-def get_machines_service(db: Session = Depends(get_db)) -> MachinesService:
+def get_machines_service(
+    db: Session = Depends(get_db),
+    providers_public: ProvidersPublic = Depends(get_providers_public),  #NEW LINE
+) -> MachinesService:
     """
     FastAPI DI: builds a service with a fresh repository instance.
     """
     repo = MachineRepository()
-    return MachinesService(db=db, machine_repo=repo)
+    return MachinesService(db=db, machine_repo=repo,
+                           providers_public=providers_public)  #NEW LINE

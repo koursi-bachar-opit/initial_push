@@ -5,7 +5,7 @@ from uuid import UUID
 from fastapi import Depends
 from app.database import get_db
 
-from .service import BookingsService, get_bookings_service
+from app.bookings.service import BookingsService, get_bookings_service #consider
 
 
 class BookingsPublic(Protocol):
@@ -33,12 +33,19 @@ class BookingsPublic(Protocol):
     def is_cancellable(self, booking) -> bool:
         ...
 
+    def is_ready_for_capture(self, booking) -> bool:
+        ...
+
+    def get_org_bookings_in_period(self, org_id, period_start, period_end):
+        ...
+
 
 class BookingsPublicImpl:
     """
     Concrete implementation of the public facade.
     """
     def __init__(self, service: BookingsService):
+    #def __init__(self, service: "BookingsService"):
         self.service = service
 
     def get_booking(self, booking_id: UUID):
@@ -64,6 +71,17 @@ class BookingsPublicImpl:
             self.service.BookingStatus.REQUESTED,
             self.service.BookingStatus.CONFIRMED,
         }
+    
+    #
+    def is_ready_for_capture(self, booking) -> bool:
+        return (
+            booking.status == self.service.BookingStatus.COMPLETED 
+            and booking.actual_price_charged is not None
+        )
+    #
+
+    def get_org_bookings_in_period(self, org_id, period_start, period_end): #consider: identical naming across public and service
+        return self.service.get_org_bookings_in_period(org_id, period_start, period_end)
 
 
 def get_bookings_public(

@@ -1,0 +1,131 @@
+from typing import Optional
+from sqlalchemy.orm import Session
+
+from .repository import ProviderRepository
+from . import models, schemas
+
+from app.users.public import UsersPublic
+from fastapi import Depends
+
+from app.database import get_db
+from app.users.public import get_users_public
+
+#NOTE: no Machines import, will cause circular dependency
+
+#ProviderProfileService
+class ProviderProfileService:
+    def __init__(
+        self,
+        db: Session,
+        repo: ProviderRepository,
+        users_public: UsersPublic,
+    ):
+        self.db = db
+        self.repo = repo
+        self.users_public = users_public
+
+    def create_profile(self, user_id, data: schemas.ProviderProfileCreate):
+        if self.repo.get_by_user_id(user_id):
+            raise ValueError("User already has a provider profile.")
+        return self.repo.create(user_id, data)
+
+    def update_profile(self, user_id, profile_id, data: schemas.ProviderProfileUpdate):
+        profile = self.repo.get(profile_id)
+        if not profile:
+            raise ValueError("Provider profile not found.")
+        if profile.user_id != user_id:
+            raise ValueError("Forbidden.")
+        return self.repo.update(profile, data)
+
+    def require_profile(self, user_id):
+        profile = self.repo.get_by_user_id(user_id)
+        if not profile:
+            raise ValueError("User is not a provider.")
+        return profile
+
+    def require_verified(self, user_id):
+        profile = self.require_profile(user_id)
+        if profile.verification_status != models.ProviderVerificationStatus.VERIFIED:
+            raise ValueError("Provider not verified.")
+        return profile
+
+#VerificationService
+class VerificationService:
+    def __init__(
+        self,
+        db: Session,
+        repo: ProviderRepository,
+        users_public: UsersPublic,
+    ):
+        self.db = db
+        self.repo = repo
+        self.users_public = users_public
+
+    def create_verification_request(
+        self,
+        user_id,
+        data: schemas.VerificationCreate,
+    ):
+        if data.subject_type == models.VerificationSubject.provider:
+            profile = self.repo.get_by_user_id(user_id)
+            if not profile:
+                raise ValueError("User has no provider profile.")
+            if profile.id != data.subject_id:
+                raise ValueError("Forbidden.")
+        return self.repo.create_verification(data)
+
+    def admin_update_verification(
+        self,
+        admin_user_id,
+        verification_id,
+        new_status: schemas.VerificationStatus,
+        notes: Optional[str] = None,
+    ):
+        if not self.users_public.is_admin_role(admin_user_id):
+            raise ValueError("Admin privileges required.")
+
+        verification = self.repo.get_verification(verification_id)
+        if not verification:
+            raise ValueError("Verification not found.")
+
+        updated = self.repo.update_verification(
+            verification,
+            new_status,
+            notes,
+            admin_user_id,
+        )
+
+        if verification.subject_type == models.VerificationSubject.provider:
+            profile = self.repo.get(verification.subject_id)
+            if not profile:
+                raise ValueError("Provider profile not found.")
+            profile.verification_status = new_status
+            self.db.commit()
+
+        return updated
+
+    def list_verifications(self, subject_type, subject_id):
+        return self.repo.list_verifications_for(subject_type, subject_id)
+
+
+def get_provider_profile_service(
+    db: Session = Depends(get_db),
+    users_public: UsersPublic = Depends(get_users_public),
+) -> ProviderProfileService:
+    repo = ProviderRepository(db)
+    return ProviderProfileService(
+        db=db,
+        repo=repo,
+        users_public=users_public,
+    )
+
+def get_verification_service(
+    db: Session = Depends(get_db),
+    users_public: UsersPublic = Depends(get_users_public),
+) -> VerificationService:
+    repo = ProviderRepository(db)
+    return VerificationService(
+        db=db,
+        repo=repo,
+        users_public=users_public,
+    )

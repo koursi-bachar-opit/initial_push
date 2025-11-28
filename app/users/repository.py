@@ -8,7 +8,6 @@ Repository methods for looking up and creating application users.
 These are keyed by supabase_id (the "sub" field from Supabase JWTs).
 This file is the link between authentication and our DB model.
 """
-
 class UserRepository:
     def get_user_by_supabase_id(self, db: Session, sub: str) -> User | None:
         """

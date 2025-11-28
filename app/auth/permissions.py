@@ -25,3 +25,14 @@ def require_provider_role(
     """
     auth_public.ensure_provider(current_user.id)
     return current_user
+
+
+def require_admin_role(
+    current_user = Depends(get_current_user),
+    auth_public: AuthPublic = Depends(get_auth_public),
+):
+    """
+    Dependency ensuring the current user has the PROVIDER role.
+    """
+    auth_public.ensure_admin(current_user.id)
+    return current_user

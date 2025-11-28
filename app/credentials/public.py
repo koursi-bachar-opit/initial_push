@@ -1,18 +1,44 @@
-from .service import AccessCredentialService
+from typing import Protocol
+from uuid import UUID
+from fastapi import Depends
+from app.database import get_db
+from sqlalchemy.orm import Session
+
+from .service import AccessCredentialService, get_access_credential_service
 
 
-class AccessCredentialPublic:
+class AccessCredentialsPublic(Protocol):
     """
-    Public API for the credentials domain.
+    Public interface exposed by the Credentials domain.
     """
-    def __init__(self, service: AccessCredentialService):
-        self._service = service
-
     def issue_for_booking(self, booking):
-        return self._service.issue_for_booking(booking)
+        ...
 
     def revoke_for_booking(self, booking):
-        return self._service.revoke_for_booking(booking)
+        ...
 
-    def get_for_booking(self, booking_id):
-        return self._service.get_for_booking(booking_id)
+    def get_for_booking(self, booking):
+        ...
+
+
+class AccessCredentialsPublicImpl:
+    """
+    Concrete adapter around AccessCredentialService.
+    """
+    def __init__(self, svc: AccessCredentialService):
+        self.svc = svc
+
+    def issue_for_booking(self, booking):
+        return self.svc.issue_for_booking(booking)
+
+    def revoke_for_booking(self, booking):
+        return self.svc.revoke_for_booking(booking)
+
+    def get_for_booking(self, booking):
+        return self.svc.get_for_booking(booking)
+
+
+def get_credentials_public(
+    svc: AccessCredentialService = Depends(get_access_credential_service)
+) -> AccessCredentialsPublic:
+    return AccessCredentialsPublicImpl(svc)

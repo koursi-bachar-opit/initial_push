@@ -18,6 +18,9 @@ class AuthPublic(Protocol):
     def ensure_provider(self, user_id: UUID) -> None:
         ...
 
+    def ensure_admin(self, user_id: UUID) -> None:
+        ...
+
 
 class AuthPublicImpl:
     """
@@ -51,6 +54,14 @@ class AuthPublicImpl:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Provider role required.",
+            )
+        
+    def ensure_admin(self, user_id: UUID) -> None:
+        user = self._get_user_or_403(user_id)
+        if not self.users_public.is_admin_role(user):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Admin role required.",
             )
 
 

@@ -10,6 +10,8 @@ from .models import Listing
 
 from uuid import UUID
 
+from app.providers.public import ProvidersPublic, get_providers_public  #NEW LINE
+
 # class MachineOwnershipError(Exception):
 #     """Raised when a provider tries to list a machine they do not own."""
 #     pass
@@ -21,23 +23,24 @@ class ListingsService:
         db: Session,
         listing_repo: ListingRepository,
         machines_public: MachinesPublic,
+        providers_public: ProvidersPublic,  #NEW LINE
     ):
         self.db = db
         self.listing_repo = listing_repo
         self.machines_public = machines_public
+        self.providers_public = providers_public  #NEW LINE
 
     def create_listing(self, provider_id: UUID, payload: ListingCreate):
         """
         Business logic + validation for creating listings.
         """
-        #validate machine ownership
 
-        #refactor: machine repository call will be delegated to public interface
+        self.providers_public.require_verified_provider(provider_id)  #NEW LINE
         
         if not self.machines_public.provider_owns_machine(
             provider_id, payload.machine_id
         ):
-            raise ValueError()
+            raise ValueError("You must own this machine.")
             # raise MachineOwnershipError()
 
         # Create listing in repository
@@ -59,7 +62,12 @@ class ListingsService:
 def get_listings_service(
     db: Session = Depends(get_db),
     machines_public: MachinesPublic = Depends(get_machines_public),
+    providers_public: ProvidersPublic = Depends(get_providers_public),  #NEW LINE
 ) -> ListingsService:
-
     repo = ListingRepository()
-    return ListingsService(db=db, listing_repo=repo, machines_public=machines_public)
+    return ListingsService(
+        db=db,
+        listing_repo=repo,
+        machines_public=machines_public,
+        providers_public=providers_public,  #NEW LINE
+    )

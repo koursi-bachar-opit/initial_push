@@ -68,3 +68,22 @@ class BookingRepository:
     def get_booking_by_id(self, db: Session, booking_id: UUID) -> Booking | None:
         """Fetches a booking by its primary key."""
         return db.get(Booking, booking_id)
+    
+    
+    def list_bookings_for_org_in_period(
+        self,
+        db: Session,
+        org_id: UUID,
+        period_start,
+        period_end,
+    ):
+        return (
+            db.query(Booking)
+            .filter(
+                Booking.organization_id == org_id,
+                Booking.end_time >= period_start,
+                Booking.start_time <= period_end,
+            )
+            .order_by(Booking.start_time.asc())
+            .all()
+        )

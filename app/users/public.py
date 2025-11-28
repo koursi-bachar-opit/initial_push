@@ -37,6 +37,9 @@ class UsersPublic(Protocol):
     
     def is_provider_role(self, user: User) -> bool:
         ...
+
+    def is_admin_role(self, user: User) -> bool:
+        ...
     #
 
 class UsersPublicImpl:
@@ -65,12 +68,14 @@ class UsersPublicImpl:
     def get_or_create_user_by_supabase_id(self, sub: str, email: str, role: UserRole) -> User:
         return self.repo.get_or_create_user_by_supabase_id(self.db, sub=sub, email=email, role=role)
     
-    from .models import UserRole
     def is_buyer_role(self, user: User) -> bool:
         return user.role == UserRole.BUYER
     
     def is_provider_role(self, user: User) -> bool:
         return user.role == UserRole.PROVIDER
+    
+    def is_admin_role(self, user: User) -> bool:
+        return user.role == UserRole.ADMIN
     #
 
 
