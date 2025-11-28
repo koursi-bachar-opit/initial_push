@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1 class="text-3xl font-bold mb-8 text-gray-900 dark:text-white">Listings</h1>
+
+<!--Tabs-->
+<div class="mb-6 border-b border-gray-200 dark:border-gray-700">
+    <ul class="flex flex-wrap -mb-px text-sm font-medium text-center text-gray-500 dark:text-gray-400"
+        id="listingTabs" role="tablist">
+        <li class="mr-2">
+            <button class="inline-block p-4 border-b-2 rounded-t-lg text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white border-transparent hover:border-blue-600 dark:hover:border-blue-500 transition"
+                    id="all-listings-tab"
+                    data-tabs-target="#all-listings"
+                    type="button"
+                    role="tab"
+                    aria-controls="all-listings"
+                    aria-selected="true">
+                All Listings
+            </button>
+        </li>
+
+        {% if user %}
+        <li class="mr-2">
+            <button class="inline-block p-4 border-b-2 rounded-t-lg text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white border-transparent hover:border-blue-600 dark:hover:border-blue-500 transition"
+                    id="my-listings-tab"
+                    data-tabs-target="#my-listings"
+                    type="button"
+                    role="tab"
+                    aria-controls="my-listings"
+                    aria-selected="false">
+                My Listings
+            </button>
+        </li>
+        {% endif %}
+    </ul>
+</div>
+
+<!--All Listings-->
+<div id="all-listings" role="tabpanel" aria-labelledby="all-listings-tab">
+    <div id="listingsGrid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+</div>
+
+<!--My Listings-->
+{% if user %}
+<div id="my-listings" class="hidden" role="tabpanel" aria-labelledby="my-listings-tab">
+    <div id="myListingsGrid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+</div>
+{% endif %}
+
+<!--Detail Modal-->
+<div id="listingDetailsModal" tabindex="-1" aria-hidden="true"
+     class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 
+     justify-center items-center w-full md:inset-0 h-modal md:h-full">
+
+    <div class="relative p-4 w-full max-w-lg h-full md:h-auto">
+        <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+            
+            <!--Modal Header-->
+            <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 id="modalTitle" class="text-xl font-semibold text-gray-900 dark:text-white"></h3>
+                <button type="button"
+                        class="text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-lg text-sm p-1.5"
+                        data-modal-hide="listingDetailsModal">
+                    X
+                </button>
+            </div>
+
+            <!--Modal Body-->
+            <div class="p-4 space-y-3">
+                <p id="modalDescription" class="text-gray-700 dark:text-gray-300"></p>
+
+                <div class="flex items-center gap-2">
+                    <span class="font-medium text-gray-800 dark:text-gray-200">Price:</span>
+                    <span id="modalPrice" class="text-blue-600 dark:text-blue-400 font-semibold"></span>
+                </div>
+
+                <div id="modalMeta" class="text-sm text-gray-500 dark:text-gray-400"></div>
+            </div>
+
+            <!--Modal Footer-->
+            <div class="flex justify-end p-4 border-t border-gray-200 dark:border-gray-700">
+                <button data-modal-hide="listingDetailsModal"
+                        class="mr-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition">
+                    Close
+                </button>
+
+                {% if user and user.role == "buyer" %}
+                <button id="modalBookButton"
+                        class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 transition">
+                    Request Booking
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="module" src="/static/js/listings.js"></script>
+{% endblock %}

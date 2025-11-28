@@ -1,0 +1,62 @@
+from sqlalchemy.orm import Session
+
+from .repository import MachineRepository
+from .schemas import MachineCreate
+from .models import Machine
+
+from fastapi import Depends
+from app.database import get_db
+
+from uuid import UUID
+
+#until: Domain exceptions
+# class MachineNotFoundError(Exception):
+#     pass
+# class NotProviderMachineError(Exception):
+#     pass
+
+
+class MachinesService:
+    """
+    Service layer for machine CRUD and domain rules
+    (authorization stays in routes).
+    """
+
+    def __init__(self, db: Session, machine_repo: MachineRepository):
+        self.db = db
+        self.machine_repo = machine_repo
+
+
+    def get_machine(self, machine_id: UUID) -> Machine:
+        machine = self.machine_repo.get_machine(self.db, machine_id)
+        if not machine:
+            raise ValueError()  #MachineNotFoundError()
+        return machine
+
+    def list_machines_for_provider(self, provider_id: UUID) -> list[Machine]:
+        return self.machine_repo.list_machines_for_provider(self.db, provider_id)
+
+
+    def create_machine(self, payload: MachineCreate) -> Machine:
+        return self.machine_repo.create_machine(self.db, payload)
+
+
+    def delete_machine(self, machine_id: UUID, provider_id: UUID):
+        machine = self.machine_repo.get_machine(self.db, machine_id)
+        if not machine:
+            raise ValueError()  #MachineNotFoundError()
+
+        # Business rule: providers can only delete their own machines
+        if machine.provider_id != provider_id:
+            raise ValueError()  #NotProviderMachineError()
+
+        self.db.delete(machine)
+        self.db.commit()
+
+
+def get_machines_service(db: Session = Depends(get_db)) -> MachinesService:
+    """
+    FastAPI DI: builds a service with a fresh repository instance.
+    """
+    repo = MachineRepository()
+    return MachinesService(db=db, machine_repo=repo)
