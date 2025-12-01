@@ -1,0 +1,126 @@
+import pytest
+from unittest.mock import Mock, create_autospec, patch
+from sqlalchemy.orm import Session
+
+from app.users.repository import UserRepository
+from app.users.models import User, UserRole
+
+
+class TestUserRepository:
+    #def get_user_by_supabase_id(self, db: Session, sub: str) -> User | None:
+    def test_get_user_by_supabase_id_returns_user_when_exists(self):
+        # Arrange
+        mock_db = Mock()
+        mock_user = Mock()
+        mock_db.query.return_value.filter_by.return_value.first.return_value = mock_user
+        
+        # Act
+        result = UserRepository().get_user_by_supabase_id(mock_db, "test_id")
+        
+        # Assert
+        assert result == mock_user
+
+    def test_get_user_by_supabase_id_returns_none_when_not_found(self):
+        # Arrange  
+        mock_db = Mock()
+        mock_db.query.return_value.filter_by.return_value.first.return_value = None
+        
+        # Act
+        result = UserRepository().get_user_by_supabase_id(mock_db, "nonexistent_id")
+        
+        # Assert
+        assert result is None
+
+    #def create_user(self,db: Session,email: str,supabase_id: str | None = None, role: UserRole = UserRole.BUYER, ) -> User:
+    def test_create_user_successfully_creates_user(self):
+        mock_db = Mock()
+        repository = UserRepository()
+        
+        result = repository.create_user(
+            mock_db, "test@example.com", "auth|123", UserRole.BUYER
+        )
+        
+        #Just verify the database operations happened
+        assert mock_db.add.called
+        assert mock_db.commit.called  
+        assert result is not None
+
+    def test_create_user_auto_generates_supabase_id_when_none(self):
+        mock_db = Mock()
+        repository = UserRepository()
+        
+        result = repository.create_user(
+            mock_db, "test@example.com", None, UserRole.BUYER
+        )
+
+        assert mock_db.add.called
+        assert mock_db.commit.called  
+        assert result is not None
+
+    # def get_or_create_user_by_supabase_id(self, db: Session, sub: str, email: str, role: str | None) -> User:
+    def test_get_or_create_returns_existing_user_when_found(self):
+        """
+        Test that when a user already exists with the given supabase_id,
+        the method returns the existing user instead of creating a new one.
+        """
+
+        mock_db = Mock()
+        repository = UserRepository()
+        
+        #create a mock existing user
+        mock_existing_user = Mock(spec=User)
+        
+        #Mock the internal method call
+        with patch.object(repository, 'get_user_by_supabase_id') as mock_get_user:
+            with patch.object(repository, 'create_user') as mock_create_user:
+                #Make get_user return an existing user
+                mock_get_user.return_value = mock_existing_user
+                
+                #Act
+                result = repository.get_or_create_user_by_supabase_id(
+                    mock_db, "auth|123", "test@example.com", "buyer"
+                )
+                
+                #Assert
+                assert result == mock_existing_user
+                mock_get_user.assert_called_once_with(mock_db, "auth|123")
+                mock_create_user.assert_not_called()
+
+        #Mock get_user_by_supabase_id to return an existing user
+        #Verify create_user is not called
+
+    def test_get_or_create_creates_new_user_when_not_found(self):
+        """
+        Test that when no user exists with the given supabase_id,
+        the method creates a new user with the correct role conversion.
+        """
+        #Mock get_user_by_supabase_id to return None
+        #and verify create_user IS called with the right parameters
+        #including role conversion from string to UserRole enum
+        mock_db = Mock()
+        repository = UserRepository()
+
+        #Mock the internal method call
+        with patch.object(repository, 'get_user_by_supabase_id') as mock_get_user:
+            with patch.object(repository, 'create_user') as mock_create_user:
+                #Make get_user return an existing user
+                mock_get_user.return_value = None
+
+                mock_new_user = Mock()
+                mock_create_user.return_value = mock_new_user
+                
+                #Act
+                result = repository.get_or_create_user_by_supabase_id(
+                    mock_db, "auth|123", "test@example.com", "buyer"
+                )
+
+                assert result == mock_new_user
+                mock_get_user.assert_called_once_with(mock_db, "auth|123")
+                
+                #Assert
+                mock_create_user.assert_called_once_with(
+                    mock_db,
+                    email="test@example.com",
+                    supabase_id="auth|123",
+                    role=UserRole.BUYER  #Tests the string -> enum conversion
+                )
