@@ -7,7 +7,7 @@ from .schemas import (
     WipeAttestationUpdateStatus,
 )
 from .service import ComplianceService, get_compliance_service
-from app.auth.permissions import require_provider_role, require_admin_role
+from app.auth.public import ensure_provider, ensure_admin
 
 
 router = APIRouter()
@@ -17,13 +17,13 @@ router = APIRouter()
 @router.post(
     "/attestations",
     response_model=WipeAttestationRead,
-    dependencies=[Depends(require_provider_role)],
 )
 def submit_attestation(
     data: WipeAttestationCreate,
-    provider_id: UUID = Depends(require_provider_role),
+    current_user = Depends(ensure_provider),
     service: ComplianceService = Depends(get_compliance_service),
 ):
+    provider_id = current_user.id
     return service.submit_attestation(provider_id, data)
 
 
@@ -31,7 +31,7 @@ def submit_attestation(
 @router.patch(
     "/attestations/{attestation_id}/review",
     response_model=WipeAttestationRead,
-    dependencies=[Depends(require_admin_role)],
+    dependencies=[Depends(ensure_admin)],
 )
 def review_attestation(
     attestation_id: UUID,
@@ -45,7 +45,7 @@ def review_attestation(
 @router.get(
     "/attestations",
     response_model=list[WipeAttestationRead],
-    dependencies=[Depends(require_admin_role)],
+    dependencies=[Depends(ensure_admin)],
 )
 def list_all(service: ComplianceService = Depends(get_compliance_service)):
     return service.list_all_attestations()

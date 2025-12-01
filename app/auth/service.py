@@ -23,7 +23,6 @@ class AuthService:
         self.users_public = users_public
         #
 
-    #Delete _decode_supabase_jwt from auth.py
     def _decode_supabase_jwt(self, token: str) -> dict:
         """
         Decode the JWT we get from Supabase.
@@ -41,7 +40,6 @@ class AuthService:
                 options={"verify_aud": False},
             )
         except PyJWTError as e:
-            #raise ValueError so the caller can turn this into a 401
             raise ValueError(f"Invalid or expired JWT: {str(e)}")
 
     def _get_or_create_user(
@@ -99,7 +97,6 @@ class AuthService:
         email = payload.get("email") or payload.get("user_metadata", {}).get("email")
         metadata = payload.get("user_metadata") or {}
         role = metadata.get("role")
-
 
         if not sub or not email:
             raise ValueError("Invalid JWT payload: missing 'sub' or 'email'.")

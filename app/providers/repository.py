@@ -12,7 +12,7 @@ class ProviderRepository:
         self.db = db
 
 
-    # ProviderProfile CRUD
+    #ProviderProfile CRUD
     def get(self, profile_id) -> Optional[models.ProviderProfile]:
         return (
             self.db.query(models.ProviderProfile)

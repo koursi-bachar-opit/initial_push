@@ -31,3 +31,5 @@ mypy==1.11.2
 
 # Auth
 PyJWT>=2.9.0
+
+stripe

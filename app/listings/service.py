@@ -11,11 +11,12 @@ from .models import Listing
 from uuid import UUID
 
 from app.providers.public import ProvidersPublic, get_providers_public  #NEW LINE
+from app.provider_agent.client import ProviderAgentClient, get_agent_client
+from app.metrics.public import MetricsPublic, get_metrics_public
 
 # class MachineOwnershipError(Exception):
 #     """Raised when a provider tries to list a machine they do not own."""
 #     pass
-
 
 class ListingsService:
     def __init__(
@@ -24,11 +25,15 @@ class ListingsService:
         listing_repo: ListingRepository,
         machines_public: MachinesPublic,
         providers_public: ProvidersPublic,  #NEW LINE
+        metrics_public: MetricsPublic,
+        agent: ProviderAgentClient,
     ):
         self.db = db
         self.listing_repo = listing_repo
         self.machines_public = machines_public
         self.providers_public = providers_public  #NEW LINE
+        self.metrics_public = metrics_public
+        self.agent = agent
 
     def create_listing(self, provider_id: UUID, payload: ListingCreate):
         """
@@ -40,17 +45,47 @@ class ListingsService:
         if not self.machines_public.provider_owns_machine(
             provider_id, payload.machine_id
         ):
-            raise ValueError("You must own this machine.")
-            # raise MachineOwnershipError()
+            raise ValueError("You must own this machine.")  #consider: raise MachineOwnershipError()
 
-        # Create listing in repository
+        #Create listing in repository
         listing = Listing(**payload.model_dump())
         listing = self.listing_repo.create_listing(self.db, listing)
         return listing
     
+
     def get_listing_by_id(self, listing_id: UUID) -> Listing | None:
-        """Get a single listing by ID."""
+        """Get a single listing by ID - for internal use."""
         return self.listing_repo.get_listing_by_id(self.db, listing_id)
+
+
+    #refactor to move collect metrics elsewhere
+    def search_listings_by_name(self, name: str):
+        """Search listings by name with real-time metrics - for customer search."""
+        listings = self.listing_repo.search_by_title(self.db, name)
+        
+        results = []
+        for listing in listings:
+            #collect metrics for each listing in search results
+            metrics_data = self._collect_listing_metrics(listing)
+            results.append({
+                "listing": listing,
+                "latest_metrics": metrics_data
+            })
+        
+        return results
+
+
+    def _collect_listing_metrics(self, listing: Listing):
+        """Helper to collect metrics for a single listing."""
+        machine = listing.machine
+        raw = self.agent.collect_metrics_raw(machine.id)
+        self.metrics_public.ingest_raw_metrics(
+            machine_id=machine.id,
+            raw=raw,
+            provider_id=machine.provider_id,
+        )
+        return self.metrics_public.get_latest_metrics(machine.id)
+
 
     def list_listings(self):
         """
@@ -62,7 +97,9 @@ class ListingsService:
 def get_listings_service(
     db: Session = Depends(get_db),
     machines_public: MachinesPublic = Depends(get_machines_public),
-    providers_public: ProvidersPublic = Depends(get_providers_public),  #NEW LINE
+    providers_public: ProvidersPublic = Depends(get_providers_public),
+    metrics_public: MetricsPublic = Depends(get_metrics_public),         # NEW
+    agent: ProviderAgentClient = Depends(get_agent_client),              # NEW
 ) -> ListingsService:
     repo = ListingRepository()
     return ListingsService(
@@ -70,4 +107,6 @@ def get_listings_service(
         listing_repo=repo,
         machines_public=machines_public,
         providers_public=providers_public,  #NEW LINE
+        metrics_public=metrics_public,     
+        agent=agent,                       
     )

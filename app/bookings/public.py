@@ -1,11 +1,9 @@
 from typing import Protocol
-from sqlalchemy.orm import Session
 from uuid import UUID
 
 from fastapi import Depends
-from app.database import get_db
 
-from app.bookings.service import BookingsService, get_bookings_service #consider
+from .service import BookingsService, get_bookings_service #consider
 
 
 class BookingsPublic(Protocol):

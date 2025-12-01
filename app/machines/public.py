@@ -29,6 +29,7 @@ class MachinesPublicImpl:
     def __init__(self, service: MachinesService):
         self.service = service
 
+    #refactor
     def provider_owns_machine(self, provider_id: UUID, machine_id: UUID) -> bool:
         #use machines service to determine ownership
         try:

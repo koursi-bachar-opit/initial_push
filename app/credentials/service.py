@@ -10,16 +10,18 @@ from .issuer import get_credential_issuer
 
 from uuid import UUID
 
+from app.notifications.public import NotificationsPublic, get_notifications_public
 
 class AccessCredentialService:
     def __init__(
         self,
         repo: AccessCredentialRepository,
         issuer: CredentialIssuer,
-        
+        notifications_public: NotificationsPublic,  
     ):
         self.repo = repo
         self.issuer = issuer
+        self.notifications = notifications_public
 
 
     def issue_for_booking(self, booking):
@@ -39,11 +41,15 @@ class AccessCredentialService:
         )
 
         # 4. Persist
-        return self.repo.create(
+        saved = self.repo.create(
             booking_id=booking.id,
             vpn_config_uri=payload.vpn_config_uri,
             ssh_public_key_fingerprint=payload.ssh_public_key_fingerprint,
         )
+
+        self.notifications.credentials_issued(booking.buyer, saved)
+
+        return saved
 
 
     def revoke_for_booking(self, booking):
@@ -62,6 +68,8 @@ class AccessCredentialService:
             updated = self.repo.mark_revoked(credential.id)
             revoked_list.append(updated)
 
+        self.notifications.credentials_revoked(booking.buyer, updated)
+
         return revoked_list
 
 
@@ -75,6 +83,7 @@ class AccessCredentialService:
 def get_access_credential_service(
     db = Depends(get_db),
     issuer: CredentialIssuer = Depends(get_credential_issuer),
+    notifications_public: NotificationsPublic = Depends(get_notifications_public),
 ) -> AccessCredentialService:
 
     repo = AccessCredentialRepository(db)
@@ -82,4 +91,5 @@ def get_access_credential_service(
     return AccessCredentialService(
         repo=repo,
         issuer=issuer,
+        notifications_public=notifications_public,
     )

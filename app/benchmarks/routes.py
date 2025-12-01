@@ -1,9 +1,7 @@
 from fastapi import APIRouter, Depends
 from uuid import UUID
 
-#from app.auth.permissions import require_authenticated
-
-from app.auth.permissions import require_provider_role
+from app.auth.public import ensure_provider
 from .service import BenchmarkService, get_benchmark_service
 from .schemas import BenchmarkCreate, BenchmarkRead
 
@@ -14,7 +12,7 @@ router = APIRouter()
 def upload_machine_benchmark(
     machine_id: UUID,
     payload: BenchmarkCreate,
-    user=Depends(require_provider_role),  #ensures provider role
+    user=Depends(ensure_provider),  #ensures provider role
     service: BenchmarkService = Depends(get_benchmark_service),
 ):
     return service.create_benchmark(

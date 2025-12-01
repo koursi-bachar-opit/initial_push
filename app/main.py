@@ -21,6 +21,7 @@ from app.providers.routes import router as providers_router
 from app.compliance.routes import router as compliance_router
 from app.invoices.routes import router as invoices_router
 from app.benchmarks.routes import router as benchmarks_router
+from app.metrics.routes import router as metrics_router
 
 
 from app.auth.auth import optional_user
@@ -64,6 +65,7 @@ app.include_router(providers_router, prefix="/api/v1/providers", tags=["provider
 app.include_router(compliance_router, prefix="/api/v1/compliance", tags=["compliance"])
 app.include_router(invoices_router, prefix="/api/v1/invoices", tags=["invoices"])
 app.include_router(benchmarks_router, prefix="/api/v1/benchmarks", tags=["benchmarks"])
+app.include_router(metrics_router, prefix="/api/v1/metrics", tags=["metrics"])
 
 
 #App health endpoint
@@ -97,7 +99,7 @@ async def store_session(payload: StoreSession, response: Response):
         key="access_token",
         value=payload.token,
         httponly=True,
-        secure=False,  #set True when using HTTPS
+        secure=True,
         samesite="lax",
         path="/"
     )

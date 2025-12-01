@@ -1,6 +1,6 @@
 from fastapi import Depends
 from dataclasses import dataclass
-from app.credentials.agent_client import ProviderAgentClient, get_agent_client
+from app.provider_agent.client import ProviderAgentClient, get_agent_client
 
 
 @dataclass

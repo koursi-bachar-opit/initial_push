@@ -22,6 +22,7 @@ class PaymentStatus(str, enum.Enum):
     CAPTURED = "captured"
     REFUNDED = "refunded"
     FAILED = "failed"
+    CANCELLED = "cancelled"
 
 
 #Payment model

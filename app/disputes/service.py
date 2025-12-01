@@ -18,6 +18,7 @@ from .schemas import DisputeCreate, DisputeResolution
 from app.bookings.public import get_bookings_public
 from app.payments.public import get_payments_public
 
+from app.notifications.public import NotificationsPublic, get_notifications_public
 
 class DisputeService:
     """
@@ -39,11 +40,13 @@ class DisputeService:
         repo: DisputeRepository,
         bookings_public: BookingsPublic,
         payments_public: PaymentsPublic,
+        notifications_public: NotificationsPublic,
     ):
         self.db = db
         self.repo = repo
         self.bookings_public = bookings_public
         self.payments_public = payments_public
+        self.notifications = notifications_public
 
 
     #Helpers
@@ -97,6 +100,9 @@ class DisputeService:
             user_id=user_id,
             reason=payload.reason,
         )
+
+        self.notifications.dispute_opened(dispute, user_id)
+
         return dispute
 
 
@@ -194,6 +200,9 @@ class DisputeService:
                 resolution_notes=payload.resolution_notes,
                 resolved_at=now,
             )
+
+            self.notifications.dispute_resolved(dispute, dispute.user) #consider: pass decision
+            
             return updated
 
         #Deny
@@ -204,6 +213,9 @@ class DisputeService:
                 resolution_notes=payload.resolution_notes,
                 resolved_at=now,
             )
+
+            self.notifications.dispute_resolved(dispute, dispute.user) #consider: pass decision
+            
             return updated
 
         else:
@@ -235,12 +247,13 @@ def get_disputes_service(
     db: Session = Depends(get_db),
     bookings_public: BookingsPublic = Depends(get_bookings_public),
     payments_public: PaymentsPublic = Depends(get_payments_public),
+    notifications_public: NotificationsPublic = Depends(get_notifications_public),
 ) -> DisputeService:
-
     repo = DisputeRepository(db)
     return DisputeService(
         db=db,
         repo=repo,
         bookings_public=bookings_public,
         payments_public=payments_public,
+        notifications_public=notifications_public,
     )

@@ -25,3 +25,13 @@ class ListingRepository:
     def get_listing_by_id(self, db: Session, listing_id: UUID) -> Listing | None:
         """Fetch a listing by its primary key so search results are deterministic."""
         return db.get(Listing, listing_id)
+    
+    def search_by_title(self, db: Session, title: str):
+        """Search listings by name with partial matching."""
+        if not title or not title.strip():
+            return []
+            
+        search_term = f"%{title.strip()}%"
+        return db.query(Listing).filter(
+            Listing.title.ilike(search_term)
+        ).order_by(Listing.title.asc()).all()

@@ -21,6 +21,9 @@ from app.providers.models import *
 from app.invoices.models import *
 from app.benchmarks.models import *
 
+from app.metrics.models import *
+
+
 
 from dotenv import load_dotenv
 load_dotenv()

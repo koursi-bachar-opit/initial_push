@@ -3,7 +3,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from app.auth.permissions import require_admin_role
+from app.auth.public import ensure_admin
 from app.organizations.public import OrganizationsPublic, get_organizations_public #type: ignore
 from app.auth.auth import get_current_user
 from app.invoices.schemas import InvoiceCreate, InvoiceListItem, InvoiceRead
@@ -30,7 +30,7 @@ def _user_org_ids(current_user) -> list[UUID]:
 def generate_invoice_admin(
     invoice_in: InvoiceCreate,
     service: InvoiceService = Depends(get_invoice_service),
-    admin_user=Depends(require_admin_role),
+    admin_user=Depends(ensure_admin),
 ):
     try:
         invoice = service.generate_invoice(
@@ -51,7 +51,7 @@ def generate_invoice_admin(
 )
 def list_all_invoices_admin(
     service: InvoiceService = Depends(get_invoice_service),
-    admin_user=Depends(require_admin_role),
+    admin_user=Depends(ensure_admin),
     skip: int = 0,
     limit: int = 100,
 ):
@@ -70,7 +70,7 @@ def list_all_invoices_admin(
 def finalize_invoice_admin(
     invoice_id: UUID,
     service: InvoiceService = Depends(get_invoice_service),
-    admin_user=Depends(require_admin_role),
+    admin_user=Depends(ensure_admin),
 ):
     try:
         invoice = service.finalize_invoice(
@@ -92,7 +92,7 @@ def finalize_invoice_admin(
 def void_invoice_admin(
     invoice_id: UUID,
     service: InvoiceService = Depends(get_invoice_service),
-    admin_user=Depends(require_admin_role),
+    admin_user=Depends(ensure_admin),
 ):
     try:
         invoice = service.void_invoice(

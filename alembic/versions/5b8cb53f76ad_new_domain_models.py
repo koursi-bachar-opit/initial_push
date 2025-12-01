@@ -1,8 +1,8 @@
 """New domain models
 
-Revision ID: f55183592e49
+Revision ID: 5b8cb53f76ad
 Revises: 
-Create Date: 2025-11-28 07:43:16.280967
+Create Date: 2025-11-30 21:04:35.605143
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'f55183592e49'
+revision: str = '5b8cb53f76ad'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -97,7 +97,7 @@ def upgrade() -> None:
     )
     op.create_table('verifications',
     sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('subject_type', sa.Enum('provider', 'machine', name='verification_subject'), nullable=False),
+    sa.Column('subject_type', sa.Enum('PROVIDER', 'MACHINE', name='verification_subject'), nullable=False),
     sa.Column('subject_id', sa.UUID(), nullable=False),
     sa.Column('status', sa.Enum('PENDING', 'VERIFIED', 'REJECTED', name='verification_status'), nullable=False),
     sa.Column('performed_by_admin_id', sa.UUID(), nullable=True),
@@ -116,6 +116,21 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_listings_machine_id'), 'listings', ['machine_id'], unique=False)
+    op.create_table('metric_samples',
+    sa.Column('id', sa.UUID(), nullable=False),
+    sa.Column('machine_id', sa.UUID(), nullable=False),
+    sa.Column('recorded_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('gpu_util', sa.Float(), nullable=True),
+    sa.Column('cpu_util', sa.Float(), nullable=True),
+    sa.Column('mem_used_gb', sa.Float(), nullable=True),
+    sa.Column('net_rx_mb', sa.Float(), nullable=True),
+    sa.Column('net_tx_mb', sa.Float(), nullable=True),
+    sa.ForeignKeyConstraint(['machine_id'], ['machines.id'], ondelete='CASCADE'),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_metric_samples_machine_id'), 'metric_samples', ['machine_id'], unique=False)
+    op.create_index('ix_metric_samples_machine_time', 'metric_samples', ['machine_id', 'recorded_at'], unique=False)
+    op.create_index(op.f('ix_metric_samples_recorded_at'), 'metric_samples', ['recorded_at'], unique=False)
     op.create_table('bookings',
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('buyer_user_id', sa.UUID(), nullable=False),
@@ -181,7 +196,7 @@ def upgrade() -> None:
     sa.Column('processor_ref', sa.String(), nullable=False),
     sa.Column('amount', sa.Numeric(precision=10, scale=2), nullable=False),
     sa.Column('currency', sa.String(), nullable=False),
-    sa.Column('status', sa.Enum('AUTHORIZED', 'CAPTURED', 'REFUNDED', 'FAILED', name='payment_status_enum'), nullable=False),
+    sa.Column('status', sa.Enum('AUTHORIZED', 'CAPTURED', 'REFUNDED', 'FAILED', 'CANCELLED', name='payment_status_enum'), nullable=False),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False),
     sa.ForeignKeyConstraint(['booking_id'], ['bookings.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
@@ -222,6 +237,10 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_bookings_listing_id'), table_name='bookings')
     op.drop_index(op.f('ix_bookings_buyer_user_id'), table_name='bookings')
     op.drop_table('bookings')
+    op.drop_index(op.f('ix_metric_samples_recorded_at'), table_name='metric_samples')
+    op.drop_index('ix_metric_samples_machine_time', table_name='metric_samples')
+    op.drop_index(op.f('ix_metric_samples_machine_id'), table_name='metric_samples')
+    op.drop_table('metric_samples')
     op.drop_index(op.f('ix_listings_machine_id'), table_name='listings')
     op.drop_table('listings')
     op.drop_table('verifications')

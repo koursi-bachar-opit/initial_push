@@ -32,7 +32,8 @@ class InvoiceRepository:
             status=status,
         )
         self.db.add(invoice)
-        self.db.flush()  # get id
+        self.db.commit()
+        self.db.refresh(invoice)
         return invoice
 
     def get(self, invoice_id: UUID) -> Optional[Invoice]:
@@ -96,5 +97,6 @@ class InvoiceRepository:
     ) -> Invoice:
         invoice.status = new_status
         self.db.add(invoice)
-        self.db.flush()
+        self.db.commit()
+        self.db.refresh(invoice)
         return invoice

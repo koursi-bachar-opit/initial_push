@@ -15,6 +15,7 @@ from app.bookings.public import BookingsPublic, get_bookings_public
 from app.payments.public import PaymentsPublic, get_payments_public
 from app.organizations.public import OrganizationsPublic, get_organizations_public
 
+from app.notifications.public import NotificationsPublic, get_notifications_public
 
 @dataclass
 class BookingSummary:
@@ -48,12 +49,14 @@ class InvoiceService:
         bookings_public: BookingsPublic,
         payments_public: PaymentsPublic,
         organizations_public: OrganizationsPublic,
+        notifications_public: NotificationsPublic,
     ) -> None:
         self.db = db
         self.repo = repo
         self.bookings_public = bookings_public
         self.payments_public = payments_public
         self.organizations_public = organizations_public
+        self.notifications = notifications_public
 
     #Public API: generation/lifecycle
     def generate_invoice(
@@ -94,8 +97,8 @@ class InvoiceService:
             status=InvoiceStatus.PENDING,
         )
 
-        self.db.commit()
-        self.db.refresh(invoice)
+        self.notifications.invoice_generated(org, invoice)
+
         return invoice
 
     def list_org_invoices(
@@ -118,6 +121,7 @@ class InvoiceService:
             skip=skip,
             limit=limit,
         )
+
         return invoices
 
     def list_all_invoices(
@@ -163,9 +167,10 @@ class InvoiceService:
         if invoice.status != InvoiceStatus.PENDING:
             raise ValueError("Only pending invoices can be finalized.")
 
-        self.repo.update_status(invoice, InvoiceStatus.FINALIZED)
-        self.db.commit()
-        self.db.refresh(invoice)
+        invoice = self.repo.update_status(invoice, InvoiceStatus.FINALIZED)
+
+        self.notifications.invoice_finalized(invoice.organization, invoice)
+
         return invoice
 
     def void_invoice(
@@ -184,9 +189,7 @@ class InvoiceService:
         if invoice.status == InvoiceStatus.PAID:
             raise ValueError("Cannot void a paid invoice.")
 
-        self.repo.update_status(invoice, InvoiceStatus.VOID)
-        self.db.commit()
-        self.db.refresh(invoice)
+        invoice = self.repo.update_status(invoice, InvoiceStatus.VOID)
         return invoice
 
     def mark_invoice_paid(
@@ -208,9 +211,7 @@ class InvoiceService:
         if invoice.status != InvoiceStatus.FINALIZED:
             raise ValueError("Only finalized invoices can be marked as paid.")
 
-        self.repo.update_status(invoice, InvoiceStatus.PAID)
-        self.db.commit()
-        self.db.refresh(invoice)
+        invoice = self.repo.update_status(invoice, InvoiceStatus.PAID)
         return invoice
 
     #Helpers
@@ -247,13 +248,14 @@ class InvoiceService:
                 refunded += p.amount
 
         return captured - refunded
-    
+
 
 def get_invoice_service(
     db: Session = Depends(get_db),
     bookings_public: BookingsPublic = Depends(get_bookings_public),
     payments_public: PaymentsPublic = Depends(get_payments_public),
     organizations_public: OrganizationsPublic = Depends(get_organizations_public),
+    notifications_public: NotificationsPublic = Depends(get_notifications_public),
 ) -> InvoiceService:
     repo = InvoiceRepository(db)
     return InvoiceService(
@@ -262,4 +264,5 @@ def get_invoice_service(
         bookings_public=bookings_public,
         payments_public=payments_public,
         organizations_public=organizations_public,
+        notifications_public=notifications_public,
     )

@@ -28,3 +28,10 @@ class MachineRead(MachineCreate):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+#consider: other domain schemas
+class MachineBenchmarkCreate(BaseModel):
+    name: str
+    score: str
+    methodology_uri: Optional[str] = None
+    artifact_uri: Optional[str] = None

@@ -16,9 +16,13 @@ class BenchmarkRepository:
             methodology_uri=payload.methodology_uri,
             artifact_uri=payload.artifact_uri,
         )
+
         self.db.add(obj)
-        self.db.flush()  #ensure ID was created
+        self.db.commit()
+        self.db.refresh(obj)
+
         return obj
+
 
     def list_for_machine(self, machine_id) -> List[MachineBenchmark]:
         return (

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.auth.auth import get_current_user
-from app.auth.permissions import require_admin_role
+from app.auth.public import ensure_admin
 
 from .schemas import (
     ProviderProfileCreate,
@@ -89,7 +89,7 @@ def list_my_verifications(
 def admin_review_verification(
     verification_id: str,
     payload: VerificationUpdateStatus,
-    admin: User = Depends(require_admin_role),
+    admin: User = Depends(ensure_admin),
     providers: ProvidersPublic = Depends(get_providers_public),
 ):
     try:
@@ -108,7 +108,72 @@ def admin_review_verification(
 def admin_list_verifications_for_subject(
     subject_type: str,
     subject_id: str,
-    admin: User = Depends(require_admin_role),
+    admin: User = Depends(ensure_admin),
     providers: ProvidersPublic = Depends(get_providers_public),
 ):
     return providers.list_verifications(subject_type, subject_id)
+
+
+#refactor: Admin routes, provider managements
+from app.database import get_db
+from app.users.public import UsersPublic, get_users_public
+from sqlalchemy.orm import Session
+from .models import ProviderProfile, VerificationSubject
+@router.get("/admin/providers")
+def get_all_providers(
+    admin: User = Depends(ensure_admin),
+    db: Session = Depends(get_db),
+    users_public: UsersPublic = Depends(get_users_public),
+):
+    """Get all provider profiles with user information"""
+    providers = db.query(ProviderProfile).all()
+    
+    result = []
+    for provider in providers:
+        user = users_public.get_user(provider.user_id)
+        result.append({
+            "id": provider.id,
+            "user_id": provider.user_id,
+            "user_email": user.email if user else "Unknown",
+            "verification_status": provider.verification_status.value,  #Get enum value
+            "payout_account_ref": provider.payout_account_ref,
+            "created_at": provider.created_at,
+            "updated_at": provider.updated_at,
+        })
+    
+    return result
+
+
+@router.get("/admin/providers/{provider_id}/verifications")
+def get_provider_verifications(
+    provider_id: str,
+    admin: User = Depends(ensure_admin),
+    providers: ProvidersPublic = Depends(get_providers_public),
+):
+    """Get all verifications for a specific provider"""
+    return providers.list_verifications(VerificationSubject.PROVIDER, provider_id)
+
+
+@router.get("/admin/stats")
+def get_provider_stats(
+    admin: User = Depends(ensure_admin),
+    db: Session = Depends(get_db),
+):
+    """Get provider statistics for admin dashboard"""
+    total = db.query(ProviderProfile).count()
+    pending = db.query(ProviderProfile).filter(
+        ProviderProfile.verification_status == "pending"
+    ).count()
+    verified = db.query(ProviderProfile).filter(
+        ProviderProfile.verification_status == "verified"
+    ).count()
+    rejected = db.query(ProviderProfile).filter(
+        ProviderProfile.verification_status == "rejected"
+    ).count()
+    
+    return {
+        "total_providers": total,
+        "pending_verification": pending,
+        "verified_providers": verified,
+        "rejected_providers": rejected,
+    }

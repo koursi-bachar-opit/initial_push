@@ -22,6 +22,8 @@ from app.payments.public import PaymentsPublic, get_payments_public #payments
 #from app.organizations.public import OrganizationsPublic, get_organizations_public  #NEW LINE
 from app.compliance.public import CompliancePublic, get_compliance_public
 
+from app.notifications.public import NotificationsPublic, get_notifications_public
+
 """
 This service defines how bookings behave, including how they move from REQUESTED,
 to CONFIRMED, become ACTIVE, and then COMPLETE or CANCELLED.
@@ -47,6 +49,7 @@ class BookingsService:
         payments_public: PaymentsPublic,    #payments
         #organizations_public: OrganizationsPublic,  #NEW LINE
         compliance_public: CompliancePublic,     #NEW LINE
+        notifications_public: NotificationsPublic,
     ):
         self.db = db
         self.booking_repo = booking_repo
@@ -55,6 +58,7 @@ class BookingsService:
         self.payments_public = payments_public  #payments
         #self.organizations_public = organizations_public  #NEW LINE
         self.compliance_public = compliance_public  #NEW LINE
+        self.notifications = notifications_public
 
 
     def normalize_times(self, start_time, end_time):
@@ -71,10 +75,10 @@ class BookingsService:
 
     def validate_booking_window(self, start_utc, end_utc):  #TODO: enforce maximum booking window (example: <= 7 days)
         if start_utc is None or end_utc is None:
-            raise ValueError("start_time and end_time must be provided.")   # TODO: convert to domain exception later
+            raise ValueError("start_time and end_time must be provided.")   #TODO: convert to domain exception later
 
         if end_utc <= start_utc:
-            raise ValueError("end_time must be after start_time")  # TODO: convert to domain exception later
+            raise ValueError("end_time must be after start_time")  #TODO: convert to domain exception later
 
 
     def fetch_listing_or_raise(self, listing_id):
@@ -203,7 +207,7 @@ class BookingsService:
             booking = self._get_booking_or_raise(booking_id)
 
         if booking.listing is None:
-            raise ValueError("Cannot confirm a booking without an associated listing")  # TODO: convert to domain exception later
+            raise ValueError("Cannot confirm a booking without an associated listing")  #TODO: convert to domain exception later
 
         now = datetime.now(timezone.utc)
 
@@ -213,9 +217,13 @@ class BookingsService:
         if booking.status != BookingStatus.REQUESTED:
             raise ValueError("Bookings can only be confirmed from a requested state") #TODO: convert to domain exception later
         
-        booking.status = BookingStatus.CONFIRMED    
+        booking.status = BookingStatus.CONFIRMED
 
-        return self.booking_repo.update_booking(self.db, booking)
+        updated = self.booking_repo.update_booking(self.db, booking)
+
+        self.notifications.booking_confirmed(booking.buyer, booking)  #consider: booking.buyer - booking created event    
+
+        return updated
 
 
     def cancel_booking(self, booking_id: UUID, booking: Booking | None = None):
@@ -240,6 +248,8 @@ class BookingsService:
         booking.status = BookingStatus.CANCELLED
     
         updated = self.booking_repo.update_booking(self.db, booking)
+
+        self.notifications.booking_cancelled(booking.buyer, booking, reason="user_cancelled")
 
         if booking.status != BookingStatus.CANCELLED:
             raise ValueError("Cannot void escrow on a booking that isn't cancelled.")
@@ -281,6 +291,8 @@ class BookingsService:
         booking.status = BookingStatus.ACTIVE
 
         updated = self.booking_repo.update_booking(self.db, booking)
+
+        self.notifications.booking_activated(booking.buyer, booking)
 
         if booking.status != BookingStatus.ACTIVE:
             raise ValueError("Cannot issue credentials unless booking is ACTIVE.")
@@ -327,6 +339,8 @@ class BookingsService:
 
         updated = self.booking_repo.update_booking(self.db, booking)
 
+        self.notifications.booking_completed(booking.buyer, booking)
+
         if not (booking.status == BookingStatus.COMPLETED and booking.actual_price_charged is not None):
             raise ValueError("Cannot capture payment: booking not in completable state.")
         
@@ -365,6 +379,7 @@ def get_bookings_service(
     payments_public: PaymentsPublic = Depends(get_payments_public), #payments
     #organizations_public: OrganizationsPublic = Depends(get_organizations_public),  #NEW LINE
     compliance_public: CompliancePublic = Depends(get_compliance_public),   #NEW LINE
+    notifications_public: NotificationsPublic = Depends(get_notifications_public),
 ) -> BookingsService:
     repo = BookingRepository()
     return BookingsService(
@@ -375,4 +390,5 @@ def get_bookings_service(
         payments_public=payments_public,    #payments
         #organizations_public=organizations_public,  #NEW LINE
         compliance_public=compliance_public,    #NEW LINE
+        notifications_public=notifications_public,
     )

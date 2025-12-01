@@ -7,7 +7,7 @@ from sqlalchemy.sql import func
 from app.database import Base
 
 
-# Enums
+#Enums
 class ProviderVerificationStatus(str, enum.Enum):
     PENDING = "pending"
     VERIFIED = "verified"
@@ -21,8 +21,8 @@ class VerificationStatus(str, enum.Enum):
 
 
 class VerificationSubject(str, enum.Enum):
-    provider = "provider"
-    machine = "machine"
+    PROVIDER = "provider"
+    MACHINE = "machine"
 
 
 class ProviderProfile(Base):

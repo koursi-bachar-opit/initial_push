@@ -13,6 +13,8 @@ from app.providers.public import ProvidersPublic, get_providers_public
 from app.database import get_db
 from fastapi import Depends
 
+from app.notifications.public import NotificationsPublic, get_notifications_public
+
 #consider: auto collect wipe and attestation
 class ComplianceService:
     def __init__(
@@ -21,11 +23,13 @@ class ComplianceService:
         repo: ComplianceRepository,
         machines_public: MachinesPublic,
         providers_public: ProvidersPublic,
+        notifications_public: NotificationsPublic,
     ):
         self.db = db
         self.repo = repo
         self.machines_public = machines_public
         self.providers_public = providers_public
+        self.notifications = notifications_public
 
     def simulate_wipe_for_booking(self, booking):
         """
@@ -76,6 +80,9 @@ class ComplianceService:
             raise HTTPException(400, "Wipe attestation already exists for this booking")
 
         att = self.repo.create(data, provider_id)
+
+        #self.notifications.wipe_proof_submitted(provider, booking, att) #consider: provider and booking errors
+        
         return att
 
     #Admin review
@@ -100,6 +107,7 @@ def get_compliance_service(
     db: Session = Depends(get_db),
     machines_public: MachinesPublic = Depends(get_machines_public),
     providers_public: ProvidersPublic = Depends(get_providers_public),
+    notifications_public: NotificationsPublic = Depends(get_notifications_public),
 ) -> ComplianceService:
     repo = ComplianceRepository(db)
     return ComplianceService(
@@ -107,4 +115,5 @@ def get_compliance_service(
         repo=repo,
         machines_public=machines_public,
         providers_public=providers_public,
+        notifications_public=notifications_public,
     )

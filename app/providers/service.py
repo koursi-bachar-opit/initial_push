@@ -4,11 +4,9 @@ from sqlalchemy.orm import Session
 from .repository import ProviderRepository
 from . import models, schemas
 
-from app.users.public import UsersPublic
 from fastapi import Depends
 
 from app.database import get_db
-from app.users.public import get_users_public
 
 #NOTE: no Machines import, will cause circular dependency
 
@@ -18,11 +16,9 @@ class ProviderProfileService:
         self,
         db: Session,
         repo: ProviderRepository,
-        users_public: UsersPublic,
     ):
         self.db = db
         self.repo = repo
-        self.users_public = users_public
 
     def create_profile(self, user_id, data: schemas.ProviderProfileCreate):
         if self.repo.get_by_user_id(user_id):
@@ -55,18 +51,16 @@ class VerificationService:
         self,
         db: Session,
         repo: ProviderRepository,
-        users_public: UsersPublic,
     ):
         self.db = db
         self.repo = repo
-        self.users_public = users_public
 
     def create_verification_request(
         self,
         user_id,
         data: schemas.VerificationCreate,
     ):
-        if data.subject_type == models.VerificationSubject.provider:
+        if data.subject_type == models.VerificationSubject.PROVIDER:
             profile = self.repo.get_by_user_id(user_id)
             if not profile:
                 raise ValueError("User has no provider profile.")
@@ -81,8 +75,6 @@ class VerificationService:
         new_status: schemas.VerificationStatus,
         notes: Optional[str] = None,
     ):
-        if not self.users_public.is_admin_role(admin_user_id):
-            raise ValueError("Admin privileges required.")
 
         verification = self.repo.get_verification(verification_id)
         if not verification:
@@ -95,7 +87,7 @@ class VerificationService:
             admin_user_id,
         )
 
-        if verification.subject_type == models.VerificationSubject.provider:
+        if verification.subject_type == models.VerificationSubject.PROVIDER:
             profile = self.repo.get(verification.subject_id)
             if not profile:
                 raise ValueError("Provider profile not found.")
@@ -110,22 +102,18 @@ class VerificationService:
 
 def get_provider_profile_service(
     db: Session = Depends(get_db),
-    users_public: UsersPublic = Depends(get_users_public),
 ) -> ProviderProfileService:
     repo = ProviderRepository(db)
     return ProviderProfileService(
         db=db,
         repo=repo,
-        users_public=users_public,
     )
 
 def get_verification_service(
     db: Session = Depends(get_db),
-    users_public: UsersPublic = Depends(get_users_public),
 ) -> VerificationService:
     repo = ProviderRepository(db)
     return VerificationService(
         db=db,
         repo=repo,
-        users_public=users_public,
     )
