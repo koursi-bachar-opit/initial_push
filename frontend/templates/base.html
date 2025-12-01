@@ -57,6 +57,9 @@
                 {% elif user.role == "provider" %}
                     <a href="/bookings" class="hover:text-gray-800 dark:hover:text-white">Bookings</a>
                     <a href="/dashboard" class="hover:text-gray-800 dark:hover:text-white">Dashboard</a>
+                {% elif user.role == "admin" %}
+                    <a href="/bookings" class="hover:text-gray-800 dark:hover:text-white">All Bookings</a>
+                    <a href="/dashboard" class="hover:text-gray-800 dark:hover:text-white">Dashboard</a>
                 {% endif %}
 
                 <!--Client-side logout (wait Supabase and localStorage)-->

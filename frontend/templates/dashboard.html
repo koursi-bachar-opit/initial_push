@@ -4,8 +4,10 @@
 <h1 class="text-3xl font-bold mb-8 text-gray-900 dark:text-white">
     {% if user.role == "buyer" %}
         Buyer Dashboard
-    {% else %}
+    {% elif user.role == "provider" %}
         Provider Dashboard
+    {% elif user.role == "admin" %}
+        Admin Dashboard
     {% endif %}
 </h1>
 
@@ -41,7 +43,88 @@
 
 {% endif %}
 
-<!--Stats-->
+
+
+
+<!--  -->
+
+{% if user.role == "admin" %}
+
+<!--Admin Provider Management Section-->
+<div class="mb-8">
+    <div class="flex justify-between items-center mb-4">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Provider Management</h2>
+    </div>
+
+    <!--Admin Stats-->
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+        <div class="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+            <div class="text-sm text-gray-500 dark:text-gray-400">Total Providers</div>
+            <div id="stat-total-providers" class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">0</div>
+        </div>
+        <div class="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+            <div class="text-sm text-gray-500 dark:text-gray-400">Pending Verification</div>
+            <div id="stat-pending-verification" class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">0</div>
+        </div>
+        <div class="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+            <div class="text-sm text-gray-500 dark:text-gray-400">Verified Providers</div>
+            <div id="stat-verified-providers" class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">0</div>
+        </div>
+        <div class="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+            <div class="text-sm text-gray-500 dark:text-gray-400">Rejected Providers</div>
+            <div id="stat-rejected-providers" class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">0</div>
+        </div>
+    </div>
+
+    <!--Provider List-->
+    <div id="providers-container" class="space-y-4">
+        <!-- Providers will be loaded here dynamically -->
+        <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+            Loading providers...
+        </div>
+    </div>
+</div>
+
+<!--Provider Template (Hidden)-->
+<template id="provider-card-template">
+    <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+        <div class="flex justify-between items-start">
+            <div>
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white provider-email">Provider Email</h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400 provider-id">ID: ...</p>
+                <div class="mt-2">
+                    <span class="provider-status-badge px-3 py-1 rounded-full text-xs font-medium"></span>
+                </div>
+                <p class="mt-2 text-sm text-gray-600 dark:text-gray-400 provider-created">Created: ...</p>
+            </div>
+            <div class="flex space-x-2">
+                <button class="verify-btn bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+                    Verify
+                </button>
+                <button class="reject-btn bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+                    Reject
+                </button>
+            </div>
+        </div>
+        <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <h4 class="text-sm font-medium text-gray-900 dark:text-white mb-2">Verification History</h4>
+            <div class="verification-history space-y-2">
+                <!-- Verification history will be populated here -->
+            </div>
+        </div>
+    </div>
+</template>
+
+{% endif %}
+<!--Stats (for buyers and providers)-->
+{% if user.role == "buyer" or user.role == "provider" %}
+
+
+<!--  -->
+
+
+
+<!--Stats(for buyers and providers)-->
 <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
     <div class="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
         <div class="text-sm text-gray-500 dark:text-gray-400">Total Bookings</div>
@@ -61,7 +144,18 @@
     </div>
 </div>
 
-<!--Tabs-->
+<!--  -->
+
+
+{% endif %}
+
+<!--Tabs (for buyers and providers)-->
+{% if user.role == "buyer" or user.role == "provider" %}
+
+
+<!--  -->
+
+<!--Tab Panels (for buyers and providers)-->
 <div class="mb-4 border-b border-gray-200 dark:border-gray-700">
     <ul class="flex flex-wrap -mb-px text-sm font-medium text-center text-gray-500 dark:text-gray-400"
         data-tabs-toggle="#dashboardTabsContent"
@@ -96,7 +190,7 @@
     </ul>
 </div>
 
-<!--Tab Panels-->
+<!--Tab Panels (for buyers and providers)-->
 <div id="dashboardTabsContent">
 
     <!--Pending bookings-->
@@ -136,6 +230,12 @@
     </div>
 
 </div>
+
+<!--  -->
+
+{% endif %}
+
+<!--  -->
 
 <!--PROVIDER: Create Listing Modal-->
 {% if user.role == "provider" %}

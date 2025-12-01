@@ -15,8 +15,19 @@ async function request(path, options = {}) {
     const resp = await fetch(API_BASE + path, options);
 
     if (!resp.ok) {
-        const err = await resp.json().catch(() => ({}));
-        throw new Error(err.detail || "Request failed");
+        let errorDetail = "Request failed";
+        try {
+            const errorData = await resp.json();
+            errorDetail = errorData.detail || JSON.stringify(errorData) || resp.statusText;
+        } catch {
+            errorDetail = resp.statusText;
+        }
+        throw new Error(`${resp.status}: ${errorDetail}`);
+    }
+
+    //for 204 no content responses, return null
+    if (resp.status === 204) {
+        return null;
     }
 
     return resp.json();
@@ -74,4 +85,32 @@ export function apiCreateMachine(payload) {
         method: "POST",
         body: JSON.stringify(payload),
     });
+}
+
+//Admin provider endpoints
+export async function apiGetProviders() {
+    return request("/providers/admin/providers");
+}
+
+export async function apiGetProviderStats() {
+    return request("/providers/admin/stats");
+}
+
+export async function apiVerifyProvider(providerId, status, notes = "") {
+    //First get the verification ID for this provider
+    const verifications = await request(`/providers/admin/providers/${providerId}/verifications`);
+    const latestVerification = verifications[0]; //Get the most recent verification
+    
+    if (!latestVerification) {
+        throw new Error("No verification request found for this provider");
+    }
+    
+    return request(`/providers/verification/${latestVerification.id}/review`, {
+        method: "POST",
+        body: JSON.stringify({ status, notes }),
+    });
+}
+
+export async function apiGetProviderVerifications(providerId) {
+    return request(`/providers/admin/providers/${providerId}/verifications`);
 }
