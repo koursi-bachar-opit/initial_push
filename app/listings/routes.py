@@ -37,12 +37,14 @@ def create_listing(
         raise HTTPException(status_code=403)
 
 
-@router.get("/search/{name}")
+@router.get("/search")
 def search_listings_by_name(
-    name: str, 
+    name: str = "",
     service: ListingsService = Depends(get_listings_service)
 ):
     """Search listings by name. Returns listings with real-time metrics for customers."""
+    if not name.strip():
+        return []
     return service.search_listings_by_name(name)
 
 

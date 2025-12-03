@@ -5,7 +5,7 @@ from app.database import get_db
 from app.machines.public import MachinesPublic, get_machines_public
 
 from .repository import ListingsRepository
-from .schemas import ListingCreate
+from .schemas import ListingCreate, ListingRead
 from .models import Listing
 
 from uuid import UUID
@@ -57,18 +57,44 @@ class ListingsService:
         """Get a single listing by ID - for internal use."""
         return self.listing_repo.get_listing_by_id(self.db, listing_id)
 
+    # #refactor to move collect metrics elsewhere
+    # def search_listings_by_name(self, name: str):
+    #     """Search listings by name with real-time metrics - for customer search."""
+    #     #update test
+    #     if not name.strip():
+    #         return []
+    #     #update test
+        
+    #     listings = self.listing_repo.search_by_title(self.db, name)
+        
+    #     results = []
+    #     for listing in listings:
+    #         #collect metrics for each listing in search results
+    #         metrics_data = self._collect_listing_metrics(listing)
+    #         results.append({
+    #             "listing": listing,
+    #             "latest_metrics": metrics_data
+    #         })
+        
+    #     return results
 
-    #refactor to move collect metrics elsewhere
     def search_listings_by_name(self, name: str):
         """Search listings by name with real-time metrics - for customer search."""
+        if not name.strip():
+            return []
+        
         listings = self.listing_repo.search_by_title(self.db, name)
         
         results = []
         for listing in listings:
-            #collect metrics for each listing in search results
+            # Collect metrics for each listing in search results
             metrics_data = self._collect_listing_metrics(listing)
+            
+            # Convert to Pydantic model - this should now work with machine loaded
+            listing_read = ListingRead.model_validate(listing)
+            
             results.append({
-                "listing": listing,
+                "listing": listing_read.model_dump(),  # Convert to dict
                 "latest_metrics": metrics_data
             })
         
