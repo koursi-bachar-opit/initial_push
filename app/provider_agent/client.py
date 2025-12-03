@@ -55,8 +55,16 @@ class ProviderAgentClient:
             "machine_id": str(machine_id),
             "gpu_util": 42,
             "cpu_util": 16,
+            "mem_gb": 5.3,
             "collected_at": datetime.now(timezone.utc).isoformat(),
         }
+    
+    def collect_metrics_raw(self, machine_id: UUID) -> dict:
+        """
+        Same as collect_metrics(), but explicitly named for raw data retrieval.
+        This avoids importing domain DTOs here.
+        """
+        return self.collect_metrics(machine_id=machine_id)
 
 
 def get_agent_client() -> ProviderAgentClient:

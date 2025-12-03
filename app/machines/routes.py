@@ -3,7 +3,7 @@ from fastapi import Depends, APIRouter, HTTPException
 from app.auth.auth import get_current_user
 from app.users.models import User, UserRole
 
-from .schemas import MachineCreate, MachineRead
+from .schemas import MachineCreate, MachineRead, MachineBenchmarkCreate#, MachineBenchmarkCreate
 from .service import MachinesService, get_machines_service#, MachineNotFoundError, NotProviderMachineError
 
 from uuid import UUID
@@ -70,3 +70,25 @@ def create_machine(
     machine.provider_id = user.id
 
     return service.create_machine(payload=machine)
+
+#consider: benchmarks domain schemas
+@router.post("/{machine_id:uuid}/benchmarks", status_code=201)
+def add_benchmark_to_machine(
+    machine_id: UUID,
+    payload: MachineBenchmarkCreate,
+    user: User = Depends(get_current_user),
+    service: MachinesService = Depends(get_machines_service),
+):
+    if user.role != UserRole.PROVIDER:
+        raise HTTPException(403, "Only providers can upload benchmarks")
+
+    try:
+        return service.add_machine_benchmark(
+            machine_id=machine_id,
+            provider_id=user.id,
+            payload=payload,
+        )
+    except ValueError:
+        raise HTTPException(404, "Machine not found")
+    except PermissionError:
+        raise HTTPException(403, "Not allowed")

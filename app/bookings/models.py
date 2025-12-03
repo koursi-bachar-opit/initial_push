@@ -38,6 +38,13 @@ class Booking(Base):
         index=True,
     )
 
+    organization_id = Column(  #NEW LINE
+        UUID(as_uuid=True),  #NEW LINE
+        ForeignKey("organizations.id", ondelete="SET NULL"),  #NEW LINE
+        nullable=True,  #NEW LINE
+        index=True,  #NEW LINE
+    )  #NEW LINE
+
     #Booking window
     start_time = Column(DateTime(timezone=True), nullable=False)
     end_time = Column(DateTime(timezone=True), nullable=False)

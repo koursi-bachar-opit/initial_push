@@ -57,7 +57,7 @@ def create_booking(
         raise HTTPException(403)
 
 
-@router.get("/", response_model=list[BookingRead])
+@router.get("/", response_model=list[BookingRead])  #actor_user_id=user.id
 def list_bookings(
     user: User = Depends(get_current_user),
     service: BookingsService = Depends(get_bookings_service),

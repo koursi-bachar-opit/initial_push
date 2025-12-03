@@ -6,33 +6,28 @@ from datetime import datetime
 from .repository import AccessCredentialRepository
 from .issuer import CredentialIssuer
 
-from app.bookings.public import BookingsPublic, get_bookings_public
 from .issuer import get_credential_issuer
 
 from uuid import UUID
 
+from app.notifications.public import NotificationsPublic, get_notifications_public
 
 class AccessCredentialService:
     def __init__(
         self,
         repo: AccessCredentialRepository,
         issuer: CredentialIssuer,
-        bookings_public: BookingsPublic,
+        notifications_public: NotificationsPublic,  
     ):
         self.repo = repo
         self.issuer = issuer
-        self.bookings_public = bookings_public
+        self.notifications = notifications_public
 
 
-    def issue_for_booking(self, booking_id: UUID):
+    def issue_for_booking(self, booking):
         """
         Issues credentials for a booking, but only if the booking is ACTIVE.
         """
-        booking = self.bookings_public.get_booking(booking_id)
-
-        #Use the public interface to check lifecycle state
-        if not self.bookings_public.is_active(booking):
-            raise ValueError("Cannot issue credentials unless booking is ACTIVE")
 
         #Gather related objects
         user = booking.buyer
@@ -46,23 +41,22 @@ class AccessCredentialService:
         )
 
         # 4. Persist
-        return self.repo.create(
+        saved = self.repo.create(
             booking_id=booking.id,
             vpn_config_uri=payload.vpn_config_uri,
             ssh_public_key_fingerprint=payload.ssh_public_key_fingerprint,
         )
 
+        self.notifications.credentials_issued(booking.buyer, saved)
 
-    def revoke_for_booking(self, booking_id: UUID):
+        return saved
+
+
+    def revoke_for_booking(self, booking):
         """
         Revoke credentials for a booking.
         """
-        booking = self.bookings_public.get_booking(booking_id)
-        
         credentials = self.repo.get_by_booking_id(booking.id)
-
-        if not (self.bookings_public.is_cancelled(booking) or self.bookings_public.is_completed(booking)):
-            raise ValueError("Booking must be cancelled or completed in order to revoke")
 
         if not credentials:
             return []
@@ -74,23 +68,22 @@ class AccessCredentialService:
             updated = self.repo.mark_revoked(credential.id)
             revoked_list.append(updated)
 
+        self.notifications.credentials_revoked(booking.buyer, updated)
+
         return revoked_list
 
 
-    def get_for_booking(self, booking_id):
+    def get_for_booking(self, booking):
         """
         Return credentials for displaying or auditing.
         """
-        booking = self.bookings_public.get_booking(booking_id)
-        if not self.bookings_public.is_active(booking):
-            return []
-        return self.repo.get_by_booking_id(booking_id)
+        return self.repo.get_by_booking_id(booking.id)
 
 
 def get_access_credential_service(
     db = Depends(get_db),
-    bookings_public: BookingsPublic = Depends(get_bookings_public),
     issuer: CredentialIssuer = Depends(get_credential_issuer),
+    notifications_public: NotificationsPublic = Depends(get_notifications_public),
 ) -> AccessCredentialService:
 
     repo = AccessCredentialRepository(db)
@@ -98,5 +91,5 @@ def get_access_credential_service(
     return AccessCredentialService(
         repo=repo,
         issuer=issuer,
-        bookings_public=bookings_public,
+        notifications_public=notifications_public,
     )

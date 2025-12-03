@@ -35,6 +35,12 @@ def create_booking(client, db_session, buyer_role="buyer", provider_role="provid
         json=payload,
         headers=auth_headers_by_role(buyer_role),
     )
+
+    print(f"Response status: {resp.status_code}")
+    print(f"Response body: {resp.text}")
+    print(f"Listing ID: {listing['id']}")
+    print(f"Payload: {payload}")
+
     assert resp.status_code == 200
     return resp.json()
 

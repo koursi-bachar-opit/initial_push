@@ -3,79 +3,9 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.auth.service import AuthService, get_auth_service
 
+
 security = HTTPBearer(auto_error=False)
 
-#marked for deletion
-# ----------------------------------------------------------------
-from sqlalchemy.orm import Session
-import jwt
-from jwt import PyJWTError
-from app.config import settings
-def _parse_mock_token_and_create_user(db: Session, token: str):
-    """
-    Legacy function for tests
-    """
-    if ":" not in token:
-        raise HTTPException(status_code=401, detail="Invalid mock token")
-
-    role_str, email = token.split(":", 1)
-    
-    from app.users.public import get_users_public
-    users_public = get_users_public(db)
-    auth_service = AuthService(db=db, users_public=users_public)
-
-    return auth_service._get_or_create_user(
-        sub=email,
-        email=email,
-        role=role_str.lower(),
-    )
-# def _parse_mock_token_and_create_user(db: Session, token: str):
-# 
-#     if ":" not in token:
-#         raise HTTPException(status_code=401, detail="Invalid mock token")
-
-#     role_str, email = token.split(":", 1)
-    
-#     # FIX: Use get_auth_service instead of direct instantiation
-#     auth_service = get_auth_service(db)  # Changed this line
-
-#     return auth_service._get_or_create_user(
-#         sub=email,
-#         email=email,
-#         role=role_str.lower(),
-#     )
-
-
-def _decode_supabase_jwt(token: str):
-    """
-    Legacy function for tests.
-    Delegates to AuthService._decode_supabase_jwt and wraps errors in HTTPException.
-    """
-    try:
-        class TempAuthService:
-            def __init__(self):
-                self.supabase_jwt_secret = settings.SUPABASE_JWT_SECRET
-            
-            def _decode_supabase_jwt(self, token: str) -> dict:
-                if not self.supabase_jwt_secret:
-                    raise RuntimeError("SUPABASE_JWT_SECRET not set.")
-                try:
-                    return jwt.decode(
-                        token,
-                        self.supabase_jwt_secret,
-                        algorithms=["HS256"],
-                        options={"verify_aud": False},
-                    )
-                except PyJWTError as e:
-                    raise ValueError(f"Invalid or expired JWT: {str(e)}")
-        
-        temp = TempAuthService()
-        return temp._decode_supabase_jwt(token)
-    except ValueError as e:
-        raise HTTPException(status_code=401, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-#---------------------------------------------------------------------
 
 def require_roles(*roles):
     """

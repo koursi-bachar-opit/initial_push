@@ -12,6 +12,18 @@ from app.listings.models import Listing
 from app.bookings.models import Booking
 from app.credentials.models import AccessCredential
 
+from app.compliance.models import *
+from app.disputes.models import *
+from app.organizations.models import *
+from app.payments.models import *
+from app.providers.models import *
+
+from app.invoices.models import *
+from app.benchmarks.models import *
+
+from app.metrics.models import *
+
+
 
 from dotenv import load_dotenv
 load_dotenv()

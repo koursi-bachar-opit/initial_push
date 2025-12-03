@@ -3,9 +3,9 @@ from sqlalchemy.orm import Session
 from .models import Machine
 from .schemas import MachineCreate
 
-class MachineRepository:
+class MachinesRepository:
     def create_machine(self, db: Session, machine_data: MachineCreate):
-        #payload for machine creation
+        """Payload for machine creation"""
         db_machine = Machine(
             provider_id=machine_data.provider_id,
             hostname=machine_data.hostname,
@@ -26,7 +26,7 @@ class MachineRepository:
         return db_machine
 
     def get_machine(self, db: Session, machine_id: UUID) -> Machine | None:
-        #get a machine by ID 
+        """Get a machine by ID"""
         return (
             db.query(Machine)
             .filter(Machine.id == machine_id)
@@ -34,7 +34,7 @@ class MachineRepository:
         )
 
     def list_machines_for_provider(self, db: Session, provider_id: UUID) -> list[Machine]:
-        #query machines for specific provider
+        """Query machines for specific provider"""
         return (
             db.query(Machine)
             .filter(Machine.provider_id == provider_id)
@@ -42,7 +42,7 @@ class MachineRepository:
         )
 
     def provider_owns_machine(self, db: Session, provider_id: UUID, machine_id: UUID) -> bool:
-        #filter for machine provider machines
+        """Filter for machine provider machines"""
         return (
             db.query(Machine)
             .filter(
@@ -52,3 +52,8 @@ class MachineRepository:
             .count()
             > 0
         )
+    
+    def delete_machine(self, db: Session, machine: Machine) -> None:
+        """Delete a machine from the database"""
+        db.delete(machine)
+        db.commit()
