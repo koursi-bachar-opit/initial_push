@@ -8,7 +8,7 @@ Repository for Listing objects, low-level DB helpers.
 The more complex validation and business logic lives in listings_service.py.
 """
 
-class ListingRepository:
+class ListingsRepository:
     def get_listings(self, db: Session):
         """Return all listings sorted by ID."""
         return db.query(Listing).order_by(Listing.id.asc()).all()

@@ -6,7 +6,7 @@ from app.machines.models import Machine
 from app.listings.models import Listing
 
 
-class BookingRepository:
+class BookingsRepository:
     def create_booking(self, db: Session, booking: Booking) -> Booking: 
         """
         Persist the newly created Booking ORM instance.

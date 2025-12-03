@@ -4,7 +4,7 @@ Public interface for the Listings domain module.
 
 from .models import Listing
 from .schemas import ListingCreate, ListingRead
-from .repository import ListingRepository
+from .repository import ListingsRepository
 from .service import ListingsService, get_listings_service
 
 __all__ = [
@@ -13,7 +13,7 @@ __all__ = [
     "get_listings_service",
 
     # Repository
-    "ListingRepository",
+    "ListingsRepository",
 
     # Schemas
     "ListingCreate",

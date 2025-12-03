@@ -8,9 +8,6 @@ from fastapi import Depends
 
 from app.database import get_db
 
-#NOTE: no Machines import, will cause circular dependency
-
-#ProviderProfileService
 class ProviderProfileService:
     def __init__(
         self,
@@ -45,7 +42,6 @@ class ProviderProfileService:
             raise ValueError("Provider not verified.")
         return profile
 
-#VerificationService
 class VerificationService:
     def __init__(
         self,
@@ -80,21 +76,17 @@ class VerificationService:
         if not verification:
             raise ValueError("Verification not found.")
 
-        updated = self.repo.update_verification(
-            verification,
-            new_status,
-            notes,
-            admin_user_id,
-        )
+        verification.status = new_status
+        verification.notes = notes
+        verification.performed_by_admin_id = admin_user_id
 
         if verification.subject_type == models.VerificationSubject.PROVIDER:
             profile = self.repo.get(verification.subject_id)
             if not profile:
                 raise ValueError("Provider profile not found.")
             profile.verification_status = new_status
-            self.db.commit()
 
-        return updated
+        return self.repo.save_verification(verification)
 
     def list_verifications(self, subject_type, subject_id):
         return self.repo.list_verifications_for(subject_type, subject_id)

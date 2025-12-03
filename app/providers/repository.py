@@ -46,7 +46,7 @@ class ProviderRepository:
         profile: models.ProviderProfile,
         data: schemas.ProviderProfileUpdate,
     ) -> models.ProviderProfile:
-        for field, value in data.dict(exclude_unset=True).items():
+        for field, value in data.model_dump(exclude_unset=True).items():
             setattr(profile, field, value)
 
         self.db.commit()
@@ -54,7 +54,7 @@ class ProviderRepository:
         return profile
 
 
-    #Verification
+    #Verification CRUD
     def get_verification(
         self,
         verification_id,
@@ -106,3 +106,11 @@ class ProviderRepository:
             .order_by(models.Verification.created_at.desc())
             .all()
         )
+    
+    def save_verification(
+        self,
+        verification: models.Verification,
+    ) -> models.Verification:
+        self.db.commit()
+        self.db.refresh(verification)
+        return verification

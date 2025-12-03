@@ -4,7 +4,7 @@ from fastapi import Depends
 from app.database import get_db
 from app.machines.public import MachinesPublic, get_machines_public
 
-from .repository import ListingRepository
+from .repository import ListingsRepository
 from .schemas import ListingCreate
 from .models import Listing
 
@@ -22,7 +22,7 @@ class ListingsService:
     def __init__(
         self,
         db: Session,
-        listing_repo: ListingRepository,
+        listing_repo: ListingsRepository,
         machines_public: MachinesPublic,
         providers_public: ProvidersPublic,  #NEW LINE
         metrics_public: MetricsPublic,
@@ -101,7 +101,7 @@ def get_listings_service(
     metrics_public: MetricsPublic = Depends(get_metrics_public),         # NEW
     agent: ProviderAgentClient = Depends(get_agent_client),              # NEW
 ) -> ListingsService:
-    repo = ListingRepository()
+    repo = ListingsRepository()
     return ListingsService(
         db=db,
         listing_repo=repo,
