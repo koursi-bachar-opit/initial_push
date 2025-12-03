@@ -3,7 +3,7 @@ from unittest.mock import Mock
 from uuid import uuid4
 
 from app.listings.service import ListingsService
-from app.listings.repository import ListingRepository
+from app.listings.repository import ListingsRepository
 from app.listings.models import Listing
 from app.listings.schemas import ListingCreate
 
@@ -16,8 +16,8 @@ def mock_db():
 
 @pytest.fixture
 def mock_repository():
-    """Mock ListingRepository fixture"""
-    return Mock(spec=ListingRepository)
+    """Mock ListingsRepository fixture"""
+    return Mock(spec=ListingsRepository)
 
 
 @pytest.fixture

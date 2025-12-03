@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import Mock
 from uuid import uuid4
 
-from app.listings.repository import ListingRepository
+from app.listings.repository import ListingsRepository
 from app.listings.models import Listing
 
 
@@ -14,8 +14,8 @@ def mock_db():
 
 @pytest.fixture
 def listing_repository():
-    """ListingRepository instance fixture"""
-    return ListingRepository()
+    """ListingsRepository instance fixture"""
+    return ListingsRepository()
 
 
 @pytest.fixture
@@ -29,7 +29,7 @@ def sample_listing():
     return listing
 
 
-class TestListingRepository:
+class TestListingsRepository:
 
     #def get_listings(self, db: Session):
     def test_get_listings_returns_all_listings_sorted(self, mock_db, listing_repository):
