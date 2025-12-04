@@ -28,3 +28,4 @@ class User(Base):
 
     #A provider can own multiple machines (casecasde delete for data integrity)
     machines = relationship("Machine", back_populates="provider", cascade="all, delete")
+    organization_memberships = relationship("OrganizationMembership", back_populates="user")
