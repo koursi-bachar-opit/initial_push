@@ -1,8 +1,8 @@
 """New domain models
 
-Revision ID: 5b8cb53f76ad
+Revision ID: 1ad774aec46d
 Revises: 
-Create Date: 2025-11-30 21:04:35.605143
+Create Date: 2025-12-04 02:07:53.095373
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '5b8cb53f76ad'
+revision: str = '1ad774aec46d'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -206,17 +206,13 @@ def upgrade() -> None:
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('booking_id', sa.UUID(), nullable=False),
     sa.Column('machine_id', sa.UUID(), nullable=False),
-    sa.Column('provider_id', sa.UUID(), nullable=False),
     sa.Column('method', sa.String(), nullable=False),
     sa.Column('evidence_uri', sa.String(), nullable=True),
     sa.Column('notes', sa.String(), nullable=True),
     sa.Column('attested_at', sa.DateTime(), nullable=True),
-    sa.Column('admin_review_status', sa.Enum('PENDING', 'VERIFIED', 'REJECTED', name='wipereviewstatus'), nullable=False),
-    sa.Column('admin_notes', sa.String(), nullable=True),
-    sa.Column('created_at', sa.DateTime(), nullable=True),
+    sa.Column('status', sa.Enum('PENDING', 'VERIFIED', 'REJECTED', name='wipereviewstatus'), nullable=False),
     sa.ForeignKeyConstraint(['booking_id'], ['bookings.id'], ondelete='CASCADE'),
     sa.ForeignKeyConstraint(['machine_id'], ['machines.id'], ondelete='CASCADE'),
-    sa.ForeignKeyConstraint(['provider_id'], ['provider_profiles.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('booking_id')
     )
