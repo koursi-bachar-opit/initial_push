@@ -1,8 +1,8 @@
 """New domain models
 
-Revision ID: 1ad774aec46d
+Revision ID: e2f3f9f04e7a
 Revises: 
-Create Date: 2025-12-04 02:07:53.095373
+Create Date: 2025-12-04 04:33:55.395975
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '1ad774aec46d'
+revision: str = 'e2f3f9f04e7a'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -82,6 +82,7 @@ def upgrade() -> None:
     sa.Column('org_role', sa.Enum('ADMIN', 'MEMBER', name='orgrole'), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.ForeignKeyConstraint(['organization_id'], ['organizations.id'], ),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('provider_profiles',
