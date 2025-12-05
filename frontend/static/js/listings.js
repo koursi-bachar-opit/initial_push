@@ -1,4 +1,4 @@
-import { apiGetListings, apiRequestBooking, apiSearchListings, apiSearchListingsWithFilters } from "./api.js";
+import { apiGetListings, apiRequestBooking, apiSearchListings, apiSearchListingsWithFilters, apiGetMachineBenchmarks } from "./api.js";
 
 // DOM Elements
 const listingsGrid = document.getElementById("listingsGrid");
@@ -27,7 +27,7 @@ const clearActiveFilters = document.getElementById("clearActiveFilters");
 const filterResultsInfo = document.getElementById("filterResultsInfo");
 const resultsCount = document.getElementById("resultsCount");
 
-// Modal elements (existing)
+// Modal elements
 const modalEl = document.getElementById("listingDetailsModal");
 const modalTitle = document.getElementById("modalTitle");
 const modalDescription = document.getElementById("modalDescription");
@@ -38,12 +38,11 @@ const modalBookButton = document.getElementById("modalBookButton");
 let allListings = [];
 let filteredListings = [];
 let selectedListing = null;
-let modal;
 let isFiltered = false;
+let modal;
 
 
 document.addEventListener("DOMContentLoaded", async () => {
-    // Initialize modal
     modal = new Modal(modalEl);
 
     // Set up event listeners
@@ -67,6 +66,18 @@ document.addEventListener("DOMContentLoaded", async () => {
         showError("Failed to load listings: " + err.message);
     }
 });
+
+// Add this function to get benchmarks for a machine
+async function getMachineBenchmarks(machineId) {
+    try {
+        const benchmarks = await apiGetMachineBenchmarks(machineId);
+        return benchmarks;
+    } catch (err) {
+        console.error("Failed to fetch benchmarks:", err);
+        return [];
+    }
+}
+
 
 async function performFilteredSearch() {
     //Build filters object
@@ -172,10 +183,9 @@ function renderListings() {
     });
 }
 
-//Update listingCardHTML to include metrics
+// Update the listingCardHTML to show benchmarks badge
 function listingCardHTML(item) {
-
-    const listing = item.listing || item; //Support both structures
+    const listing = item.listing || item;
     const metrics = item.latest_metrics;
     
     const description = listing.machine?.notes || "No description provided.";
@@ -183,7 +193,7 @@ function listingCardHTML(item) {
     const gpuUtil = metrics?.gpu_util;
     
     return `
-        <div class="bg-white dark:bg-gray-800 shadow border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:shadow-lg transition">
+        <div class="bg-white dark:bg-gray-800 shadow border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:shadow-lg transition relative">
             <div class="p-5">
                 <h3 class="text-lg font-bold mb-1 text-gray-900 dark:text-white">${listing.title}</h3>
                 <p class="text-gray-600 dark:text-gray-300 text-sm line-clamp-2 mb-3">
@@ -215,25 +225,29 @@ function listingCardHTML(item) {
 
                 <button 
                     data-id="${listing.id}"
-                    class="btn-view-details w-full mt-2 px-4 py-2 bg-gray-900 text-white rounded hover:bg-black dark:hover:bg-gray-700 transition text-sm"
+                    class="btn-view-details w-full mt-2 px-4 py-2 bg-gray-900 text-white rounded hover:bg-black dark:hover:bg-gray-700 transition text-sm flex items-center justify-center gap-2"
                     data-modal-target="listingDetailsModal"
                     data-modal-toggle="listingDetailsModal">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                    </svg>
                     View Details
+                    <span class="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300 text-xs font-medium px-2 py-0.5 rounded">
+                        Benchmarks
+                    </span>
                 </button>
             </div>
         </div>
     `;
 }
 
-
-// Open modal (check listing description)
-function openDetailsModal(id) {
-    // Find the item in filteredListings (which has {listing, latest_metrics})
+async function openDetailsModal(id) {
+    // Find the item in filteredListings
     const item = filteredListings.find((item) => {
         const listing = item.listing || item;
         return String(listing.id) === String(id);
     });
-
+    
     if (!item) return;
     
     // Extract the listing from the item
@@ -250,41 +264,103 @@ function openDetailsModal(id) {
     modalPrice.textContent = `$${selectedListing.price}/hr`;
     
     // Build machine details
-    let metaHTML = `Listing ID: ${selectedListing.id}`;
+    let metaHTML = `
+        <div class="space-y-3">
+            <div><strong>Listing ID:</strong> ${selectedListing.id}</div>
+    `;
+    
     if (selectedListing.machine) {
         const machine = selectedListing.machine;
-        metaHTML += `<br>Machine: ${machine.hostname}`;
-        if (machine.location_region) {
-            metaHTML += `<br>Region: ${machine.location_region}`;
-        }
-        if (machine.cpu_cores || machine.ram_gb) {
-            metaHTML += `<br>Specs: ${machine.cpu_cores || '?'} CPU cores, ${machine.ram_gb || '?'} GB RAM`;
+        metaHTML += `
+            <div><strong>Machine:</strong> ${machine.hostname}</div>
+            ${machine.location_region ? `<div><strong>Region:</strong> ${machine.location_region}</div>` : ''}
+            <div><strong>Specs:</strong> ${machine.cpu_cores || '?'} CPU cores, ${machine.ram_gb || '?'} GB RAM</div>
+        `;
+        
+        // Fetch benchmarks for this machine
+        if (machine.id) {
+            try {
+                const benchmarks = await getMachineBenchmarks(machine.id);
+                if (benchmarks.length > 0) {
+                    metaHTML += `
+                        <div class="pt-4 mt-4 border-t border-gray-200 dark:border-gray-700">
+                            <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Benchmarks</h4>
+                            <div class="space-y-2">
+                    `;
+                    
+                    benchmarks.forEach(benchmark => {
+                        metaHTML += `
+                            <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <div class="font-medium">${benchmark.name}</div>
+                                        <div class="text-lg font-semibold text-purple-600 dark:text-purple-400">${benchmark.score}</div>
+                                        ${benchmark.methodology_uri ? `
+                                            <div class="text-sm mt-1">
+                                                <a href="${benchmark.methodology_uri}" target="_blank" 
+                                                   class="text-blue-600 dark:text-blue-400 hover:underline">
+                                                    Methodology
+                                                </a>
+                                            </div>
+                                        ` : ''}
+                                        ${benchmark.artifact_uri ? `
+                                            <div class="text-sm">
+                                                <a href="${benchmark.artifact_uri}" target="_blank"
+                                                   class="text-blue-600 dark:text-blue-400 hover:underline">
+                                                    Artifact
+                                                </a>
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                                        ${new Date(benchmark.created_at).toLocaleDateString()}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    metaHTML += `
+                            </div>
+                        </div>
+                    `;
+                }
+            } catch (err) {
+                console.error("Failed to load benchmarks:", err);
+            }
         }
     }
     
     // Add metrics to modal if available
     if (item.latest_metrics) {
         const metrics = item.latest_metrics;
-        metaHTML += `<br><br><strong>Live Metrics:</strong>`;
-        metaHTML += `<br>CPU Utilization: ${metrics.cpu_util}%`;
-        metaHTML += `<br>GPU Utilization: ${metrics.gpu_util}%`;
-        if (metrics.mem_used_gb) {
-            metaHTML += `<br>Memory Used: ${metrics.mem_used_gb} GB`;
-        }
-        metaHTML += `<br><small>Updated: ${new Date(metrics.recorded_at).toLocaleTimeString()}</small>`;
+        metaHTML += `
+            <div class="pt-4 mt-4 border-t border-gray-200 dark:border-gray-700">
+                <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Live Metrics</h4>
+                <div class="space-y-2">
+                    <div><strong>CPU Utilization:</strong> ${metrics.cpu_util}%</div>
+                    <div><strong>GPU Utilization:</strong> ${metrics.gpu_util}%</div>
+                    ${metrics.mem_used_gb ? `<div><strong>Memory Used:</strong> ${metrics.mem_used_gb} GB</div>` : ''}
+                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                        Updated: ${new Date(metrics.recorded_at).toLocaleTimeString()}
+                    </div>
+                </div>
+            </div>
+        `;
     }
     
+    metaHTML += `</div>`; // Close the space-y-3 div
     modalMeta.innerHTML = metaHTML;
 
     // Check if modalBookButton exists and user is buyer
     if (modalBookButton && role === "buyer") {
         modalBookButton.onclick = handleBookingRequest;
-        modalBookButton.style.display = "block"; // Ensure it's visible
+        modalBookButton.style.display = "block";
     } else if (modalBookButton) {
-        // Hide the button if user is not a buyer
         modalBookButton.style.display = "none";
     }
 
+    // Show the modal using the already initialized modal
     modal.show();
 }
 
