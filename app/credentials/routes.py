@@ -20,7 +20,7 @@ def get_buyer_credentials(
     service: AccessCredentialsService = Depends(get_access_credential_service),
     bookings_public: BookingsPublic = Depends(get_bookings_public),
 ):
-    auth.ensure_buyer(user) #Ensures the user is a buyer
+    auth.ensure_buyer() #Ensures the user is a buyer
 
     booking = bookings_public.get_booking(booking_id)
 
@@ -32,7 +32,7 @@ def get_buyer_credentials(
         )
 
     #service will decide whether credentials should be shown
-    creds = service.get_for_booking(booking_id)
+    creds = service.get_for_booking(booking)        #consider: mixed passing of booking object and booking id
     return {"credentials": creds}
 
 
@@ -45,7 +45,7 @@ def get_provider_credentials(
     service: AccessCredentialsService = Depends(get_access_credential_service),
     bookings_public: BookingsPublic = Depends(get_bookings_public),
 ):
-    auth.ensure_provider(user)  #Ensures the user is a provider
+    auth.ensure_provider()  #Ensures the user is a provider
 
     booking = bookings_public.get_booking(booking_id)
 
@@ -57,5 +57,5 @@ def get_provider_credentials(
             detail="You are not the provider of this machine.",
         )
 
-    creds = service.get_for_booking(booking_id)
+    creds = service.get_for_booking(booking)     #consider: mixed passing of booking object and booking id
     return {"credentials": creds}
