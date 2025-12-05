@@ -15,8 +15,6 @@ class PaymentsPublic(Protocol):
     """
     def escrow_for_booking(
         self,
-        db: Session,
-        *,
         booking,
         amount: Decimal,
         currency: str,
@@ -25,16 +23,12 @@ class PaymentsPublic(Protocol):
 
     def capture_for_booking(
         self,
-        db: Session,
-        *,
         booking,
     ) -> Payment:
         ...
 
     def refund_for_booking(
         self,
-        db: Session,
-        *,
         booking,
         reason: str | None = None,
     ) -> Payment:
@@ -42,37 +36,31 @@ class PaymentsPublic(Protocol):
 
     def list_for_booking(
         self,
-        db: Session,
         booking,
     ) -> List[Payment]:
         ...
 
     def void_escrow_for_booking(
         self,
-        db: Session,
-        *,
         booking,
     ) -> Payment:
         ...
 
-    def get_payments_for_bookings(self, db: Session, booking_ids):
+    def get_payments_for_bookings(self, booking_ids):
         ...
 
 
 class PaymentsPublicImpl(PaymentsPublic):
     def __init__(self, service: PaymentsService):
-        self.service = service  #self.db public signature
+        self.service = service
 
     def escrow_for_booking(
         self,
-        db: Session,
-        *,
         booking,
         amount: Decimal,
         currency: str,
     ) -> Payment:
         return self.service.create_escrow(
-            db,
             booking=booking,
             amount=amount,
             currency=currency,
@@ -80,45 +68,36 @@ class PaymentsPublicImpl(PaymentsPublic):
 
     def capture_for_booking(
         self,
-        db: Session,
-        *,
         booking,
     ) -> Payment:
         return self.service.capture(
-            db,
             booking=booking,
         )
 
     def refund_for_booking(
         self,
-        db: Session,
-        *,
         booking,
         reason: str | None = None,
     ) -> Payment:
         return self.service.refund(
-            db,
             booking=booking,
             reason=reason,
         )
 
     def list_for_booking(
         self,
-        db: Session,
-        booking,
+        booking_id,
     ):
-        return self.service.list_for_booking(db, booking)
+        return self.service.list_for_booking(booking_id)
     
     def void_escrow_for_booking(
         self,
-        db: Session,
-        *,
         booking,
     ) -> Payment:
-        return self.service.void_escrow(db, booking=booking)
+        return self.service.void_escrow(booking=booking)
     
-    def get_payments_for_bookings(self, db: Session, booking_ids):
-        return self.service.get_payments_for_bookings(db, booking_ids)
+    def get_payments_for_bookings(self, booking_ids):
+        return self.service.get_payments_for_bookings(booking_ids)
 
 
 def get_payments_public(

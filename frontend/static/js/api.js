@@ -114,3 +114,7 @@ export async function apiVerifyProvider(providerId, status, notes = "") {
 export async function apiGetProviderVerifications(providerId) {
     return request(`/providers/admin/providers/${providerId}/verifications`);
 }
+
+export function apiSearchListings(searchTerm) {
+    return request(`/listings/search?name=${encodeURIComponent(searchTerm)}`);
+}

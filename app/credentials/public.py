@@ -4,7 +4,7 @@ from fastapi import Depends
 from app.database import get_db
 from sqlalchemy.orm import Session
 
-from .service import AccessCredentialService, get_access_credential_service
+from .service import AccessCredentialsService, get_access_credential_service
 
 
 class AccessCredentialsPublic(Protocol):
@@ -23,9 +23,9 @@ class AccessCredentialsPublic(Protocol):
 
 class AccessCredentialsPublicImpl:
     """
-    Concrete adapter around AccessCredentialService.
+    Concrete adapter around AccessCredentialsService.
     """
-    def __init__(self, svc: AccessCredentialService):
+    def __init__(self, svc: AccessCredentialsService):
         self.svc = svc
 
     def issue_for_booking(self, booking):
@@ -39,6 +39,6 @@ class AccessCredentialsPublicImpl:
 
 
 def get_credentials_public(
-    svc: AccessCredentialService = Depends(get_access_credential_service)
+    svc: AccessCredentialsService = Depends(get_access_credential_service)
 ) -> AccessCredentialsPublic:
     return AccessCredentialsPublicImpl(svc)

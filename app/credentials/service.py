@@ -10,15 +10,19 @@ from .issuer import get_credential_issuer
 
 from uuid import UUID
 
+from sqlalchemy.orm import Session
+
 from app.notifications.public import NotificationsPublic, get_notifications_public
 
-class AccessCredentialService:
+class AccessCredentialsService:
     def __init__(
         self,
+        db: Session,
         repo: AccessCredentialRepository,
         issuer: CredentialIssuer,
         notifications_public: NotificationsPublic,  
     ):
+        self.db = db
         self.repo = repo
         self.issuer = issuer
         self.notifications = notifications_public
@@ -40,8 +44,8 @@ class AccessCredentialService:
             machine=machine,
         )
 
-        # 4. Persist
         saved = self.repo.create(
+            self.db,
             booking_id=booking.id,
             vpn_config_uri=payload.vpn_config_uri,
             ssh_public_key_fingerprint=payload.ssh_public_key_fingerprint,
@@ -56,7 +60,7 @@ class AccessCredentialService:
         """
         Revoke credentials for a booking.
         """
-        credentials = self.repo.get_by_booking_id(booking.id)
+        credentials = self.repo.get_by_booking_id(self.db, booking.id)
 
         if not credentials:
             return []
@@ -65,7 +69,7 @@ class AccessCredentialService:
 
         for credential in credentials:
             self.issuer.revoke(credential)
-            updated = self.repo.mark_revoked(credential.id)
+            updated = self.repo.mark_revoked(self.db, credential.id)
             revoked_list.append(updated)
 
         self.notifications.credentials_revoked(booking.buyer, updated)
@@ -77,18 +81,19 @@ class AccessCredentialService:
         """
         Return credentials for displaying or auditing.
         """
-        return self.repo.get_by_booking_id(booking.id)
+        return self.repo.get_by_booking_id(self.db, booking.id)
 
 
 def get_access_credential_service(
-    db = Depends(get_db),
+    db: Session = Depends(get_db),
     issuer: CredentialIssuer = Depends(get_credential_issuer),
     notifications_public: NotificationsPublic = Depends(get_notifications_public),
-) -> AccessCredentialService:
+) -> AccessCredentialsService:
 
-    repo = AccessCredentialRepository(db)
+    repo = AccessCredentialRepository()
 
-    return AccessCredentialService(
+    return AccessCredentialsService(
+        db=db,
         repo=repo,
         issuer=issuer,
         notifications_public=notifications_public,

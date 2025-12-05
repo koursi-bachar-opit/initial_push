@@ -34,6 +34,7 @@ class BookingRequest(BaseModel):
     listing_id: UUID
     start_time: datetime
     end_time: datetime
+    organization_id: Optional[UUID] = None  #NEW LINE
 
 
 class BookingRead(BaseModel):

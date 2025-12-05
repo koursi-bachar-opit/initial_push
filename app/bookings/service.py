@@ -9,7 +9,7 @@ from .schemas import (
     BookingStatus
 )
 
-from .repository import BookingRepository
+from .repository import BookingsRepository
 from app.listings.public import ListingsPublic, get_listings_public
 
 from fastapi import Depends
@@ -19,7 +19,7 @@ from uuid import UUID
 
 from app.credentials.public import AccessCredentialsPublic, get_credentials_public #credentials
 from app.payments.public import PaymentsPublic, get_payments_public #payments
-#from app.organizations.public import OrganizationsPublic, get_organizations_public  #NEW LINE
+from app.organizations.public import OrganizationsPublic, get_organizations_public  #NEW LINE
 from app.compliance.public import CompliancePublic, get_compliance_public
 
 from app.notifications.public import NotificationsPublic, get_notifications_public
@@ -43,11 +43,11 @@ class BookingsService:
     def __init__(
         self,
         db: Session,
-        booking_repo: BookingRepository,
+        booking_repo: BookingsRepository,
         listings_public: ListingsPublic,
         credentials_public: AccessCredentialsPublic, #credentials
         payments_public: PaymentsPublic,    #payments
-        #organizations_public: OrganizationsPublic,  #NEW LINE
+        organizations_public: OrganizationsPublic,  #NEW LINE
         compliance_public: CompliancePublic,     #NEW LINE
         notifications_public: NotificationsPublic,
     ):
@@ -56,24 +56,25 @@ class BookingsService:
         self.listings_public = listings_public
         self.credentials_public = credentials_public #credentials
         self.payments_public = payments_public  #payments
-        #self.organizations_public = organizations_public  #NEW LINE
+        self.organizations_public = organizations_public  #NEW LINE
         self.compliance_public = compliance_public  #NEW LINE
         self.notifications = notifications_public
 
 
     def normalize_times(self, start_time, end_time):
         """
-        normalize_times assumes start_time/end_time are already timezone-aware. If the API ever starts receiving naive datetimes, 
-        astimezone will do something, but maybe not what's expected.
-        Previously had explicit tz validation. If expect all datetimes to be aware, it's worth:
-        Either validating that (and raising ValueError)
+        Convert timezone-aware datetimes to UTC.
+        Raises ValueError for naive datetimes.
         """
+        if start_time.tzinfo is None or end_time.tzinfo is None:
+            raise ValueError("start_time and end_time must be timezone-aware")
+    
         start_utc = start_time.astimezone(timezone.utc)
         end_utc = end_time.astimezone(timezone.utc)
         return start_utc, end_utc
 
 
-    def validate_booking_window(self, start_utc, end_utc):  #TODO: enforce maximum booking window (example: <= 7 days)
+    def validate_booking_window(self, start_utc, end_utc):  #TODO: enforce maximum booking window (example: <= 7 days), and minimum bookings time
         if start_utc is None or end_utc is None:
             raise ValueError("start_time and end_time must be provided.")   #TODO: convert to domain exception later
 
@@ -82,7 +83,6 @@ class BookingsService:
 
 
     def fetch_listing_or_raise(self, listing_id):
-        # fetch via public interface, not repository
         listing = self.listings_public.get_listing_by_id(listing_id)
         if not listing:
             raise ValueError("Listing not found") #TODO: convert to domain exception later
@@ -97,8 +97,8 @@ class BookingsService:
         return total_seconds * (hourly_price / 3600)
 
 
-    #def build_booking_model(self, payload, buyer_user_id, start_utc, end_utc, total_price, organization_id=None):  #NEW LINE
-    def build_booking_model(self, payload, buyer_user_id, start_utc, end_utc, total_price):
+    #def build_booking_model(self, payload, buyer_user_id, start_utc, end_utc, total_price):
+    def build_booking_model(self, payload, buyer_user_id, start_utc, end_utc, total_price, organization_id=None):  #NEW LINE
         """
         Build the Booking model for passing to the repository
         """
@@ -109,7 +109,7 @@ class BookingsService:
             end_time=end_utc,
             total_price_estimate=total_price,
             status=BookingStatus.REQUESTED,  #until: status transitions eventually will be used in state machine
-            #organization_id=organization_id,  #NEW LINE
+            organization_id=organization_id,  #NEW LINE
         )
         return booking
     
@@ -147,13 +147,10 @@ class BookingsService:
         
         listing = self.fetch_listing_or_raise(payload.listing_id)
         
-        if payload.buyer_user_id is None:
-            raise ValueError("buyer_user_id is required for admin booking creation")
-
         total_price = self.calculate_price(start_utc, end_utc, listing.price)
 
         booking = self.build_booking_model(payload, payload.buyer_user_id, start_utc, end_utc, total_price,
-                                           #organization_id=payload.organization_id,  #NEW LINE
+                                           organization_id=payload.organization_id,  #NEW LINE
                                            )
         
         return self.booking_repo.create_booking(self.db, booking)
@@ -174,10 +171,10 @@ class BookingsService:
 
         total_price = self.calculate_price(start_utc, end_utc, listing.price)
 
-        # if payload.organization_id is not None:  #NEW LINE
-        #     is_admin = self.organizations_public.is_org_admin(actor_user_id, payload.organization_id)  #NEW LINE
-        #     if not is_admin:  #NEW LINE
-        #         raise ValueError("User is not an admin of the specified organization")  #NEW LINE
+        if payload.organization_id is not None:  #NEW LINE
+            is_admin = self.organizations_public.is_org_admin(buyer_user_id, payload.organization_id)  #NEW LINE
+            if not is_admin:  #NEW LINE
+                raise ValueError("User is not an admin of the specified organization")  #NEW LINE
 
         booking = self.build_booking_model(payload, buyer_user_id, start_utc, end_utc, total_price)
 
@@ -188,7 +185,6 @@ class BookingsService:
 
         #Payments: escrow hold immediately upon booking request
         self.payments_public.escrow_for_booking(
-            self.db,
             booking=created,
             amount=created.total_price_estimate,
             currency=created.listing.currency if hasattr(created.listing, "currency") else "USD",
@@ -240,7 +236,6 @@ class BookingsService:
 
         if now > booking.start_time:
             raise ValueError("Cannot cancel booking after booking start_time") #TODO: convert to domain exception later
-        
 
         if booking.status not in {BookingStatus.REQUESTED, BookingStatus.CONFIRMED}:
             raise ValueError("Booking must be requested or confirmed in order to cancel.")  #TODO: convert to domain exception later
@@ -255,7 +250,6 @@ class BookingsService:
             raise ValueError("Cannot void escrow on a booking that isn't cancelled.")
         
         self.payments_public.void_escrow_for_booking(
-            self.db,
             booking=booking,
         )
 
@@ -346,7 +340,6 @@ class BookingsService:
         
         #payout the provider
         self.payments_public.capture_for_booking(
-            self.db,
             booking=booking,
         )
 
@@ -377,18 +370,18 @@ def get_bookings_service(
     listings_public: ListingsPublic = Depends(get_listings_public),
     credentials_public: AccessCredentialsPublic = Depends(get_credentials_public),  #credentials
     payments_public: PaymentsPublic = Depends(get_payments_public), #payments
-    #organizations_public: OrganizationsPublic = Depends(get_organizations_public),  #NEW LINE
+    organizations_public: OrganizationsPublic = Depends(get_organizations_public),  #NEW LINE
     compliance_public: CompliancePublic = Depends(get_compliance_public),   #NEW LINE
     notifications_public: NotificationsPublic = Depends(get_notifications_public),
 ) -> BookingsService:
-    repo = BookingRepository()
+    repo = BookingsRepository()
     return BookingsService(
         db=db,
         booking_repo=repo,
         listings_public=listings_public,
         credentials_public=credentials_public,  #credentials
         payments_public=payments_public,    #payments
-        #organizations_public=organizations_public,  #NEW LINE
+        organizations_public=organizations_public,  #NEW LINE
         compliance_public=compliance_public,    #NEW LINE
         notifications_public=notifications_public,
     )

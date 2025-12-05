@@ -27,7 +27,7 @@ def list_payments_for_booking(
     Get all payments associated with a booking.
     Caller must be either the buyer or the provider (via booking access logic).
     """
-    return payments_public.list_for_booking(db, booking_id)
+    return payments_public.list_for_booking(booking_id)
 
 
 #consider
@@ -54,6 +54,7 @@ def create_payment_intent(
     except Exception as e:
         raise ValueError(f"Failed to create payment intent: {str(e)}")
 
+#consider: passes payment_intent_id, not booking ID (list_for_booking takes a booking ID)
 @router.get("/{payment_intent_id}/status")
 def get_payment_status(
     payment_intent_id: str,
@@ -64,7 +65,7 @@ def get_payment_status(
     Get payment status for a PaymentIntent.
     """
     # You could check Stripe API here or use your database
-    payments = payments_public.list_for_booking(db, payment_intent_id)
+    payments = payments_public.list_for_booking(payment_intent_id)
     if payments:
         return {"status": payments[0].status}
     return {"status": "unknown"}

@@ -1,7 +1,41 @@
 {% extends "base.html" %}
 {% block content %}
 
-<h1 class="text-3xl font-bold mb-8 text-gray-900 dark:text-white">Listings</h1>
+<h1 class="text-3xl font-bold mb-6 text-gray-900 dark:text-white">Listings</h1>
+
+<!-- Search Box -->
+<div class="mb-8">
+    <div class="flex gap-2">
+        <div class="relative flex-1">
+            <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
+                <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
+                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"/>
+                </svg>
+            </div>
+            <input 
+                type="text" 
+                id="searchInput" 
+                placeholder="Search listings by title..."
+                class="block w-full p-4 ps-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+            >
+        </div>
+        <button 
+            id="searchButton"
+            class="px-6 py-4 text-sm font-medium text-white bg-blue-700 rounded-lg hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800 transition"
+        >
+            Search
+        </button>
+        <button 
+            id="clearSearch"
+            class="px-6 py-4 text-sm font-medium text-gray-900 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-gray-200 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700 dark:hover:border-gray-700 dark:focus:ring-gray-700 transition"
+        >
+            Clear
+        </button>
+    </div>
+    <div id="searchResultsInfo" class="mt-2 text-sm text-gray-600 dark:text-gray-400 hidden">
+        Found <span id="resultsCount" class="font-semibold">0</span> results
+    </div>
+</div>
 
 <!--Tabs-->
 <div class="mb-6 border-b border-gray-200 dark:border-gray-700">
@@ -37,13 +71,23 @@
 
 <!--All Listings-->
 <div id="all-listings" role="tabpanel" aria-labelledby="all-listings-tab">
-    <div id="listingsGrid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+    <div id="listingsGrid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Listings will be loaded here via JS -->
+    </div>
+    <div id="noResults" class="hidden text-center py-12">
+        <p class="text-gray-500 dark:text-gray-400 text-lg">No listings found.</p>
+    </div>
 </div>
 
 <!--My Listings-->
 {% if user %}
 <div id="my-listings" class="hidden" role="tabpanel" aria-labelledby="my-listings-tab">
-    <div id="myListingsGrid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+    <div id="myListingsGrid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- My listings will be loaded here -->
+    </div>
+    <div id="noMyResults" class="hidden text-center py-12">
+        <p class="text-gray-500 dark:text-gray-400 text-lg">You haven't created any listings yet.</p>
+    </div>
 </div>
 {% endif %}
 

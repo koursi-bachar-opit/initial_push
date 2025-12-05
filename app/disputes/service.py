@@ -189,7 +189,6 @@ class DisputeService:
             #PaymentService.refund() implementation.
             #Extend PaymentsPublic for partial refund
             _ = self.payments_public.refund_for_booking(
-                self.db,
                 booking_id=booking.id,
                 reason="dispute_resolution",
             )

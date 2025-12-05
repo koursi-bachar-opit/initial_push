@@ -5,7 +5,6 @@ from fastapi import Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.bookings.public import get_bookings_public, BookingsPublic
 
 from .repository import OrganizationRepository
 from .models import OrgRole
@@ -17,10 +16,8 @@ class OrganizationService:
     def __init__(
         self,
         repo: OrganizationRepository,
-        bookings_public: BookingsPublic,   #until: for future org-funded bookings
     ):
         self.repo = repo
-        self.bookings_public = bookings_public
 
 
     def create_organization(self, creator_user_id: UUID, payload: OrganizationCreate):
@@ -112,10 +109,8 @@ class OrganizationService:
 
 def get_organization_service(
     db: Session = Depends(get_db),
-    bookings_public: BookingsPublic = Depends(get_bookings_public),
 ) -> OrganizationService:
     repo = OrganizationRepository(db)
     return OrganizationService(
         repo=repo,
-        bookings_public=bookings_public,
     )
