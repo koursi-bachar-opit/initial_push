@@ -5,7 +5,7 @@ from app.database import get_db
 from app.machines.public import MachinesPublic, get_machines_public
 
 from .repository import ListingsRepository
-from .schemas import ListingCreate, ListingRead
+from .schemas import ListingCreate, ListingRead, ListingFilter #, ListingFilter
 from .models import Listing
 
 from uuid import UUID
@@ -56,28 +56,29 @@ class ListingsService:
     def get_listing_by_id(self, listing_id: UUID) -> Listing | None:
         """Get a single listing by ID - for internal use."""
         return self.listing_repo.get_listing_by_id(self.db, listing_id)
+    
 
-    # #refactor to move collect metrics elsewhere
-    # def search_listings_by_name(self, name: str):
-    #     """Search listings by name with real-time metrics - for customer search."""
-    #     #update test
-    #     if not name.strip():
-    #         return []
-    #     #update test
-        
-    #     listings = self.listing_repo.search_by_title(self.db, name)
-        
-    #     results = []
-    #     for listing in listings:
-    #         #collect metrics for each listing in search results
-    #         metrics_data = self._collect_listing_metrics(listing)
-    #         results.append({
-    #             "listing": listing,
-    #             "latest_metrics": metrics_data
-    #         })
-        
-    #     return results
+    def _collect_listing_metrics(self, listing: Listing):
+        """Helper to collect metrics for a single listing."""
+        machine = listing.machine
+        raw = self.agent.collect_metrics_raw(machine.id)
+        self.metrics_public.ingest_raw_metrics(
+            machine_id=machine.id,
+            raw=raw,
+            provider_id=machine.provider_id,
+        )
+        return self.metrics_public.get_latest_metrics(machine.id)
 
+
+    def list_listings(self):
+        """
+        Public listing retrieval.
+        """
+        return self.listing_repo.get_listings(self.db)
+    
+
+    #update tests
+    #consider: metrics collection in listings
     def search_listings_by_name(self, name: str):
         """Search listings by name with real-time metrics - for customer search."""
         if not name.strip():
@@ -99,25 +100,31 @@ class ListingsService:
             })
         
         return results
+    
 
-
-    def _collect_listing_metrics(self, listing: Listing):
-        """Helper to collect metrics for a single listing."""
-        machine = listing.machine
-        raw = self.agent.collect_metrics_raw(machine.id)
-        self.metrics_public.ingest_raw_metrics(
-            machine_id=machine.id,
-            raw=raw,
-            provider_id=machine.provider_id,
-        )
-        return self.metrics_public.get_latest_metrics(machine.id)
-
-
-    def list_listings(self):
-        """
-        Public listing retrieval.
-        """
-        return self.listing_repo.get_listings(self.db)
+    def search_listings_with_filters(self, filters: ListingFilter):
+        """Search listings with advanced filtering by machine specifications."""
+        result = self.listing_repo.search_listings_with_filters(self.db, filters)
+        
+        # Add metrics to each listing
+        enhanced_items = []
+        for listing in result["items"]:
+            metrics_data = self._collect_listing_metrics(listing)
+            listing_read = ListingRead.model_validate(listing)
+            
+            enhanced_items.append({
+                "listing": listing_read.model_dump(),
+                "latest_metrics": metrics_data
+            })
+        
+        return {
+            "items": enhanced_items,
+            "total": result["total"],
+            "page": result["page"],
+            "per_page": result["per_page"],
+            "total_pages": result["total_pages"]
+        }
+    #update tests
 
 
 def get_listings_service(
