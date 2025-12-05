@@ -24,19 +24,19 @@ class Machine(Base):
     )
 
     #Hardware and descriptive attributes (note: to be non nullable later)
-    hostname = Column(String, nullable=True)
-    location_region = Column(String, nullable=True)
+    hostname = Column(String, nullable=False)
+    location_region = Column(String, nullable=False)
 
-    gpu_model = Column(String, nullable=True)
-    gpu_count = Column(Integer, nullable=True)
-    vram_gb = Column(Integer, nullable=True)
+    gpu_model = Column(String, nullable=False)
+    gpu_count = Column(Integer, nullable=False)
+    vram_gb = Column(Integer, nullable=False)
 
-    cpu_model = Column(String, nullable=True)
-    cpu_cores = Column(Integer, nullable=True)
-    ram_gb = Column(Integer, nullable=True)
+    cpu_model = Column(String, nullable=False)
+    cpu_cores = Column(Integer, nullable=False)
+    ram_gb = Column(Integer, nullable=False)
 
-    storage_gb = Column(Integer, nullable=True)
-    network_mbps = Column(Integer, nullable=True)
+    storage_gb = Column(Integer, nullable=False)
+    network_mbps = Column(Integer, nullable=False)
     notes = Column(String, nullable=True)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
