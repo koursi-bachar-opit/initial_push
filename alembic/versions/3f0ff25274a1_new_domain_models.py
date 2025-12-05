@@ -1,8 +1,8 @@
 """New domain models
 
-Revision ID: e2f3f9f04e7a
+Revision ID: 3f0ff25274a1
 Revises: 
-Create Date: 2025-12-04 04:33:55.395975
+Create Date: 2025-12-05 02:49:26.699329
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'e2f3f9f04e7a'
+revision: str = '3f0ff25274a1'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -58,16 +58,16 @@ def upgrade() -> None:
     op.create_table('machines',
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('provider_id', sa.UUID(), nullable=False),
-    sa.Column('hostname', sa.String(), nullable=True),
-    sa.Column('location_region', sa.String(), nullable=True),
-    sa.Column('gpu_model', sa.String(), nullable=True),
-    sa.Column('gpu_count', sa.Integer(), nullable=True),
-    sa.Column('vram_gb', sa.Integer(), nullable=True),
-    sa.Column('cpu_model', sa.String(), nullable=True),
-    sa.Column('cpu_cores', sa.Integer(), nullable=True),
-    sa.Column('ram_gb', sa.Integer(), nullable=True),
-    sa.Column('storage_gb', sa.Integer(), nullable=True),
-    sa.Column('network_mbps', sa.Integer(), nullable=True),
+    sa.Column('hostname', sa.String(), nullable=False),
+    sa.Column('location_region', sa.String(), nullable=False),
+    sa.Column('gpu_model', sa.String(), nullable=False),
+    sa.Column('gpu_count', sa.Integer(), nullable=False),
+    sa.Column('vram_gb', sa.Integer(), nullable=False),
+    sa.Column('cpu_model', sa.String(), nullable=False),
+    sa.Column('cpu_cores', sa.Integer(), nullable=False),
+    sa.Column('ram_gb', sa.Integer(), nullable=False),
+    sa.Column('storage_gb', sa.Integer(), nullable=False),
+    sa.Column('network_mbps', sa.Integer(), nullable=False),
     sa.Column('notes', sa.String(), nullable=True),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
