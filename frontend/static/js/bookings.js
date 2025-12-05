@@ -30,7 +30,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     //Attach button, choose bookings actions
     document.querySelectorAll("[data-act]").forEach(btn => {
         btn.addEventListener("click", async () => {
-            const id = Number(btn.dataset.id);
+            const id = btn.dataset.id;
             const act = btn.dataset.act;
 
             if (act === "cancel") {
@@ -127,7 +127,6 @@ function btn(act, label, id) {
         </button>
     `;
 }
-
 
 //Badge and date helpers
 function statusBadge(status) {
