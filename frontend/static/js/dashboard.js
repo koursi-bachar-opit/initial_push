@@ -9,6 +9,7 @@ import {
     apiGetProviderStats,
     apiGetMachineBenchmarks,
     apiAddMachineBenchmark,
+    apiGetBookingCredentials,
 } from "./api.js";
 
 //body targets
@@ -377,6 +378,17 @@ async function loadBookings() {
         pendingBody.innerHTML = pending.length
             ? pending.map(rowHTML).join("")
             : emptyRow(5, "No pending bookings.");
+        
+        // Add event listeners for credentials buttons
+        setTimeout(() => {
+            document.querySelectorAll('.view-credentials-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const bookingId = btn.dataset.bookingId;
+                    showCredentialsModal(bookingId);
+                });
+            });
+        }, 100);
     }
 
     if (pastBody) {
@@ -384,6 +396,72 @@ async function loadBookings() {
             ? past.map(rowHTML).join("")
             : emptyRow(5, "No past bookings.");
     }
+}
+
+// Credentials functionality
+async function loadCredentials(bookingId) {
+    return await apiGetBookingCredentials(bookingId);
+}
+
+// show bookings credentials
+function showCredentialsModal(bookingId) {
+    console.log("Fetching credentials for booking:", bookingId); // Debug log
+    
+    loadCredentials(bookingId)
+        .then(data => {
+            console.log("Credentials response:", data); // Debug log
+            
+            const credentials = data.credentials;
+            
+            // Debug: Check what we received
+            console.log("Credentials data:", credentials);
+            console.log("VPN URI:", credentials?.vpn_config_uri);
+            console.log("SSH Fingerprint:", credentials?.ssh_public_key_fingerprint);
+            
+            // Set VPN download link
+            const vpnLink = document.getElementById('vpnDownloadLink');
+            if (credentials && credentials.vpn_config_uri) {
+                vpnLink.href = credentials.vpn_config_uri;
+                vpnLink.classList.remove('hidden');
+                console.log("VPN link set to:", credentials.vpn_config_uri);
+            } else {
+                vpnLink.classList.add('hidden');
+                console.log("No VPN URI available");
+            }
+            
+            // Set SSH fingerprint
+            const sshFingerprint = document.getElementById('sshFingerprint');
+            if (credentials && credentials.ssh_public_key_fingerprint) {
+                sshFingerprint.textContent = credentials.ssh_public_key_fingerprint;
+                console.log("SSH fingerprint set:", credentials.ssh_public_key_fingerprint);
+            } else {
+                sshFingerprint.textContent = 'Not available';
+                console.log("No SSH fingerprint available");
+            }
+            
+            // Copy button functionality
+            const copyBtn = document.getElementById('copySshFingerprintBtn');
+            copyBtn.onclick = () => {
+                navigator.clipboard.writeText(credentials?.ssh_public_key_fingerprint || '')
+                    .then(() => {
+                        const originalText = copyBtn.textContent;
+                        copyBtn.textContent = 'Copied!';
+                        setTimeout(() => {
+                            copyBtn.textContent = originalText;
+                        }, 2000);
+                    })
+                    .catch(err => {
+                        console.error('Failed to copy:', err);
+                    });
+            };
+            
+            // Show the modal (let Flowbite handle it if using Option A)
+            // If using Option B, keep your custom modal show logic
+        })
+        .catch(err => {
+            console.error("Error loading credentials:", err); // Debug log
+            alert('Failed to load credentials: ' + err.message);
+        });
 }
 
 // Admin functions
@@ -522,10 +600,27 @@ function updateStats(stats) {
 }
 
 //Helper fxns
+//Helper fxns
 function rowHTML(b) {
+    const credentialsButton = b.status === 'active' ? `
+        <button class="view-credentials-btn inline-flex items-center gap-1 text-white bg-purple-600 hover:bg-purple-700 font-medium rounded-lg text-xs px-3 py-1.5 transition"
+                data-booking-id="${b.id}"
+                data-modal-target="credentialsModal"
+                data-modal-toggle="credentialsModal"
+                title="View access credentials for this booking">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
+            </svg>
+            Credentials
+        </button>
+    ` : '';
+    
     return `
         <tr class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
-            <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">#${b.id}</td>
+            <td class="px-6 py-4">
+                <div class="font-medium text-gray-900 dark:text-white">#${b.id.substring(0, 8)}...</div>
+                <div class="mt-1">${credentialsButton}</div>
+            </td>
             <td class="px-6 py-4 text-gray-900 dark:text-white">${b.listing_title || "Listing " + b.listing_id}</td>
             <td class="px-6 py-4 text-gray-900 dark:text-white">${b.buyer_email || "Unknown"}</td>
             <td class="px-6 py-4 text-gray-900 dark:text-white">${scheduleHTML(b)}</td>

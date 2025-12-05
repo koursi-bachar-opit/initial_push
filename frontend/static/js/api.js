@@ -145,3 +145,8 @@ export function apiAddMachineBenchmark(machineId, payload) {
         body: JSON.stringify(payload),
     });
 }
+
+// Credentials
+export function apiGetBookingCredentials(bookingId) {
+    return request(`/credentials/buyer/${bookingId}`);
+}
