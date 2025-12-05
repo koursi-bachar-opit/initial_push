@@ -50,11 +50,12 @@ def search_listings_by_name(
     return service.search_listings_by_name(name)
 
 
-@router.get("/", response_model=list[ListingRead])
+@router.get("/", response_model=list[dict])
 def list_listings(service: ListingsService = Depends(get_listings_service)):
     """
     Public listings endpoint.
     Accessible even to anonymous users.
+    Returns listings with metrics.
     """
     return service.list_listings()
 

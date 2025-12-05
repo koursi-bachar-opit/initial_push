@@ -70,14 +70,27 @@ class ListingsService:
         return self.metrics_public.get_latest_metrics(machine.id)
 
 
+    #update tests
     def list_listings(self):
         """
-        Public listing retrieval.
+        Public listing retrieval with metrics.
         """
-        return self.listing_repo.get_listings(self.db)
+        listings = self.listing_repo.get_listings(self.db)
+        
+        enhanced_listings = []
+        for listing in listings:
+            # Collect metrics for each listing
+            metrics_data = self._collect_listing_metrics(listing)
+            listing_read = ListingRead.model_validate(listing)
+            
+            enhanced_listings.append({
+                "listing": listing_read.model_dump(),
+                "latest_metrics": metrics_data
+            })
+        
+        return enhanced_listings
     
 
-    #update tests
     #consider: metrics collection in listings
     def search_listings_by_name(self, name: str):
         """Search listings by name with real-time metrics - for customer search."""
