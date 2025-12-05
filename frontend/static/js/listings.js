@@ -1,24 +1,33 @@
-import { apiGetListings, apiRequestBooking, apiSearchListings } from "./api.js";
+import { apiGetListings, apiRequestBooking, apiSearchListings, apiSearchListingsWithFilters } from "./api.js";
 
+// DOM Elements
 const listingsGrid = document.getElementById("listingsGrid");
 const myListingsGrid = document.getElementById("myListingsGrid");
 const role = localStorage.getItem("user_role");
 const userId = localStorage.getItem("user_id");
 
-// Search elements
-const searchInput = document.getElementById("searchInput");
-const searchButton = document.getElementById("searchButton");
-const clearSearch = document.getElementById("clearSearch");
-const searchResultsInfo = document.getElementById("searchResultsInfo");
+// Filter Elements
+const filterSearch = document.getElementById("filterSearch");
+const minPrice = document.getElementById("minPrice");
+const maxPrice = document.getElementById("maxPrice");
+const minCpuCores = document.getElementById("minCpuCores");
+const minRamGb = document.getElementById("minRamGb");
+const gpuModel = document.getElementById("gpuModel");
+const minGpuCount = document.getElementById("minGpuCount");
+const minVramGb = document.getElementById("minVramGb");
+const minStorageGb = document.getElementById("minStorageGb");
+const minNetworkMbps = document.getElementById("minNetworkMbps");
+const locationRegion = document.getElementById("locationRegion");
+const cpuModel = document.getElementById("cpuModel");
+const sortBy = document.getElementById("sortBy");
+const sortOrder = document.getElementById("sortOrder");
+const applyFilters = document.getElementById("applyFilters");
+const clearFilters = document.getElementById("clearFilters");
+const clearActiveFilters = document.getElementById("clearActiveFilters");
+const filterResultsInfo = document.getElementById("filterResultsInfo");
 const resultsCount = document.getElementById("resultsCount");
-const noResults = document.getElementById("noResults");
-const noMyResults = document.getElementById("noMyResults");
 
-let allListings = [];
-let filteredListings = [];
-let selectedListing = null;
-
-//modal DOM references (Flowbite)
+// Modal elements (existing)
 const modalEl = document.getElementById("listingDetailsModal");
 const modalTitle = document.getElementById("modalTitle");
 const modalDescription = document.getElementById("modalDescription");
@@ -26,98 +35,117 @@ const modalPrice = document.getElementById("modalPrice");
 const modalMeta = document.getElementById("modalMeta");
 const modalBookButton = document.getElementById("modalBookButton");
 
-//Flowbite modal instance is constructed after Flowbite loads
+let allListings = [];
+let filteredListings = [];
+let selectedListing = null;
 let modal;
+let isFiltered = false;
+
 
 document.addEventListener("DOMContentLoaded", async () => {
-    //create modal instance safely
+    // Initialize modal
     modal = new Modal(modalEl);
 
-    // Set up search event listeners
-    searchButton.addEventListener("click", performSearch);
-    clearSearch.addEventListener("click", clearSearchResults);
-    searchInput.addEventListener("keypress", (e) => {
-        if (e.key === "Enter") {
-            performSearch();
-        }
+    // Set up event listeners
+    applyFilters.addEventListener("click", performFilteredSearch);
+    clearFilters.addEventListener("click", resetAllFilters);
+    clearActiveFilters.addEventListener("click", resetAllFilters);
+    
+    // Enter key in search box
+    filterSearch.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") performFilteredSearch();
     });
 
+    // Load initial listings with metrics
     try {
-        allListings = await apiGetListings();
+        const response = await apiGetListings();
+        // Assuming apiGetListings now returns {items: [...]} structure
+        allListings = response.items || response; // Support both structures
         filteredListings = [...allListings];
         renderListings();
     } catch (err) {
-        listingsGrid.innerHTML = `<p class="text-red-600">${err.message}</p>`;
-        return;
+        showError("Failed to load listings: " + err.message);
     }
 });
 
-// Perform search
-async function performSearch() {
-    const searchTerm = searchInput.value.trim();
-    
-    if (!searchTerm) {
-        clearSearchResults();
-        return;
-    }
+async function performFilteredSearch() {
+    //Build filters object
+    const filters = {
+        q: filterSearch.value.trim() || undefined,
+        min_price: minPrice.value ? parseFloat(minPrice.value) : undefined,
+        max_price: maxPrice.value ? parseFloat(maxPrice.value) : undefined,
+        min_cpu_cores: minCpuCores.value ? parseInt(minCpuCores.value) : undefined,
+        min_ram_gb: minRamGb.value ? parseInt(minRamGb.value) : undefined,
+        gpu_model: gpuModel.value.trim() || undefined,
+        min_gpu_count: minGpuCount.value ? parseInt(minGpuCount.value) : undefined,
+        min_vram_gb: minVramGb.value ? parseInt(minVramGb.value) : undefined,
+        min_storage_gb: minStorageGb.value ? parseInt(minStorageGb.value) : undefined,
+        min_network_mbps: minNetworkMbps.value ? parseInt(minNetworkMbps.value) : undefined,
+        location_region: locationRegion.value.trim() || undefined,
+        cpu_model: cpuModel.value.trim() || undefined,
+        sort_by: sortBy.value,
+        sort_order: sortOrder.value,
+        page: 1,
+        per_page: 20
+    };
 
     try {
-        const searchResults = await apiSearchListings(searchTerm);
+        const response = await apiSearchListingsWithFilters(filters);
         
-        // Extract listings from the search results structure
-        filteredListings = searchResults.map(result => result.listing);
+        //Extract listings from response - now includes metrics
+        filteredListings = response.items; //Keep the full structure with metrics
+        isFiltered = true;
         
-        // Update UI
-        updateSearchUI(searchTerm, filteredListings.length);
+        //Update UI
+        updateResultsInfo(response.total);
         renderListings();
         
     } catch (err) {
-        console.error("Search error:", err);
-        showError("Search failed. Please try again.");
+        console.error("Filter error:", err);
+        showError("Failed to apply filters: " + err.message);
     }
 }
 
-// Clear search results
-function clearSearchResults() {
-    searchInput.value = "";
+function resetAllFilters() {
+    // Clear all filter inputs
+    filterSearch.value = "";
+    minPrice.value = "";
+    maxPrice.value = "";
+    minCpuCores.value = "";
+    minRamGb.value = "";
+    gpuModel.value = "";
+    minGpuCount.value = "";
+    minVramGb.value = "";
+    minStorageGb.value = "";
+    minNetworkMbps.value = "";
+    locationRegion.value = "";
+    cpuModel.value = "";
+    sortBy.value = "created_at";
+    sortOrder.value = "desc";
+    
+    // Reset to all listings
     filteredListings = [...allListings];
-    searchResultsInfo.classList.add("hidden");
-    noResults.classList.add("hidden");
+    isFiltered = false;
+    filterResultsInfo.classList.add("hidden");
     renderListings();
 }
 
-// Update search UI
-function updateSearchUI(searchTerm, count) {
-    resultsCount.textContent = count;
-    searchResultsInfo.classList.remove("hidden");
-    
-    if (count === 0) {
-        noResults.classList.remove("hidden");
+function updateResultsInfo(total) {
+    if (total === 0) {
+        filterResultsInfo.classList.add("hidden");
     } else {
-        noResults.classList.add("hidden");
+        resultsCount.textContent = total;
+        filterResultsInfo.classList.remove("hidden");
     }
 }
 
-// Show error message
-function showError(message) {
-    const errorDiv = document.createElement("div");
-    errorDiv.className = "p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400";
-    errorDiv.innerHTML = `<span class="font-medium">Error!</span> ${message}`;
-    
-    // Insert after search box
-    const searchBox = document.querySelector(".mb-8");
-    searchBox.parentNode.insertBefore(errorDiv, searchBox.nextSibling);
-    
-    // Remove after 5 seconds
-    setTimeout(() => errorDiv.remove(), 5000);
-}
-
-//render listings
 function renderListings() {
     // Update all listings tab
     if (filteredListings.length === 0) {
         listingsGrid.innerHTML = "";
+        document.getElementById("noResults").classList.remove("hidden");
     } else {
+        document.getElementById("noResults").classList.add("hidden");
         listingsGrid.innerHTML = filteredListings
             .map((l) => listingCardHTML(l))
             .join("");
@@ -126,16 +154,14 @@ function renderListings() {
     // Update my listings tab if user is logged in
     if (myListingsGrid && userId) {
         const mine = allListings.filter((l) => {
-            // Check if listing belongs to current user
-            // This assumes provider_id is accessible somehow
             return l.provider_id === userId || l.machine?.provider_id === userId;
         });
         
         if (mine.length === 0) {
-            noMyResults.classList.remove("hidden");
+            document.getElementById("noMyResults").classList.remove("hidden");
             myListingsGrid.innerHTML = "";
         } else {
-            noMyResults.classList.add("hidden");
+            document.getElementById("noMyResults").classList.add("hidden");
             myListingsGrid.innerHTML = mine.map((l) => listingCardHTML(l)).join("");
         }
     }
@@ -146,32 +172,49 @@ function renderListings() {
     });
 }
 
-//Card UI to format listing boxes
-function listingCardHTML(l) {
-    // Get description from machine if available
-    const description = l.machine?.notes || l.machine?.description || "No description provided.";
+//Update listingCardHTML to include metrics
+function listingCardHTML(item) {
+
+    const listing = item.listing || item; //Support both structures
+    const metrics = item.latest_metrics;
+    
+    const description = listing.machine?.notes || "No description provided.";
+    const cpuUtil = metrics?.cpu_util;
+    const gpuUtil = metrics?.gpu_util;
     
     return `
         <div class="bg-white dark:bg-gray-800 shadow border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:shadow-lg transition">
             <div class="p-5">
-                <h3 class="text-lg font-bold mb-1 text-gray-900 dark:text-white">${l.title}</h3>
+                <h3 class="text-lg font-bold mb-1 text-gray-900 dark:text-white">${listing.title}</h3>
                 <p class="text-gray-600 dark:text-gray-300 text-sm line-clamp-2 mb-3">
                     ${description}
                 </p>
-                <p class="text-blue-600 dark:text-blue-400 font-semibold mb-2">$${l.price}/hr</p>
+                <p class="text-blue-600 dark:text-blue-400 font-semibold mb-2">$${listing.price}/hr</p>
                 
-                <!-- Machine specs if available -->
-                ${l.machine ? `
+                <!-- Machine specs with metrics -->
+                ${listing.machine ? `
                 <div class="text-xs text-gray-500 dark:text-gray-400 mb-3 space-y-1">
-                    ${l.machine.cpu_cores ? `<div><span class="font-medium">CPU:</span> ${l.machine.cpu_cores} cores</div>` : ''}
-                    ${l.machine.ram_gb ? `<div><span class="font-medium">RAM:</span> ${l.machine.ram_gb} GB</div>` : ''}
-                    ${l.machine.gpu_model ? `<div><span class="font-medium">GPU:</span> ${l.machine.gpu_model}</div>` : ''}
-                    ${l.machine.location_region ? `<div><span class="font-medium">Region:</span> ${l.machine.location_region}</div>` : ''}
+                    ${listing.machine.cpu_cores ? `<div><span class="font-medium">CPU:</span> ${listing.machine.cpu_cores} cores ${cpuUtil !== undefined ? `<span class="text-green-600 dark:text-green-400">(${cpuUtil}% util)</span>` : ''}</div>` : ''}
+                    ${listing.machine.ram_gb ? `<div><span class="font-medium">RAM:</span> ${listing.machine.ram_gb} GB</div>` : ''}
+                    ${listing.machine.gpu_model ? `<div><span class="font-medium">GPU:</span> ${listing.machine.gpu_model} x${listing.machine.gpu_count || 1} ${gpuUtil !== undefined ? `<span class="text-green-600 dark:text-green-400">(${gpuUtil}% util)</span>` : ''}</div>` : ''}
+                    ${listing.machine.vram_gb ? `<div><span class="font-medium">VRAM:</span> ${listing.machine.vram_gb} GB per GPU</div>` : ''}
+                    ${listing.machine.storage_gb ? `<div><span class="font-medium">Storage:</span> ${listing.machine.storage_gb} GB</div>` : ''}
+                    ${listing.machine.network_mbps ? `<div><span class="font-medium">Network:</span> ${listing.machine.network_mbps} Mbps</div>` : ''}
+                    ${listing.machine.location_region ? `<div><span class="font-medium">Region:</span> ${listing.machine.location_region}</div>` : ''}
+                    ${metrics ? `<div class="pt-2 mt-2 border-t border-gray-200 dark:border-gray-700">
+                        <div class="flex justify-between">
+                            <span class="font-medium">Live Metrics:</span>
+                            <span class="text-xs text-gray-400">${new Date(metrics.recorded_at).toLocaleTimeString()}</span>
+                        </div>
+                        <div>CPU: <span class="${cpuUtil > 80 ? 'text-red-600' : cpuUtil > 50 ? 'text-yellow-600' : 'text-green-600'}">${cpuUtil}%</span></div>
+                        <div>GPU: <span class="${gpuUtil > 80 ? 'text-red-600' : gpuUtil > 50 ? 'text-yellow-600' : 'text-green-600'}">${gpuUtil}%</span></div>
+                        ${metrics.mem_used_gb ? `<div>Memory: ${metrics.mem_used_gb} GB used</div>` : ''}
+                    </div>` : ''}
                 </div>
                 ` : ''}
 
                 <button 
-                    data-id="${l.id}"
+                    data-id="${listing.id}"
                     class="btn-view-details w-full mt-2 px-4 py-2 bg-gray-900 text-white rounded hover:bg-black dark:hover:bg-gray-700 transition text-sm"
                     data-modal-target="listingDetailsModal"
                     data-modal-toggle="listingDetailsModal">
@@ -181,6 +224,7 @@ function listingCardHTML(l) {
         </div>
     `;
 }
+
 
 //Open modal (check listing description)
 function openDetailsModal(id) {
@@ -239,117 +283,25 @@ async function handleBookingRequest() {
     }
 }
 
-// import { apiGetListings, apiRequestBooking } from "./api.js";
-
-// const listingsGrid = document.getElementById("listingsGrid");
-// const myListingsGrid = document.getElementById("myListingsGrid");
-// const role = localStorage.getItem("user_role");
-// const userId = localStorage.getItem("user_id");
-
-// let listings = [];
-// let selectedListing = null;
-
-// //modal DOM references (Flowbite)
-// const modalEl = document.getElementById("listingDetailsModal");
-// const modalTitle = document.getElementById("modalTitle");
-// const modalDescription = document.getElementById("modalDescription");
-// const modalPrice = document.getElementById("modalPrice");
-// const modalMeta = document.getElementById("modalMeta");
-// const modalBookButton = document.getElementById("modalBookButton");
-
-// //Flowbite modal instance is constructed after Flowbite loads
-// let modal;
-
-// document.addEventListener("DOMContentLoaded", async () => {
-//     //create modal instance safely
-//     modal = new Modal(modalEl);
-
-//     try {
-//         listings = await apiGetListings();
-//     } catch (err) {
-//         listingsGrid.innerHTML = `<p class="text-red-600">${err.message}</p>`;
-//         return;
-//     }
-
-//     renderListings();
-// });
-
-
-// //render listings
-// function renderListings() {
-//     listingsGrid.innerHTML = listings
-//         .map((l) => listingCardHTML(l))
-//         .join("");
-
-//     if (myListingsGrid) {
-//         const mine = listings.filter((l) => String(l.provider_user_id) === userId);
-//         myListingsGrid.innerHTML = mine.map((l) => listingCardHTML(l)).join("");
-//     }
-
-//     document.querySelectorAll(".btn-view-details").forEach((btn) => {
-//         btn.addEventListener("click", () => openDetailsModal(btn.dataset.id));
-//     });
-// }
-
-
-// //Card UI to format listing boxes
-// function listingCardHTML(l) {
-//     return `
-//         <div class="bg-white dark:bg-gray-800 shadow border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:shadow-lg transition">
-//             <div class="p-5">
-//                 <h3 class="text-lg font-bold mb-1 text-gray-900 dark:text-white">${l.title}</h3>
-//                 <p class="text-gray-600 dark:text-gray-300 text-sm line-clamp-2 mb-3">
-//                     ${l.description || "No description provided."}
-//                 </p>
-//                 <p class="text-blue-600 dark:text-blue-400 font-semibold mb-2">$${l.price}/hr</p>
-
-//                 <button 
-//                     data-id="${l.id}"
-//                     class="btn-view-details w-full mt-2 px-4 py-2 bg-gray-900 text-white rounded hover:bg-black dark:hover:bg-gray-700 transition text-sm"
-//                     data-modal-target="listingDetailsModal"
-//                     data-modal-toggle="listingDetailsModal">
-//                     View Details
-//                 </button>
-//             </div>
-//         </div>
-//     `;
-// }
-
-// //Open modal (check listing description)
-// function openDetailsModal(id) {
-//     selectedListing = listings.find((l) => String(l.id) === String(id));
-//     if (!selectedListing) return;
-
-//     modalTitle.textContent = selectedListing.title;
-//     modalDescription.textContent = selectedListing.description || "No description.";
-//     modalPrice.textContent = `$${selectedListing.price}/hr`;
-//     modalMeta.textContent = `Listing ID: ${selectedListing.id}`;
-
-//     if (modalBookButton) {
-//         modalBookButton.onclick = handleBookingRequest;
-//     }
-
-//     modal.show();
-// }
-
-
-// //Booking request selection (booking window one hour default for test)
-// async function handleBookingRequest() {
-//     if (!selectedListing) return;
-
-//     const now = new Date();
-//     const end = new Date(now.getTime() + 60 * 60 * 1000);
-
-//     try {
-//         await apiRequestBooking({
-//             listing_id: selectedListing.id,
-//             start_time: now.toISOString(),
-//             end_time: end.toISOString(),
-//         });
-
-//         alert("Booking request sent!");
-//         modal.hide();
-//     } catch (err) {
-//         alert("Error: " + err.message);
-//     }
-// }
+function showError(message) {
+    // Create error notification
+    const errorDiv = document.createElement("div");
+    errorDiv.className = "fixed top-4 right-4 z-50 p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400 shadow-lg";
+    errorDiv.innerHTML = `
+        <div class="flex items-center">
+            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+            </svg>
+            <span class="font-medium">Error!</span> ${message}
+        </div>
+    `;
+    
+    document.body.appendChild(errorDiv);
+    
+    // Remove after 5 seconds
+    setTimeout(() => {
+        if (errorDiv.parentNode) {
+            errorDiv.parentNode.removeChild(errorDiv);
+        }
+    }, 5000);
+}
