@@ -226,11 +226,19 @@ function listingCardHTML(item) {
 }
 
 
-//Open modal (check listing description)
+// Open modal (check listing description)
 function openDetailsModal(id) {
-    selectedListing = filteredListings.find((l) => String(l.id) === String(id));
-    if (!selectedListing) return;
+    // Find the item in filteredListings (which has {listing, latest_metrics})
+    const item = filteredListings.find((item) => {
+        const listing = item.listing || item;
+        return String(listing.id) === String(id);
+    });
 
+    if (!item) return;
+    
+    // Extract the listing from the item
+    selectedListing = item.listing || item;
+    
     modalTitle.textContent = selectedListing.title;
     
     // Use machine description/notes if available
@@ -253,16 +261,34 @@ function openDetailsModal(id) {
             metaHTML += `<br>Specs: ${machine.cpu_cores || '?'} CPU cores, ${machine.ram_gb || '?'} GB RAM`;
         }
     }
+    
+    // Add metrics to modal if available
+    if (item.latest_metrics) {
+        const metrics = item.latest_metrics;
+        metaHTML += `<br><br><strong>Live Metrics:</strong>`;
+        metaHTML += `<br>CPU Utilization: ${metrics.cpu_util}%`;
+        metaHTML += `<br>GPU Utilization: ${metrics.gpu_util}%`;
+        if (metrics.mem_used_gb) {
+            metaHTML += `<br>Memory Used: ${metrics.mem_used_gb} GB`;
+        }
+        metaHTML += `<br><small>Updated: ${new Date(metrics.recorded_at).toLocaleTimeString()}</small>`;
+    }
+    
     modalMeta.innerHTML = metaHTML;
 
-    if (modalBookButton) {
+    // Check if modalBookButton exists and user is buyer
+    if (modalBookButton && role === "buyer") {
         modalBookButton.onclick = handleBookingRequest;
+        modalBookButton.style.display = "block"; // Ensure it's visible
+    } else if (modalBookButton) {
+        // Hide the button if user is not a buyer
+        modalBookButton.style.display = "none";
     }
 
     modal.show();
 }
 
-//Booking request selection (booking window one hour default for test)
+// Booking request selection (booking window one hour default for test)
 async function handleBookingRequest() {
     if (!selectedListing) return;
 
