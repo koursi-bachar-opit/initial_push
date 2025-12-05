@@ -132,3 +132,16 @@ export function apiSearchListingsWithFilters(filters = {}) {
     
     return request(`/listings/search/filter?${params}`);
 }
+
+
+// Benchmarks
+export function apiGetMachineBenchmarks(machineId) {
+    return request(`/benchmarks/machines/${machineId}`);
+}
+
+export function apiAddMachineBenchmark(machineId, payload) {
+    return request(`/benchmarks/machines/${machineId}`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+    });
+}

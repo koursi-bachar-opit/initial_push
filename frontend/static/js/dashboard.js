@@ -7,6 +7,8 @@ import {
     apiVerifyProvider,
     apiGetProviderVerifications,
     apiGetProviderStats,
+    apiGetMachineBenchmarks,
+    apiAddMachineBenchmark,
 } from "./api.js";
 
 //body targets
@@ -51,6 +53,8 @@ async function loadUserDashboard() {
     if (machineSelect) {
         await loadMachines();
     }
+
+    setupBenchmarkForm();
 
     //Load bookings
     await loadBookings();
@@ -167,7 +171,7 @@ async function loadAdminDashboard() {
 
 //Load machines and update UI state
 async function loadMachines() {
-    if (!machineSelect) return; //buyer dashboard
+    if (!machineSelect) return; // buyer dashboard
 
     try {
         machines = await apiGetMachines();
@@ -176,26 +180,172 @@ async function loadMachines() {
         machines = [];
     }
 
-    //Machines UI state
+    // Machines UI state
     if (machines.length === 0) {
         openCreateListingBtn.disabled = true;
         noMachinesWarning.classList.remove("hidden");
         machineSelect.innerHTML = "";
+        
+        // Also update benchmarks dropdown
+        const benchmarkMachineSelect = document.getElementById("benchmarkMachineSelect");
+        if (benchmarkMachineSelect) {
+            benchmarkMachineSelect.innerHTML = '<option value="">No machines available</option>';
+        }
         return;
     }
 
     openCreateListingBtn.disabled = false;
     noMachinesWarning.classList.add("hidden");
 
-    //dropdown - update to show more details
+    // Update listing dropdown
     machineSelect.innerHTML = machines
         .map(
             (m) =>
                 `<option value="${m.id}">
-                    ${m.hostname} - ${m.cpu_cores} cores, ${m.ram_gb}GB RAM, ${m.gpu_count}x ${m.gpu_model}
-                </option>`
+                    ${m.hostname || "Machine #" + m.id}
+                 </option>`
         )
         .join("");
+
+    // Update benchmarks dropdown
+    const benchmarkMachineSelect = document.getElementById("benchmarkMachineSelect");
+    const openAddBenchmarkBtn = document.getElementById("openAddBenchmarkModal");
+    
+    if (benchmarkMachineSelect) {
+        benchmarkMachineSelect.innerHTML = '<option value="">Choose a machine...</option>' +
+            machines.map(m => 
+                `<option value="${m.id}" data-hostname="${m.hostname || 'Unnamed'}">
+                    ${m.hostname || "Machine #" + m.id}
+                </option>`
+            ).join("");
+
+        // When machine is selected for benchmarks
+        benchmarkMachineSelect.addEventListener("change", async function() {
+            const machineId = this.value;
+            const selectedOption = this.options[this.selectedIndex];
+            const machineName = selectedOption.getAttribute("data-hostname");
+            
+            if (machineId) {
+                // Enable add benchmark button
+                openAddBenchmarkBtn.disabled = false;
+                
+                // Set hidden field in modal
+                document.getElementById("benchmarkMachineId").value = machineId;
+                
+                // Show benchmarks list
+                document.getElementById("benchmarksList").classList.remove("hidden");
+                document.getElementById("selectedMachineName").textContent = machineName;
+                
+                // Load benchmarks for this machine
+                await loadMachineBenchmarks(machineId);
+            } else {
+                // Disable add benchmark button
+                openAddBenchmarkBtn.disabled = true;
+                document.getElementById("benchmarksList").classList.add("hidden");
+            }
+        });
+    }
+}
+
+// Load benchmarks for a specific machine
+async function loadMachineBenchmarks(machineId) {
+    const benchmarksContainer = document.getElementById("benchmarksContainer");
+    if (!benchmarksContainer) return;
+
+    try {
+        const benchmarks = await apiGetMachineBenchmarks(machineId);
+        renderBenchmarks(benchmarks);
+    } catch (err) {
+        benchmarksContainer.innerHTML = `
+            <div class="text-red-600 dark:text-red-400">
+                Failed to load benchmarks: ${err.message}
+            </div>
+        `;
+    }
+}
+
+// Render benchmarks list
+function renderBenchmarks(benchmarks) {
+    const container = document.getElementById("benchmarksContainer");
+    if (!container) return;
+
+    if (benchmarks.length === 0) {
+        container.innerHTML = `
+            <div class="text-gray-500 dark:text-gray-400 italic">
+                No benchmarks yet. Add one to showcase this machine's performance.
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = benchmarks.map(benchmark => `
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h4 class="font-medium text-gray-900 dark:text-white">${benchmark.name}</h4>
+                    <p class="text-lg font-semibold text-purple-600 dark:text-purple-400 mt-1">${benchmark.score}</p>
+                    ${benchmark.methodology_uri ? `
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                            <a href="${benchmark.methodology_uri}" target="_blank" 
+                               class="text-blue-600 dark:text-blue-400 hover:underline">
+                                Methodology
+                            </a>
+                        </p>
+                    ` : ''}
+                    ${benchmark.artifact_uri ? `
+                        <p class="text-sm text-gray-600 dark:text-gray-400">
+                            <a href="${benchmark.artifact_uri}" target="_blank"
+                               class="text-blue-600 dark:text-blue-400 hover:underline">
+                                Artifact
+                            </a>
+                        </p>
+                    ` : ''}
+                </div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">
+                    ${new Date(benchmark.created_at).toLocaleDateString()}
+                </div>
+            </div>
+        </div>
+    `).join("");
+}
+
+// Handle benchmark form submission
+function setupBenchmarkForm() {
+    const form = document.getElementById("add-benchmark-form");
+    if (!form) return;
+
+    form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const fd = new FormData(form);
+        const machineId = fd.get("machine_id");
+        
+        const payload = {
+            name: fd.get("name"),
+            score: fd.get("score"),
+            methodology_uri: fd.get("methodology_uri") || undefined,
+            artifact_uri: fd.get("artifact_uri") || undefined,
+        };
+
+        try {
+            await apiAddMachineBenchmark(machineId, payload);
+            alert("Benchmark added successfully!");
+
+            // Close modal
+            document.querySelector('[data-modal-hide="addBenchmarkModal"]')?.click();
+            
+            // Reset form
+            form.reset();
+            
+            // Reload benchmarks for the selected machine
+            const selectedMachineId = document.getElementById("benchmarkMachineSelect").value;
+            if (selectedMachineId) {
+                await loadMachineBenchmarks(selectedMachineId);
+            }
+        } catch (err) {
+            alert("Error adding benchmark: " + err.message);
+        }
+    });
 }
 
 //Load bookings
