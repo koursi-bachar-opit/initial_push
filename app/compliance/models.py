@@ -32,19 +32,11 @@ class WipeAttestation(Base):
         nullable=False,
     )
 
-    provider_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("provider_profiles.id", ondelete="CASCADE"),
-        nullable=False,
-    )
-
     method = Column(String, nullable=False)
     evidence_uri = Column(String, nullable=True)
     notes = Column(String, nullable=True)
 
     attested_at = Column(DateTime, default=datetime.now(timezone.utc))
-    admin_review_status = Column(
+    status = Column(
         Enum(WipeReviewStatus), default=WipeReviewStatus.PENDING, nullable=False
     )
-    admin_notes = Column(String, nullable=True)
-    created_at = Column(DateTime, default=datetime.now(timezone.utc))

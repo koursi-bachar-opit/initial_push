@@ -1,25 +1,36 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from uuid import UUID
-
-from app.auth.public import ensure_provider
+from typing import Optional
+from app.auth.auth import get_current_user
 from .service import BenchmarkService, get_benchmark_service
 from .schemas import BenchmarkCreate, BenchmarkRead
+from app.users.models import User, UserRole
 
 router = APIRouter()
 
+#consider: more upfront validation if authorization is refactored
 #Provider upload
+router = APIRouter()
+
 @router.post("/machines/{machine_id}", response_model=BenchmarkRead)
 def upload_machine_benchmark(
     machine_id: UUID,
-    payload: BenchmarkCreate,
-    user=Depends(ensure_provider),  #ensures provider role
+    benchmark: BenchmarkCreate,  # Change to accept BenchmarkCreate schema
+    user: User = Depends(get_current_user),
     service: BenchmarkService = Depends(get_benchmark_service),
 ):
+    if user.role != UserRole.PROVIDER:
+        raise HTTPException(403, "Only providers can upload benchmarks")
+    
     return service.create_benchmark(
         machine_id=machine_id,
-        provider_user_id=user.id,
-        payload=payload,
+        provider_id=user.id,
+        name=benchmark.name,
+        score=benchmark.score,
+        methodology_uri=benchmark.methodology_uri,
+        artifact_uri=benchmark.artifact_uri
     )
+    
 
 #Public read
 @router.get("/machines/{machine_id}", response_model=list[BenchmarkRead])

@@ -118,3 +118,35 @@ export async function apiGetProviderVerifications(providerId) {
 export function apiSearchListings(searchTerm) {
     return request(`/listings/search?name=${encodeURIComponent(searchTerm)}`);
 }
+
+//Advanced Listings Search with Filters
+export function apiSearchListingsWithFilters(filters = {}) {
+    const params = new URLSearchParams();
+    
+    // Add all filter parameters
+    Object.entries(filters).forEach(([key, value]) => {
+        if (value !== null && value !== undefined && value !== '') {
+            params.append(key, value);
+        }
+    });
+    
+    return request(`/listings/search/filter?${params}`);
+}
+
+
+// Benchmarks
+export function apiGetMachineBenchmarks(machineId) {
+    return request(`/benchmarks/machines/${machineId}`);
+}
+
+export function apiAddMachineBenchmark(machineId, payload) {
+    return request(`/benchmarks/machines/${machineId}`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+    });
+}
+
+// Credentials
+export function apiGetBookingCredentials(bookingId) {
+    return request(`/credentials/buyer/${bookingId}`);
+}

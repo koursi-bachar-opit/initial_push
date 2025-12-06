@@ -1,15 +1,12 @@
 from typing import Protocol, List
 from uuid import UUID
 
-from fastapi import Depends, HTTPException, status  #HTTPException, status
-from sqlalchemy.orm import Session
+from fastapi import Depends
 
 from app.database import get_db
 
 from .service import OrganizationService, get_organization_service
 from .models import Organization, OrganizationMembership
-
-#
 
 from app.auth.auth import get_current_user
 
@@ -35,15 +32,6 @@ class OrganizationsPublic(Protocol):
     ) -> OrganizationMembership | None:
         ...
 
-    #refactor: move to permissions (without circular import)
-    def require_org_member_or_admin(
-        self,
-        org_id: UUID,
-        current_user=Depends(get_current_user),
-    ) -> bool:
-        ...
-
-
 class OrganizationsPublicImpl(OrganizationsPublic):
 
     def __init__(self, service: OrganizationService):
@@ -67,19 +55,6 @@ class OrganizationsPublicImpl(OrganizationsPublic):
     #Membership lookup
     def get_membership(self, org_id: UUID, user_id: UUID):
         return self.service.repo.get_membership(org_id, user_id)
-    
-    #refactor: move to permissions (without circular import)
-    def require_org_member_or_admin(
-        self,
-        org_id: UUID,
-        current_user=Depends(get_current_user),
-    ):
-        if not self.is_org_member(current_user.id, org_id):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="You are not a member of this organization.",
-            )
-        return True
 
 
 def get_organizations_public(

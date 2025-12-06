@@ -7,7 +7,6 @@ from app.machines.repository import MachinesRepository
 from app.machines.models import Machine
 from app.machines.schemas import MachineCreate
 
-from app.machines.schemas import MachineBenchmarkCreate
 
 @pytest.fixture
 def mock_db():
@@ -18,17 +17,12 @@ def mock_repository():
     return Mock(spec=MachinesRepository)
 
 @pytest.fixture
-def mock_benchmarks_public():
-    return Mock()
-
-@pytest.fixture
-def machines_service(mock_db, mock_repository, mock_benchmarks_public):
+def machines_service(mock_db, mock_repository):
     """Main service fixture that composes other fixtures"""
     return MachinesService(
         db=mock_db,
         machine_repo=mock_repository,
         providers_public=Mock(),
-        benchmarks_public=mock_benchmarks_public
     )
 
 @pytest.fixture
@@ -49,15 +43,6 @@ def sample_machine_data():
         notes="Test machine"
     )
 
-@pytest.fixture
-def sample_benchmark_data():
-    """Fixture for sample benchmark creation data"""
-    return MachineBenchmarkCreate(
-        name="Test Score",
-        score="4311",
-        methodology_uri="machine-log-retrieval",
-        artifact_uri="logs.machine.logger",
-    )
 
 class TestMachinesService:
     #def get_machine(self, machine_id: UUID) -> Machine:
@@ -175,66 +160,3 @@ class TestMachinesService:
         
         mock_repository.get_machine.assert_called_once_with(mock_db, machine_id)
         mock_repository.delete_machine.assert_not_called()
-
-    #Benchmark-related tests
-    #def add_machine_benchmark(self, machine_id, provider_id, payload):
-    def test_add_machine_benchmark_successfully_creates_benchmark(self, machines_service, mock_db, mock_repository, mock_benchmarks_public, sample_benchmark_data):
-        """Test successful benchmark creation for owned machine"""
-        #Mock repository.get_machine to return owned machine
-        #Mock benchmarks_public.create_benchmark to return benchmark
-        #Call service.add_machine_benchmark with owner's provider_id
-        #Verify benchmarks_public.create_benchmark was called with correct params
-        owner_id = uuid4()
-        machine_id = uuid4()
-        mock_machine = Mock(spec=Machine)
-        mock_machine.provider_id = owner_id
-
-        mock_repository.get_machine.return_value = mock_machine
-
-        mock_benchmark_result = Mock()
-        mock_benchmarks_public.create_benchmark.return_value = mock_benchmark_result
-        
-        result = machines_service.add_machine_benchmark(machine_id, owner_id, sample_benchmark_data)
-        
-        assert result == mock_benchmark_result
-        mock_repository.get_machine.assert_called_once_with(mock_db, machine_id)
-        mock_benchmarks_public.create_benchmark.assert_called_once_with(
-            machine_id, 
-            sample_benchmark_data
-        )
-
-    def test_add_machine_benchmark_raises_error_when_machine_not_found(self, machines_service, mock_repository, mock_benchmarks_public):
-        """Test error when adding benchmark to non-existent machine"""
-        #Mock repository.get_machine to return None
-        #Call service.add_machine_benchmark
-        #Verify ValueError is raised
-        machine_id = uuid4()
-        provider_id = uuid4()
-        payload = Mock()
-
-        mock_repository.get_machine.return_value = None
-
-        with pytest.raises(ValueError, match="Machine does not exist."):
-                machines_service.add_machine_benchmark(machine_id, provider_id, payload)
-
-        mock_benchmarks_public.create_benchmark.assert_not_called()        
-
-    def test_add_machine_benchmark_raises_error_when_not_owner(self, machines_service, mock_db, mock_repository):
-        """Test error when provider doesn't own machine for benchmark"""
-        #Mock repository.get_machine to return machine with different owner
-        #Call service.add_machine_benchmark with different provider_id
-        #Verify PermissionError is raised
-        owner_a_id = uuid4()
-        owner_b_id = uuid4()
-        machine_id = uuid4()
-        payload = Mock()
-        
-        mock_machine = Mock(spec=Machine)
-        mock_machine.provider_id = owner_a_id
-        
-        mock_repository.get_machine.return_value = mock_machine
-
-        with pytest.raises(PermissionError, match="User does not own machine"):
-                machines_service.add_machine_benchmark(machine_id, owner_b_id, payload)
-        
-        mock_repository.get_machine.assert_called_once_with(mock_db, machine_id)

@@ -1,8 +1,8 @@
 """New domain models
 
-Revision ID: 5b8cb53f76ad
+Revision ID: 3f0ff25274a1
 Revises: 
-Create Date: 2025-11-30 21:04:35.605143
+Create Date: 2025-12-05 02:49:26.699329
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '5b8cb53f76ad'
+revision: str = '3f0ff25274a1'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -58,16 +58,16 @@ def upgrade() -> None:
     op.create_table('machines',
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('provider_id', sa.UUID(), nullable=False),
-    sa.Column('hostname', sa.String(), nullable=True),
-    sa.Column('location_region', sa.String(), nullable=True),
-    sa.Column('gpu_model', sa.String(), nullable=True),
-    sa.Column('gpu_count', sa.Integer(), nullable=True),
-    sa.Column('vram_gb', sa.Integer(), nullable=True),
-    sa.Column('cpu_model', sa.String(), nullable=True),
-    sa.Column('cpu_cores', sa.Integer(), nullable=True),
-    sa.Column('ram_gb', sa.Integer(), nullable=True),
-    sa.Column('storage_gb', sa.Integer(), nullable=True),
-    sa.Column('network_mbps', sa.Integer(), nullable=True),
+    sa.Column('hostname', sa.String(), nullable=False),
+    sa.Column('location_region', sa.String(), nullable=False),
+    sa.Column('gpu_model', sa.String(), nullable=False),
+    sa.Column('gpu_count', sa.Integer(), nullable=False),
+    sa.Column('vram_gb', sa.Integer(), nullable=False),
+    sa.Column('cpu_model', sa.String(), nullable=False),
+    sa.Column('cpu_cores', sa.Integer(), nullable=False),
+    sa.Column('ram_gb', sa.Integer(), nullable=False),
+    sa.Column('storage_gb', sa.Integer(), nullable=False),
+    sa.Column('network_mbps', sa.Integer(), nullable=False),
     sa.Column('notes', sa.String(), nullable=True),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
@@ -82,6 +82,7 @@ def upgrade() -> None:
     sa.Column('org_role', sa.Enum('ADMIN', 'MEMBER', name='orgrole'), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.ForeignKeyConstraint(['organization_id'], ['organizations.id'], ),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('provider_profiles',
@@ -206,17 +207,13 @@ def upgrade() -> None:
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('booking_id', sa.UUID(), nullable=False),
     sa.Column('machine_id', sa.UUID(), nullable=False),
-    sa.Column('provider_id', sa.UUID(), nullable=False),
     sa.Column('method', sa.String(), nullable=False),
     sa.Column('evidence_uri', sa.String(), nullable=True),
     sa.Column('notes', sa.String(), nullable=True),
     sa.Column('attested_at', sa.DateTime(), nullable=True),
-    sa.Column('admin_review_status', sa.Enum('PENDING', 'VERIFIED', 'REJECTED', name='wipereviewstatus'), nullable=False),
-    sa.Column('admin_notes', sa.String(), nullable=True),
-    sa.Column('created_at', sa.DateTime(), nullable=True),
+    sa.Column('status', sa.Enum('PENDING', 'VERIFIED', 'REJECTED', name='wipereviewstatus'), nullable=False),
     sa.ForeignKeyConstraint(['booking_id'], ['bookings.id'], ondelete='CASCADE'),
     sa.ForeignKeyConstraint(['machine_id'], ['machines.id'], ondelete='CASCADE'),
-    sa.ForeignKeyConstraint(['provider_id'], ['provider_profiles.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('booking_id')
     )

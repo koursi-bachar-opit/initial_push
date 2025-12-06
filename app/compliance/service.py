@@ -36,11 +36,11 @@ class ComplianceService:
         Automatically simulate a wipe + create the attestation.
         """
         #if already exists, return it (idempotent)
-        att = self.repo.get_by_booking(booking.id)
+        att = self.repo.get_by_booking(self.db, booking.id)
         if att:
             return att
 
-        machine = self.machines_public.get_machine(booking.listing.machine_id)
+        machine = booking.listing.machine
 
         #construct fake attestation
         create_data = WipeAttestationCreate(
@@ -51,12 +51,19 @@ class ComplianceService:
             notes="Simulated wipe completed successfully.",
         )
 
-        return self.repo.create(create_data, provider_id=machine.provider_id)
+        return self.repo.create(
+            db=self.db,
+            booking_id=create_data.booking_id,
+            machine_id=create_data.machine_id,
+            method=create_data.method,
+            evidence_uri=create_data.evidence_uri,
+            notes=create_data.notes,
+        )
 
 
     # Booking enforcement
     def require_attestation_for_booking(self, booking):
-        att = self.repo.get_by_booking(booking.id)
+        att = self.repo.get_by_booking(self.db, booking.id)
         if not att:
             raise HTTPException(
                 status.HTTP_400_BAD_REQUEST,
@@ -76,10 +83,17 @@ class ComplianceService:
             raise HTTPException(403, "You do not own this machine")
 
         #enforce 1 -> 1
-        if self.repo.get_by_booking(data.booking_id):
+        if self.repo.get_by_booking(self.db, data.booking_id):
             raise HTTPException(400, "Wipe attestation already exists for this booking")
 
-        att = self.repo.create(data, provider_id)
+        att = self.repo.create(
+            db=self.db,
+            booking_id=data.booking_id,
+            machine_id=data.machine_id,
+            method=data.method,
+            evidence_uri=data.evidence_uri,
+            notes=data.notes,
+        )
 
         #self.notifications.wipe_proof_submitted(provider, booking, att) #consider: provider and booking errors
         
@@ -87,20 +101,20 @@ class ComplianceService:
 
     #Admin review
     def admin_review(self, attestation_id: UUID, data: WipeAttestationUpdateStatus):
-        updated = self.repo.update_status(attestation_id, data.status, data.admin_notes)
+        updated = self.repo.update_status(self.db, attestation_id, data.status)
         if not updated:
             raise HTTPException(404, "Attestation not found")
         return updated
 
     #Queries
     def get_attestation_by_booking(self, booking):
-        return self.repo.get_by_booking(booking.id)
+        return self.repo.get_by_booking(self.db, booking.id)
 
     def list_machine_attestations(self, machine_id: UUID):
-        return self.repo.list_machine_attestations(machine_id)
+        return self.repo.list_machine_attestations(self.db, machine_id)
 
     def list_all_attestations(self):
-        return self.repo.list_all()
+        return self.repo.list_all(self.db)
 
 
 def get_compliance_service(
@@ -109,7 +123,7 @@ def get_compliance_service(
     providers_public: ProvidersPublic = Depends(get_providers_public),
     notifications_public: NotificationsPublic = Depends(get_notifications_public),
 ) -> ComplianceService:
-    repo = ComplianceRepository(db)
+    repo = ComplianceRepository()
     return ComplianceService(
         db=db,
         repo=repo,

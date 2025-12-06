@@ -13,8 +13,8 @@ class BenchmarkRepository:
             listing_id=payload.listing_id,
             name=payload.name,
             score=payload.score,
-            methodology_uri=payload.methodology_uri,
-            artifact_uri=payload.artifact_uri,
+            methodology_uri=str(payload.methodology_uri) if payload.methodology_uri else None,
+            artifact_uri=str(payload.artifact_uri) if payload.artifact_uri else None,
         )
 
         self.db.add(obj)
