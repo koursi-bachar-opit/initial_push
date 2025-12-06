@@ -3,11 +3,9 @@ from sqlalchemy.orm import Session
 from .models import MachineBenchmark
 from .schemas import BenchmarkCreate
 
-class BenchmarkRepository:
-    def __init__(self, db: Session):
-        self.db = db
 
-    def create(self, machine_id, payload: BenchmarkCreate) -> MachineBenchmark:
+class BenchmarksRepository:
+    def create(self, db: Session, machine_id, payload: BenchmarkCreate) -> MachineBenchmark:
         obj = MachineBenchmark(
             machine_id=machine_id,
             listing_id=payload.listing_id,
@@ -17,24 +15,23 @@ class BenchmarkRepository:
             artifact_uri=str(payload.artifact_uri) if payload.artifact_uri else None,
         )
 
-        self.db.add(obj)
-        self.db.commit()
-        self.db.refresh(obj)
+        db.add(obj)
+        db.commit()
+        db.refresh(obj)
 
         return obj
 
-
-    def list_for_machine(self, machine_id) -> List[MachineBenchmark]:
+    def list_for_machine(self, db: Session, machine_id) -> List[MachineBenchmark]:
         return (
-            self.db.query(MachineBenchmark)
+            db.query(MachineBenchmark)
             .filter(MachineBenchmark.machine_id == machine_id)
             .order_by(MachineBenchmark.created_at.desc())
             .all()
         )
 
-    def list_for_listing(self, listing_id) -> List[MachineBenchmark]:
+    def list_for_listing(self, db: Session, listing_id) -> List[MachineBenchmark]:
         return (
-            self.db.query(MachineBenchmark)
+            db.query(MachineBenchmark)
             .filter(MachineBenchmark.listing_id == listing_id)
             .order_by(MachineBenchmark.created_at.desc())
             .all()
