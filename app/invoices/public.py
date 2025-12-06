@@ -20,7 +20,7 @@ class InvoicesPublic(Protocol):
     def get_invoices_for_org(self, org_id: UUID, limit: int = 100) -> List[Invoice]:
         ...
 
-
+#consider: remove repo from constructor, pass repo calls as self.service.repo
 class InvoicesPublicImpl(InvoicesPublic):
     def __init__(
         self,

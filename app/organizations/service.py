@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 
-from .repository import OrganizationRepository
+from .repository import OrganizationsRepository
 from .models import OrgRole
 from .schemas import OrganizationCreate, OrganizationUpdate, MembershipCreate, MembershipUpdateRole
 from .permissions import OrgPermission
@@ -16,7 +16,7 @@ class OrganizationService:
     def __init__(
         self,
         db: Session,
-        repo: OrganizationRepository,
+        repo: OrganizationsRepository,
     ):
         self.db = db
         self.repo = repo
@@ -112,7 +112,7 @@ class OrganizationService:
 def get_organization_service(
     db: Session = Depends(get_db),
 ) -> OrganizationService:
-    repo = OrganizationRepository()
+    repo = OrganizationsRepository()
     return OrganizationService(
         db=db,
         repo=repo,
