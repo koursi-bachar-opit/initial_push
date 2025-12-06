@@ -40,3 +40,6 @@ class WipeAttestation(Base):
     status = Column(
         Enum(WipeReviewStatus), default=WipeReviewStatus.PENDING, nullable=False
     )
+
+    booking = relationship("Booking", back_populates="wipe_attestation", lazy="select")
+    machine = relationship("Machine", back_populates="wipe_attestations", lazy="select")

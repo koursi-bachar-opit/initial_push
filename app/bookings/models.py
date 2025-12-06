@@ -75,6 +75,13 @@ class Booking(Base):
         cascade="all, delete-orphan"
     )
 
+    wipe_attestation = relationship(
+        "WipeAttestation", 
+        back_populates="booking", 
+        uselist=False,
+        cascade="all, delete-orphan"
+    )
+
 
     """
     Additional temporary computed fields for API responses 

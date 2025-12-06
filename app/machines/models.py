@@ -44,3 +44,8 @@ class Machine(Base):
 
     provider = relationship("User", back_populates="machines")
     listings = relationship("Listing", back_populates="machine", cascade="all, delete")
+    wipe_attestations = relationship(
+        "WipeAttestation", 
+        back_populates="machine",
+        cascade="all, delete-orphan"
+    )
