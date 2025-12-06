@@ -403,27 +403,52 @@ async function loadCredentials(bookingId) {
     return await apiGetBookingCredentials(bookingId);
 }
 
-// show bookings credentials
+// Show credentials for a booking
 function showCredentialsModal(bookingId) {
-    console.log("Fetching credentials for booking:", bookingId); // Debug log
+    console.log("Fetching credentials for booking:", bookingId);
     
     loadCredentials(bookingId)
         .then(data => {
-            console.log("Credentials response:", data); // Debug log
+            console.log("Credentials response:", data);
             
-            const credentials = data.credentials;
+            const credentialsArray = data.credentials;
             
-            // Debug: Check what we received
-            console.log("Credentials data:", credentials);
-            console.log("VPN URI:", credentials?.vpn_config_uri);
-            console.log("SSH Fingerprint:", credentials?.ssh_public_key_fingerprint);
+            // Check if we have credentials
+            if (!credentialsArray || credentialsArray.length === 0) {
+                console.log("No credentials found for this booking");
+                alert("No access credentials available for this booking.");
+                return;
+            }
             
-            // Set VPN download link
+            // Get the first (or most recent) credential
+            const credential = credentialsArray[0];
+            
+            console.log("Credential data:", credential);
+            console.log("VPN URI:", credential.vpn_config_uri);
+            console.log("SSH Fingerprint:", credential.ssh_public_key_fingerprint);
+            
+            // Set VPN download link - FIX for S3 scheme
             const vpnLink = document.getElementById('vpnDownloadLink');
-            if (credentials && credentials.vpn_config_uri) {
-                vpnLink.href = credentials.vpn_config_uri;
+            if (credential.vpn_config_uri) {
+                // Convert s3:// to https:// for browser compatibility
+                // Or show it as text if it's a mock URI
+                if (credential.vpn_config_uri.startsWith('s3://')) {
+                    // Option 1: Show as text (mock)
+                    vpnLink.href = '#';
+                    vpnLink.onclick = (e) => {
+                        e.preventDefault();
+                        alert('Mock VPN Configuration: ' + credential.vpn_config_uri + '\n\nIn a real system, this would download the VPN config file.');
+                        return false;
+                    };
+                    vpnLink.textContent = 'Download VPN Configuration (Mock)';
+                } else {
+                    // Option 2: Use as-is for real URLs
+                    vpnLink.href = credential.vpn_config_uri;
+                    vpnLink.onclick = null;
+                    vpnLink.textContent = 'Download VPN Configuration';
+                }
                 vpnLink.classList.remove('hidden');
-                console.log("VPN link set to:", credentials.vpn_config_uri);
+                console.log("VPN link set to:", credential.vpn_config_uri);
             } else {
                 vpnLink.classList.add('hidden');
                 console.log("No VPN URI available");
@@ -431,9 +456,9 @@ function showCredentialsModal(bookingId) {
             
             // Set SSH fingerprint
             const sshFingerprint = document.getElementById('sshFingerprint');
-            if (credentials && credentials.ssh_public_key_fingerprint) {
-                sshFingerprint.textContent = credentials.ssh_public_key_fingerprint;
-                console.log("SSH fingerprint set:", credentials.ssh_public_key_fingerprint);
+            if (credential.ssh_public_key_fingerprint) {
+                sshFingerprint.textContent = credential.ssh_public_key_fingerprint;
+                console.log("SSH fingerprint set:", credential.ssh_public_key_fingerprint);
             } else {
                 sshFingerprint.textContent = 'Not available';
                 console.log("No SSH fingerprint available");
@@ -442,7 +467,7 @@ function showCredentialsModal(bookingId) {
             // Copy button functionality
             const copyBtn = document.getElementById('copySshFingerprintBtn');
             copyBtn.onclick = () => {
-                navigator.clipboard.writeText(credentials?.ssh_public_key_fingerprint || '')
+                navigator.clipboard.writeText(credential.ssh_public_key_fingerprint || '')
                     .then(() => {
                         const originalText = copyBtn.textContent;
                         copyBtn.textContent = 'Copied!';
@@ -455,11 +480,45 @@ function showCredentialsModal(bookingId) {
                     });
             };
             
-            // Show the modal (let Flowbite handle it if using Option A)
-            // If using Option B, keep your custom modal show logic
+            // MANUALLY SHOW THE MODAL (since Flowbite auto-init isn't working)
+            const modal = document.getElementById('credentialsModal');
+            modal.classList.remove('hidden');
+            modal.style.display = 'flex';
+            modal.setAttribute('aria-hidden', 'false');
+            
+            // Add close functionality
+            const closeBtn = modal.querySelector('[data-modal-hide="credentialsModal"]');
+            if (closeBtn) {
+                closeBtn.onclick = () => {
+                    modal.classList.add('hidden');
+                    modal.style.display = 'none';
+                    modal.setAttribute('aria-hidden', 'true');
+                };
+            }
+            
+            // Close when clicking outside
+            modal.onclick = (e) => {
+                if (e.target === modal) {
+                    modal.classList.add('hidden');
+                    modal.style.display = 'none';
+                    modal.setAttribute('aria-hidden', 'true');
+                }
+            };
+            
+            // Close with Escape key
+            const escapeHandler = (e) => {
+                if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+                    modal.classList.add('hidden');
+                    modal.style.display = 'none';
+                    modal.setAttribute('aria-hidden', 'true');
+                    document.removeEventListener('keydown', escapeHandler);
+                }
+            };
+            document.addEventListener('keydown', escapeHandler);
+            
         })
         .catch(err => {
-            console.error("Error loading credentials:", err); // Debug log
+            console.error("Error loading credentials:", err);
             alert('Failed to load credentials: ' + err.message);
         });
 }
@@ -600,13 +659,11 @@ function updateStats(stats) {
 }
 
 //Helper fxns
-//Helper fxns
 function rowHTML(b) {
     const credentialsButton = b.status === 'active' ? `
         <button class="view-credentials-btn inline-flex items-center gap-1 text-white bg-purple-600 hover:bg-purple-700 font-medium rounded-lg text-xs px-3 py-1.5 transition"
                 data-booking-id="${b.id}"
-                data-modal-target="credentialsModal"
-                data-modal-toggle="credentialsModal"
+                type="button"
                 title="View access credentials for this booking">
             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
