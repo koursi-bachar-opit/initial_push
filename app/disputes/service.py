@@ -8,7 +8,7 @@ from fastapi import Depends
 from app.database import get_db
 
 from .models import DisputeStatus
-from .repository import DisputeRepository
+from .repository import DisputesRepository
 
 from app.bookings.public import BookingsPublic
 from app.payments.public import PaymentsPublic
@@ -37,7 +37,7 @@ class DisputeService:
     def __init__(
         self,
         db: Session,
-        repo: DisputeRepository,
+        repo: DisputesRepository,
         bookings_public: BookingsPublic,
         payments_public: PaymentsPublic,
         notifications_public: NotificationsPublic,
@@ -248,7 +248,7 @@ def get_disputes_service(
     payments_public: PaymentsPublic = Depends(get_payments_public),
     notifications_public: NotificationsPublic = Depends(get_notifications_public),
 ) -> DisputeService:
-    repo = DisputeRepository(db)
+    repo = DisputesRepository(db)
     return DisputeService(
         db=db,
         repo=repo,
