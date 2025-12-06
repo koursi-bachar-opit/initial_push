@@ -12,12 +12,11 @@ class MetricsRepository:
     """
     Persistence layer for metric samples.
     """
-    def __init__(self, db: Session):
-        self.db = db
-
+    
     #Create
     def create_sample(
         self,
+        db: Session,
         machine_id: UUID,
         recorded_at: datetime,
         gpu_util: Optional[float],
@@ -35,14 +34,15 @@ class MetricsRepository:
             net_rx_mb=net_rx_mb,
             net_tx_mb=net_tx_mb,
         )
-        self.db.add(sample)
-        self.db.commit()
-        self.db.refresh(sample)
+        db.add(sample)
+        db.commit()
+        db.refresh(sample)
         return sample
 
     #Fetch list
     def list_samples(
         self,
+        db: Session,
         machine_id: UUID,
         start: Optional[datetime] = None,
         end: Optional[datetime] = None,
@@ -61,14 +61,18 @@ class MetricsRepository:
         if limit:
             stmt = stmt.limit(limit)
 
-        return list(self.db.scalars(stmt).all())
+        return list(db.scalars(stmt).all())
 
     #Latest sample
-    def get_latest_sample(self, machine_id: UUID) -> Optional[MetricSample]:
+    def get_latest_sample(
+        self,
+        db: Session,
+        machine_id: UUID,
+    ) -> Optional[MetricSample]:
         stmt = (
             select(MetricSample)
             .where(MetricSample.machine_id == machine_id)
             .order_by(desc(MetricSample.recorded_at))
             .limit(1)
         )
-        return self.db.scalars(stmt).first()
+        return db.scalars(stmt).first()
