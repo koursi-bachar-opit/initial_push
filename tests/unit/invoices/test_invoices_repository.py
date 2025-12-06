@@ -14,9 +14,9 @@ def mock_db():
 
 
 @pytest.fixture
-def invoice_repository(mock_db):
+def invoice_repository():
     """InvoiceRepository instance fixture"""
-    return InvoiceRepository(mock_db)
+    return InvoiceRepository()
 
 
 @pytest.fixture
@@ -56,6 +56,7 @@ class TestInvoiceRepository:
         mock_db.refresh.return_value = None
         
         result = invoice_repository.create(
+            db=mock_db,
             organization_id=sample_invoice_data["organization_id"],
             period_start=sample_invoice_data["period_start"],
             period_end=sample_invoice_data["period_end"],
@@ -79,7 +80,7 @@ class TestInvoiceRepository:
         filter_result.first.return_value = sample_invoice
         mock_query.filter.return_value = filter_result
         
-        result = invoice_repository.get(invoice_id)
+        result = invoice_repository.get(db=mock_db, invoice_id=invoice_id)
         
         assert result == sample_invoice
         mock_db.query.assert_called_once_with(Invoice)
@@ -97,7 +98,7 @@ class TestInvoiceRepository:
         filter_result.first.return_value = None
         mock_query.filter.return_value = filter_result
         
-        result = invoice_repository.get(invoice_id)
+        result = invoice_repository.get(db=mock_db, invoice_id=invoice_id)
         
         assert result is None
         mock_db.query.assert_called_once_with(Invoice)
@@ -118,6 +119,7 @@ class TestInvoiceRepository:
         mock_query.filter.return_value = filter_result
         
         result = invoice_repository.get_for_period(
+            db=mock_db,
             organization_id=organization_id,
             period_start=period_start,
             period_end=period_end
@@ -142,6 +144,7 @@ class TestInvoiceRepository:
         mock_query.filter.return_value = filter_result
         
         result = invoice_repository.get_for_period(
+            db=mock_db,
             organization_id=organization_id,
             period_start=period_start,
             period_end=period_end
@@ -171,7 +174,7 @@ class TestInvoiceRepository:
         offset_result.limit.return_value = limit_result
         limit_result.all.return_value = mock_invoices
         
-        result = invoice_repository.list_for_org(organization_id)
+        result = invoice_repository.list_for_org(db=mock_db, organization_id=organization_id)
         
         assert result == mock_invoices
         mock_db.query.assert_called_once_with(Invoice)
@@ -202,7 +205,7 @@ class TestInvoiceRepository:
         offset_result.limit.return_value = limit_result
         limit_result.all.return_value = []
         
-        result = invoice_repository.list_for_org(organization_id)
+        result = invoice_repository.list_for_org(db=mock_db, organization_id=organization_id)
         
         assert result == []
         mock_db.query.assert_called_once_with(Invoice)
@@ -236,7 +239,12 @@ class TestInvoiceRepository:
         offset_result.limit.return_value = limit_result
         limit_result.all.return_value = []
         
-        result = invoice_repository.list_for_org(organization_id, skip=skip, limit=limit)
+        result = invoice_repository.list_for_org(
+            db=mock_db, 
+            organization_id=organization_id, 
+            skip=skip, 
+            limit=limit
+        )
         
         assert result == []
         mock_db.query.assert_called_once_with(Invoice)
@@ -248,7 +256,6 @@ class TestInvoiceRepository:
         order_result.offset.assert_called_once_with(skip)
         offset_result.limit.assert_called_once_with(limit)
         limit_result.all.assert_called_once()
-
 
     def test_list_all_returns_invoices_sorted_by_created_at(self, invoice_repository, mock_db):
         """Test getting all invoices returns sorted list"""
@@ -266,7 +273,7 @@ class TestInvoiceRepository:
         offset_result.limit.return_value = limit_result
         limit_result.all.return_value = mock_invoices
         
-        result = invoice_repository.list_all()
+        result = invoice_repository.list_all(db=mock_db)
         
         assert result == mock_invoices
         mock_db.query.assert_called_once_with(Invoice)
@@ -293,7 +300,7 @@ class TestInvoiceRepository:
         offset_result.limit.return_value = limit_result
         limit_result.all.return_value = []
         
-        result = invoice_repository.list_all()
+        result = invoice_repository.list_all(db=mock_db)
         
         assert result == []
         mock_db.query.assert_called_once_with(Invoice)
@@ -322,7 +329,7 @@ class TestInvoiceRepository:
         offset_result.limit.return_value = limit_result
         limit_result.all.return_value = []
         
-        result = invoice_repository.list_all(skip=skip, limit=limit)
+        result = invoice_repository.list_all(db=mock_db, skip=skip, limit=limit)
         
         assert result == []
         mock_db.query.assert_called_once_with(Invoice)
@@ -342,7 +349,7 @@ class TestInvoiceRepository:
         mock_db.commit.return_value = None
         mock_db.refresh.return_value = None
         
-        result = invoice_repository.update_status(sample_invoice, new_status)
+        result = invoice_repository.update_status(db=mock_db, invoice=sample_invoice, new_status=new_status)
         
         assert sample_invoice.status == new_status
         mock_db.add.assert_called_once_with(sample_invoice)
