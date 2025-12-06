@@ -4,7 +4,7 @@ from uuid import uuid4
 from fastapi import HTTPException, status
 
 from app.organizations.service import OrganizationService
-from app.organizations.repository import OrganizationRepository
+from app.organizations.repository import OrganizationsRepository
 from app.organizations.models import Organization, OrganizationMembership, OrganizationStatus, OrgRole
 from app.organizations.schemas import OrganizationCreate, OrganizationUpdate, MembershipCreate, MembershipUpdateRole
 from app.organizations.permissions import OrgPermission
@@ -18,8 +18,8 @@ def mock_db():
 
 @pytest.fixture
 def mock_repository():
-    """Mock OrganizationRepository fixture"""
-    return Mock(spec=OrganizationRepository)
+    """Mock OrganizationsRepository fixture"""
+    return Mock(spec=OrganizationsRepository)
 
 
 @pytest.fixture
