@@ -13,14 +13,12 @@ def test_invoices_public_implements_protocol():
     
     public_impl = InvoicesPublicImpl(db=mock_db, repo=mock_repo, service=mock_service)
     
-    # Check that all protocol methods exist and are callable
     assert hasattr(public_impl, 'get_invoice')
     assert hasattr(public_impl, 'get_invoices_for_org')
     
     assert callable(public_impl.get_invoice)
     assert callable(public_impl.get_invoices_for_org)
     
-    # Verify the implementation has the expected dependencies
     assert public_impl.db == mock_db
     assert public_impl.repo == mock_repo
     assert public_impl.service == mock_service
@@ -38,7 +36,6 @@ def test_invoices_public_delegates_to_repository():
     org_id = uuid4()
     limit = 50
     
-    # Test get_invoice delegates to repository.get()
     mock_invoice = Mock()
     mock_repo.get.return_value = mock_invoice
     
@@ -47,7 +44,6 @@ def test_invoices_public_delegates_to_repository():
     assert result == mock_invoice
     mock_repo.get.assert_called_once_with(invoice_id)
     
-    # Test get_invoices_for_org delegates to repository.list_for_org()
     mock_repo.reset_mock()
     mock_invoices_list = [Mock(), Mock(), Mock()]
     mock_repo.list_for_org.return_value = mock_invoices_list
