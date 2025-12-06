@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.invoices.models import Invoice
-from app.invoices.repository import InvoiceRepository
+from app.invoices.repository import InvoicesRepository
 from app.invoices.service import InvoiceService, get_invoice_service
 
 
@@ -25,7 +25,7 @@ class InvoicesPublicImpl(InvoicesPublic):
     def __init__(
         self,
         db: Session,
-        repo: InvoiceRepository,
+        repo: InvoicesRepository,
         service: InvoiceService,
     ) -> None:
         self.db = db
@@ -43,5 +43,5 @@ def get_invoices_public(
     db: Session = Depends(get_db),
     service: InvoiceService = Depends(get_invoice_service),
 ) -> InvoicesPublic:
-    repo = InvoiceRepository(db)
+    repo = InvoicesRepository()
     return InvoicesPublicImpl(db=db, repo=repo, service=service)

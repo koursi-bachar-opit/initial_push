@@ -8,7 +8,7 @@ from sqlalchemy import and_
 from .models import Invoice, InvoiceStatus
 
 
-class InvoiceRepository:
+class InvoicesRepository:
     #CRUD
     def create(
         self,
