@@ -150,3 +150,34 @@ export function apiAddMachineBenchmark(machineId, payload) {
 export function apiGetBookingCredentials(bookingId) {
     return request(`/credentials/buyer/${bookingId}`);
 }
+
+// Compliance
+export function apiGetWipeVerification(bookingId) {
+    return request(`/compliance/buyer/booking/${bookingId}/wipe-verification`);
+}
+
+// Compliance Admin endpoints
+export function apiGetAllAttestations() {
+    return request("/compliance/attestations");
+}
+
+export function apiGetMachineAttestations(machineId) {
+    return request(`/compliance/machines/${machineId}/attestations`);
+}
+
+export function apiReviewAttestation(attestationId, status) {
+    return request(`/compliance/attestations/${attestationId}/review`, {
+        method: "PATCH",
+        body: JSON.stringify({ status }),
+    });
+}
+
+// Provider-specific attestation endpoint
+export function apiGetProviderBookingAttestation(bookingId) {
+    return request(`/compliance/provider/booking/${bookingId}/wipe-attestation`);
+}
+
+// Admin-specific attestation endpoint  
+export function apiGetAdminBookingAttestation(bookingId) {
+    return request(`/compliance/admin/booking/${bookingId}/wipe-attestation`);
+}

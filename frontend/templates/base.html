@@ -41,27 +41,34 @@
             <!--Always visible-->
             <a href="/listings" class="hover:text-gray-800 dark:hover:text-white">Listings</a>
 
-            <!--Dynamic auth links - will be updated by JavaScript -->
-            <div id="auth-links" class="flex gap-5 items-center">
-                <!--Anonymous user links (default)-->
+            {% if not user %}
+                <!--Anonymous user-->
                 <a href="/login" class="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">Log in</a>
                 <a href="/signup"
                    class="rounded-lg bg-blue-600 px-4 py-1.5 text-white hover:bg-blue-700 transition">
                     Sign up
                 </a>
-            </div>
 
-            <div id="user-links" class="flex gap-5 items-center hidden">
-                <!--Authenticated user links (hidden by default)-->
-                <a href="/bookings" class="hover:text-gray-800 dark:hover:text-white">Bookings</a>
-                <a href="/dashboard" class="hover:text-gray-800 dark:hover:text-white">Dashboard</a>
-                
+            {% else %}
+
+                {% if user.role == "buyer" %}
+                    <a href="/bookings" class="hover:text-gray-800 dark:hover:text-white">Bookings</a>
+                    <a href="/dashboard" class="hover:text-gray-800 dark:hover:text-white">Dashboard</a>
+                {% elif user.role == "provider" %}
+                    <a href="/bookings" class="hover:text-gray-800 dark:hover:text-white">Bookings</a>
+                    <a href="/dashboard" class="hover:text-gray-800 dark:hover:text-white">Dashboard</a>
+                {% elif user.role == "admin" %}
+                    <a href="/bookings" class="hover:text-gray-800 dark:hover:text-white">All Bookings</a>
+                    <a href="/dashboard" class="hover:text-gray-800 dark:hover:text-white">Dashboard</a>
+                {% endif %}
+
                 <!--Client-side logout (wait Supabase and localStorage)-->
                 <button onclick="logoutUser()"
                         class="text-red-600 hover:underline dark:text-red-400 dark:hover:text-red-300">
                     Log out
                 </button>
-            </div>
+
+            {% endif %}
 
             <button onclick="toggleTheme()" class="text-gray-600 dark:text-gray-300 hover:text-blue-600">
                 🌓
@@ -84,41 +91,6 @@
 
 <!--Load shared Supabase client-->
 <script type="module" src="/static/js/supabaseClient.js"></script>
-
-<script>
-    // Check auth state on page load and update navbar
-    function updateNavbar() {
-        const token = localStorage.getItem("access_token");
-        const userRole = localStorage.getItem("user_role");
-        
-        const authLinks = document.getElementById('auth-links');
-        const userLinks = document.getElementById('user-links');
-        
-        if (token && userRole) {
-            // User is logged in
-            if (authLinks) authLinks.classList.add('hidden');
-            if (userLinks) userLinks.classList.remove('hidden');
-            
-            // Update role-specific links if needed
-            const bookingsLink = userLinks.querySelector('a[href="/bookings"]');
-            const dashboardLink = userLinks.querySelector('a[href="/dashboard"]');
-            
-            // You can customize links based on role if needed
-            // Example: if (userRole === 'admin') { ... }
-            
-        } else {
-            // User is not logged in
-            if (authLinks) authLinks.classList.remove('hidden');
-            if (userLinks) userLinks.classList.add('hidden');
-        }
-    }
-    
-    // Run on page load
-    document.addEventListener('DOMContentLoaded', updateNavbar);
-    
-    // Also run when localStorage changes (in case of login from another tab)
-    window.addEventListener('storage', updateNavbar);
-</script>
 
 <script>
     //Logs out client-side Supabase session
