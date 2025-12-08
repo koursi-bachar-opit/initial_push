@@ -364,6 +364,46 @@ class BookingsService:
             period_end=period_end,
         )
 
+    #update tests
+    def create_booking_draft(
+        self,
+        buyer_user_id,
+        payload: BookingRequest
+    ):
+        """
+        Create a booking in "pending_payment" status for Stripe Checkout flow.
+        Does NOT create escrow - payment happens separately.
+        """
+        # Copy all validation from request_booking
+        start_utc, end_utc = self.normalize_times(payload.start_time, payload.end_time)
+        
+        if buyer_user_id is None:
+            raise ValueError("buyer_user_id is required")
+        
+        self.validate_booking_window(start_utc, end_utc)
+        
+        listing = self.fetch_listing_or_raise(payload.listing_id)
+        total_price = self.calculate_price(start_utc, end_utc, listing.price)
+
+        if payload.organization_id is not None:
+            is_admin = self.organizations_public.is_org_admin(buyer_user_id, payload.organization_id)
+            if not is_admin:
+                raise ValueError("User is not an admin of the specified organization")
+
+        # Create booking with "pending_payment" status
+        booking = self.build_booking_model(payload, buyer_user_id, start_utc, end_utc, total_price)
+        
+        # OVERRIDE: Set status to pending_payment
+        booking.status = BookingStatus.PENDING_PAYMENT
+        
+        created = self.booking_repo.create_booking(self.db, booking)
+        
+        # DO NOT create escrow here - payment happens via Stripe Checkout
+        # self.payments_public.escrow_for_booking(...)  # REMOVED
+        
+        return created
+    #update tests
+
 
 def get_bookings_service(
     db: Session = Depends(get_db),

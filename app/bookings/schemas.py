@@ -1,6 +1,6 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID
 from enum import Enum
 
@@ -30,12 +30,31 @@ class BookingAdminCreate(BaseModel):
 
 class BookingRequest(BaseModel):
     """
-    Buery booking creation payload.
+    Buyer booking creation payload.
     """
     listing_id: UUID
     start_time: datetime
     end_time: datetime
-    organization_id: Optional[UUID] = None  #NEW LINE
+    organization_id: Optional[UUID] = None
+    
+    @field_validator('start_time', 'end_time', mode='after')
+    @classmethod
+    def ensure_timezone_aware(cls, v: datetime) -> datetime:
+        """Ensure datetime is timezone-aware (assume UTC if naive)"""
+        if v.tzinfo is None:
+            # Assume UTC if no timezone provided
+            return v.replace(tzinfo=timezone.utc)
+        return v
+
+
+# class BookingRequest(BaseModel):
+#     """
+#     Buery booking creation payload.
+#     """
+#     listing_id: UUID
+#     start_time: datetime
+#     end_time: datetime
+#     organization_id: Optional[UUID] = None  #NEW LINE
 
 
 class BookingRead(BaseModel):

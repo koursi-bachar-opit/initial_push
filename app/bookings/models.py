@@ -8,6 +8,7 @@ from app.database import Base
 
 
 class BookingStatus(str, Enum):
+    PENDING_PAYMENT = "pending_payment" #new status
     REQUESTED = "requested"
     CONFIRMED = "confirmed"
     ACTIVE = "active"
