@@ -1,8 +1,8 @@
 """New domain models
 
-Revision ID: 1d9b2341166f
+Revision ID: f0c03cfeb6e5
 Revises: 
-Create Date: 2025-12-06 07:59:20.669454
+Create Date: 2025-12-08 03:26:35.061226
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '1d9b2341166f'
+revision: str = 'f0c03cfeb6e5'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -142,7 +142,7 @@ def upgrade() -> None:
     sa.Column('total_price_estimate', sa.Float(), nullable=False),
     sa.Column('actual_price_charged', sa.Float(), nullable=True),
     sa.Column('usage_seconds', sa.Float(), nullable=True),
-    sa.Column('status', sa.Enum('REQUESTED', 'CONFIRMED', 'ACTIVE', 'COMPLETED', 'CANCELLED', name='bookingstatus', native_enum=False), nullable=False),
+    sa.Column('status', sa.Enum('PENDING_PAYMENT', 'REQUESTED', 'CONFIRMED', 'ACTIVE', 'COMPLETED', 'CANCELLED', name='bookingstatus', native_enum=False), nullable=False),
     sa.Column('active_session_start', sa.DateTime(timezone=True), nullable=True),
     sa.Column('active_session_end', sa.DateTime(timezone=True), nullable=True),
     sa.ForeignKeyConstraint(['buyer_user_id'], ['users.id'], ondelete='CASCADE'),
