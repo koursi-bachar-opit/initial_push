@@ -181,3 +181,21 @@ export function apiGetProviderBookingAttestation(bookingId) {
 export function apiGetAdminBookingAttestation(bookingId) {
     return request(`/compliance/admin/booking/${bookingId}/wipe-attestation`);
 }
+
+export async function apiRequestBookingWithPayment(payload) {
+    const response = await fetch('/api/v1/bookings/request-with-payment', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+        },
+        body: JSON.stringify(payload)
+    });
+    
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || 'Failed to create booking');
+    }
+    
+    return await response.json();
+}
