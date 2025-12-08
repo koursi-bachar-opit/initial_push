@@ -145,6 +145,43 @@ async def dashboard_page(request: Request, user=Depends(optional_user)):
     return templates.TemplateResponse("dashboard.html", {"request": request, "user": user})
 
 
+@app.get("/payments/success", response_class=HTMLResponse)
+async def payment_success_page(
+    request: Request, 
+    session_id: str = None, 
+    booking_id: str = None,
+    amount: float = None,
+    currency: str = "USD",
+    user=Depends(optional_user)
+):
+    return templates.TemplateResponse(
+        "payment_success.html", 
+        {
+            "request": request, 
+            "user": user,
+            "session_id": session_id,
+            "booking_id": booking_id,
+            "amount": amount,
+            "currency": currency
+        }
+    )
+
+@app.get("/payments/cancel", response_class=HTMLResponse)
+async def payment_cancel_page(
+    request: Request, 
+    booking_id: str = None,
+    user=Depends(optional_user)
+):
+    return templates.TemplateResponse(
+        "payment_cancel.html", 
+        {
+            "request": request, 
+            "user": user,
+            "booking_id": booking_id
+        }
+    )
+
+
 #Log out clears coookies
 @app.get("/logout")
 async def logout():
