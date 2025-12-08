@@ -8,7 +8,7 @@ from sqlalchemy import select, update
 from app.disputes.models import Dispute, DisputeStatus
 
 
-class DisputeRepository:
+class DisputesRepository:
     """
     Repository handling all persistence operations for the Dispute domain.
     Responsibilities:
@@ -19,12 +19,10 @@ class DisputeRepository:
     -List open disputes for admin review
     -Update dispute status and resolution fields
     """
-    def __init__(self, session: Session):
-        self.session = session
-
-
+    
     def create_dispute(
         self,
+        db: Session,
         booking_id: uuid.UUID,
         user_id: uuid.UUID,
         reason: str
@@ -35,19 +33,19 @@ class DisputeRepository:
             reason=reason,
             status=DisputeStatus.OPEN,
         )
-        self.session.add(dispute)
-        self.session.commit()
-        self.session.refresh(dispute)
+        db.add(dispute)
+        db.commit()
+        db.refresh(dispute)
         return dispute
 
 
-    def get_by_id(self, dispute_id: uuid.UUID) -> Optional[Dispute]:
+    def get_by_id(self, db: Session, dispute_id: uuid.UUID) -> Optional[Dispute]:
         stmt = select(Dispute).where(Dispute.id == dispute_id)
-        return self.session.scalar(stmt)
+        return db.scalar(stmt)
 
 
     #List queries
-    def list_for_user(self, user_id: uuid.UUID) -> List[Dispute]:
+    def list_for_user(self, db: Session, user_id: uuid.UUID) -> List[Dispute]:
         """
         Returns all disputes:
         - opened by the user
@@ -61,17 +59,17 @@ class DisputeRepository:
             .where(Dispute.opened_by_user_id == user_id)
             .order_by(Dispute.created_at.desc())
         )
-        return list(self.session.scalars(stmt))
+        return list(db.scalars(stmt))
 
-    def list_for_booking(self, booking_id: uuid.UUID) -> List[Dispute]:
+    def list_for_booking(self, db: Session, booking_id: uuid.UUID) -> List[Dispute]:
         stmt = (
             select(Dispute)
             .where(Dispute.booking_id == booking_id)
             .order_by(Dispute.created_at.desc())
         )
-        return list(self.session.scalars(stmt))
+        return list(db.scalars(stmt))
 
-    def list_open_for_admin(self) -> List[Dispute]:
+    def list_open_for_admin(self, db: Session) -> List[Dispute]:
         stmt = (
             select(Dispute)
             .where(
@@ -85,12 +83,13 @@ class DisputeRepository:
             )
             .order_by(Dispute.created_at.asc())
         )
-        return list(self.session.scalars(stmt))
+        return list(db.scalars(stmt))
 
 
     #update operations
     def update_status(
         self,
+        db: Session,
         dispute_id: uuid.UUID,
         new_status: DisputeStatus,
         resolution_notes: Optional[str] = None,
@@ -107,7 +106,7 @@ class DisputeRepository:
             .execution_options(synchronize_session="fetch")
         )
 
-        self.session.execute(stmt)
-        self.session.commit()
+        db.execute(stmt)
+        db.commit()
 
-        return self.get_by_id(dispute_id)
+        return self.get_by_id(db, dispute_id)

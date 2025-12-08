@@ -8,7 +8,7 @@ from fastapi import Depends
 from app.database import get_db
 
 from .models import DisputeStatus
-from .repository import DisputeRepository
+from .repository import DisputesRepository
 
 from app.bookings.public import BookingsPublic
 from app.payments.public import PaymentsPublic
@@ -37,7 +37,7 @@ class DisputeService:
     def __init__(
         self,
         db: Session,
-        repo: DisputeRepository,
+        repo: DisputesRepository,
         bookings_public: BookingsPublic,
         payments_public: PaymentsPublic,
         notifications_public: NotificationsPublic,
@@ -51,7 +51,7 @@ class DisputeService:
 
     #Helpers
     def _get_dispute_or_raise(self, dispute_id: uuid.UUID):
-        dispute = self.repo.get_by_id(dispute_id)
+        dispute = self.repo.get_by_id(self.db, dispute_id)
         if not dispute:
             raise ValueError("Dispute not found")
         return dispute
@@ -77,7 +77,7 @@ class DisputeService:
         raise ValueError("User not authorized to dispute this booking")
 
     def _validate_unique_open_dispute(self, booking_id: uuid.UUID):
-        existing = self.repo.list_for_booking(booking_id)
+        existing = self.repo.list_for_booking(self.db, booking_id)
         for d in existing:
             if d.status in {
                 DisputeStatus.OPEN,
@@ -96,6 +96,7 @@ class DisputeService:
         self._validate_unique_open_dispute(payload.booking_id)
 
         dispute = self.repo.create_dispute(
+            self.db,
             booking_id=payload.booking_id,
             user_id=user_id,
             reason=payload.reason,
@@ -112,13 +113,13 @@ class DisputeService:
         This method does not return disputes on their owned machines;
         that filtering is performed at the service level in routes if needed.
         """
-        return self.repo.list_for_user(user_id)
+        return self.repo.list_for_user(self.db, user_id)
 
     def list_disputes_for_booking(self, booking_id: uuid.UUID):
-        return self.repo.list_for_booking(booking_id)
+        return self.repo.list_for_booking(self.db, booking_id)
 
     def list_open_for_admin(self):
-        return self.repo.list_open_for_admin()
+        return self.repo.list_open_for_admin(self.db)
 
 
     def set_status(
@@ -148,6 +149,7 @@ class DisputeService:
             raise ValueError("Invalid dispute status transition")
 
         updated = self.repo.update_status(
+            self.db,
             dispute_id,
             new_status,
             resolution_notes=resolution_notes,
@@ -194,6 +196,7 @@ class DisputeService:
             )
 
             updated = self.repo.update_status(
+                self.db,
                 dispute_id,
                 DisputeStatus.RESOLVED_REFUNDED,
                 resolution_notes=payload.resolution_notes,
@@ -207,6 +210,7 @@ class DisputeService:
         #Deny
         elif payload.decision == "deny":
             updated = self.repo.update_status(
+                self.db,
                 dispute_id,
                 DisputeStatus.RESOLVED_DENIED,
                 resolution_notes=payload.resolution_notes,
@@ -234,6 +238,7 @@ class DisputeService:
             raise ValueError("Only resolved disputes can be closed")
 
         updated = self.repo.update_status(
+            self.db,
             dispute_id,
             DisputeStatus.CLOSED,
             resolution_notes=dispute.resolution_notes,
@@ -248,7 +253,7 @@ def get_disputes_service(
     payments_public: PaymentsPublic = Depends(get_payments_public),
     notifications_public: NotificationsPublic = Depends(get_notifications_public),
 ) -> DisputeService:
-    repo = DisputeRepository(db)
+    repo = DisputesRepository()
     return DisputeService(
         db=db,
         repo=repo,

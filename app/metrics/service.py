@@ -68,6 +68,7 @@ class MetricsService:
         recorded_at = payload.recorded_at or datetime.now(timezone.utc)
 
         sample = self.repo.create_sample(
+            self.db,
             machine_id=machine_id,
             recorded_at=recorded_at,
             gpu_util=payload.gpu_util,
@@ -113,6 +114,7 @@ class MetricsService:
             raise ValueError("Machine does not exist.")
 
         samples = self.repo.list_samples(
+            self.db,
             machine_id=machine_id,
             start=query.start,
             end=query.end,
@@ -131,7 +133,7 @@ class MetricsService:
         if not machine:
             raise ValueError("Machine does not exist.")
 
-        sample = self.repo.get_latest_sample(machine_id)
+        sample = self.repo.get_latest_sample(self.db, machine_id)
         if not sample:
             return None
 
@@ -143,7 +145,7 @@ def get_metrics_service(
     machines_public: MachinesPublic = Depends(get_machines_public),
 ) -> MetricsService:
 
-    repo = MetricsRepository(db=db)
+    repo = MetricsRepository()
     return MetricsService(
         db=db,
         repo=repo,

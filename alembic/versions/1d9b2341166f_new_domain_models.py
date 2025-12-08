@@ -1,8 +1,8 @@
 """New domain models
 
-Revision ID: 3f0ff25274a1
+Revision ID: 1d9b2341166f
 Revises: 
-Create Date: 2025-12-05 02:49:26.699329
+Create Date: 2025-12-06 07:59:20.669454
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '3f0ff25274a1'
+revision: str = '1d9b2341166f'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None

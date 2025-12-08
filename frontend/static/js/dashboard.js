@@ -10,6 +10,12 @@ import {
     apiGetMachineBenchmarks,
     apiAddMachineBenchmark,
     apiGetBookingCredentials,
+    apiGetWipeVerification,
+    apiGetAllAttestations,
+    apiGetMachineAttestations,
+    apiReviewAttestation,
+    apiGetProviderBookingAttestation,
+    apiGetAdminBookingAttestation,
 } from "./api.js";
 
 //body targets
@@ -56,6 +62,10 @@ async function loadUserDashboard() {
     }
 
     setupBenchmarkForm();
+
+    if (document.getElementById('wipeHistoryMachineSelect')) {
+        setupWipeHistory();
+    }
 
     //Load bookings
     await loadBookings();
@@ -168,6 +178,7 @@ async function loadUserDashboard() {
 async function loadAdminDashboard() {
     await loadProviders();
     await loadStats();
+    await loadWipeAttestations();
 }
 
 //Load machines and update UI state
@@ -379,8 +390,9 @@ async function loadBookings() {
             ? pending.map(rowHTML).join("")
             : emptyRow(5, "No pending bookings.");
         
-        // Add event listeners for credentials buttons
+        // In loadBookings() function, after table population:
         setTimeout(() => {
+            // Credentials buttons (for active bookings)
             document.querySelectorAll('.view-credentials-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     e.preventDefault();
@@ -388,7 +400,27 @@ async function loadBookings() {
                     showCredentialsModal(bookingId);
                 });
             });
+
+            // Wipe verification buttons (for buyers only)
+            document.querySelectorAll('.view-wipe-verification-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const bookingId = btn.dataset.bookingId;
+                    showWipeVerificationModal(bookingId);
+                });
+            });
+
+            // Provider attestation buttons (for providers only)
+            document.querySelectorAll('.view-provider-attestation-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const bookingId = btn.dataset.bookingId;
+                    // Call the actual function to show provider attestation modal
+                    showProviderAttestationModal(bookingId);
+                });
+            });
         }, 100);
+
     }
 
     if (pastBody) {
@@ -403,27 +435,52 @@ async function loadCredentials(bookingId) {
     return await apiGetBookingCredentials(bookingId);
 }
 
-// show bookings credentials
+// Show credentials for a booking
 function showCredentialsModal(bookingId) {
-    console.log("Fetching credentials for booking:", bookingId); // Debug log
+    console.log("Fetching credentials for booking:", bookingId);
     
     loadCredentials(bookingId)
         .then(data => {
-            console.log("Credentials response:", data); // Debug log
+            console.log("Credentials response:", data);
             
-            const credentials = data.credentials;
+            const credentialsArray = data.credentials;
             
-            // Debug: Check what we received
-            console.log("Credentials data:", credentials);
-            console.log("VPN URI:", credentials?.vpn_config_uri);
-            console.log("SSH Fingerprint:", credentials?.ssh_public_key_fingerprint);
+            // Check if we have credentials
+            if (!credentialsArray || credentialsArray.length === 0) {
+                console.log("No credentials found for this booking");
+                alert("No access credentials available for this booking.");
+                return;
+            }
             
-            // Set VPN download link
+            // Get the first (or most recent) credential
+            const credential = credentialsArray[0];
+            
+            console.log("Credential data:", credential);
+            console.log("VPN URI:", credential.vpn_config_uri);
+            console.log("SSH Fingerprint:", credential.ssh_public_key_fingerprint);
+            
+            // Set VPN download link - FIX for S3 scheme
             const vpnLink = document.getElementById('vpnDownloadLink');
-            if (credentials && credentials.vpn_config_uri) {
-                vpnLink.href = credentials.vpn_config_uri;
+            if (credential.vpn_config_uri) {
+                // Convert s3:// to https:// for browser compatibility
+                // Or show it as text if it's a mock URI
+                if (credential.vpn_config_uri.startsWith('s3://')) {
+                    // Option 1: Show as text (mock)
+                    vpnLink.href = '#';
+                    vpnLink.onclick = (e) => {
+                        e.preventDefault();
+                        alert('Mock VPN Configuration: ' + credential.vpn_config_uri + '\n\nIn a real system, this would download the VPN config file.');
+                        return false;
+                    };
+                    vpnLink.textContent = 'Download VPN Configuration (Mock)';
+                } else {
+                    // Option 2: Use as-is for real URLs
+                    vpnLink.href = credential.vpn_config_uri;
+                    vpnLink.onclick = null;
+                    vpnLink.textContent = 'Download VPN Configuration';
+                }
                 vpnLink.classList.remove('hidden');
-                console.log("VPN link set to:", credentials.vpn_config_uri);
+                console.log("VPN link set to:", credential.vpn_config_uri);
             } else {
                 vpnLink.classList.add('hidden');
                 console.log("No VPN URI available");
@@ -431,9 +488,9 @@ function showCredentialsModal(bookingId) {
             
             // Set SSH fingerprint
             const sshFingerprint = document.getElementById('sshFingerprint');
-            if (credentials && credentials.ssh_public_key_fingerprint) {
-                sshFingerprint.textContent = credentials.ssh_public_key_fingerprint;
-                console.log("SSH fingerprint set:", credentials.ssh_public_key_fingerprint);
+            if (credential.ssh_public_key_fingerprint) {
+                sshFingerprint.textContent = credential.ssh_public_key_fingerprint;
+                console.log("SSH fingerprint set:", credential.ssh_public_key_fingerprint);
             } else {
                 sshFingerprint.textContent = 'Not available';
                 console.log("No SSH fingerprint available");
@@ -442,7 +499,7 @@ function showCredentialsModal(bookingId) {
             // Copy button functionality
             const copyBtn = document.getElementById('copySshFingerprintBtn');
             copyBtn.onclick = () => {
-                navigator.clipboard.writeText(credentials?.ssh_public_key_fingerprint || '')
+                navigator.clipboard.writeText(credential.ssh_public_key_fingerprint || '')
                     .then(() => {
                         const originalText = copyBtn.textContent;
                         copyBtn.textContent = 'Copied!';
@@ -455,12 +512,252 @@ function showCredentialsModal(bookingId) {
                     });
             };
             
-            // Show the modal (let Flowbite handle it if using Option A)
-            // If using Option B, keep your custom modal show logic
+            // MANUALLY SHOW THE MODAL (since Flowbite auto-init isn't working)
+            const modal = document.getElementById('credentialsModal');
+            modal.classList.remove('hidden');
+            modal.style.display = 'flex';
+            modal.setAttribute('aria-hidden', 'false');
+            
+            // Add close functionality
+            const closeBtn = modal.querySelector('[data-modal-hide="credentialsModal"]');
+            if (closeBtn) {
+                closeBtn.onclick = () => {
+                    modal.classList.add('hidden');
+                    modal.style.display = 'none';
+                    modal.setAttribute('aria-hidden', 'true');
+                };
+            }
+            
+            // Close when clicking outside
+            modal.onclick = (e) => {
+                if (e.target === modal) {
+                    modal.classList.add('hidden');
+                    modal.style.display = 'none';
+                    modal.setAttribute('aria-hidden', 'true');
+                }
+            };
+            
+            // Close with Escape key
+            const escapeHandler = (e) => {
+                if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+                    modal.classList.add('hidden');
+                    modal.style.display = 'none';
+                    modal.setAttribute('aria-hidden', 'true');
+                    document.removeEventListener('keydown', escapeHandler);
+                }
+            };
+            document.addEventListener('keydown', escapeHandler);
+            
         })
         .catch(err => {
-            console.error("Error loading credentials:", err); // Debug log
+            console.error("Error loading credentials:", err);
             alert('Failed to load credentials: ' + err.message);
+        });
+}
+
+
+// Wipe Verification functionality
+async function loadWipeVerification(bookingId) {
+    return await apiGetWipeVerification(bookingId);
+}
+
+// Show wipe verification for a completed booking
+function showWipeVerificationModal(bookingId) {
+    console.log("Fetching wipe verification for booking:", bookingId);
+    
+    const modal = document.getElementById('wipeVerificationModal');
+    const content = document.getElementById('wipeVerificationContent');
+    
+    // Check if modal elements exist
+    if (!modal || !content) {
+        console.error('Wipe verification modal elements not found');
+        return;
+    }
+    
+    // Show loading state
+    content.innerHTML = `
+        <div class="text-center py-8">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            <p class="mt-2 text-gray-500 dark:text-gray-400">Loading verification details...</p>
+        </div>
+    `;
+    
+    // Show modal immediately - MANUALLY
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+    modal.setAttribute('aria-hidden', 'false');
+    
+    loadWipeVerification(bookingId)
+        .then(data => {
+            console.log("Wipe verification response:", data);
+            
+            if (data.is_verified) {
+                // Verified wipe
+                content.innerHTML = `
+                    <div class="text-center">
+                        <div class="inline-flex items-center justify-center w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full mb-4">
+                            <svg class="w-8 h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-bold text-green-600 dark:text-green-400 mb-2">Server Wiped & Verified</h3>
+                        <p class="text-gray-600 dark:text-gray-400 mb-4">This server has been securely wiped and verified.</p>
+                    </div>
+                    
+                    <div class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Method</p>
+                                <p class="font-medium">${data.method_summary}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Status</p>
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
+                                    ${data.status}
+                                </span>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Verified At</p>
+                                <p class="font-medium">${new Date(data.verified_at).toLocaleString()}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Your Data</p>
+                                <p class="font-medium text-green-600 dark:text-green-400">Securely Erased</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
+                        <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-2">Data Security Assurance</h4>
+                        <ul class="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                            <li class="flex items-center">
+                                <svg class="w-4 h-4 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                                All user data permanently removed
+                            </li>
+                            <li class="flex items-center">
+                                <svg class="w-4 h-4 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                                Storage media securely overwritten
+                            </li>
+                            <li class="flex items-center">
+                                <svg class="w-4 h-4 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                                Verification logged for compliance
+                            </li>
+                        </ul>
+                    </div>
+                `;
+            } else {
+                // Not verified or pending
+                content.innerHTML = `
+                    <div class="text-center">
+                        <div class="inline-flex items-center justify-center w-16 h-16 ${
+                            data.status === 'pending' ? 'bg-yellow-100 dark:bg-yellow-900' : 'bg-gray-100 dark:bg-gray-900'
+                        } rounded-full mb-4">
+                            <svg class="w-8 h-8 ${
+                                data.status === 'pending' ? 'text-yellow-600 dark:text-yellow-400' : 'text-gray-600 dark:text-gray-400'
+                            }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-bold ${
+                            data.status === 'pending' ? 'text-yellow-600 dark:text-yellow-400' : 'text-gray-600 dark:text-gray-400'
+                        } mb-2">
+                            ${data.status === 'pending' ? 'Wipe Verification Pending' : 'Wipe Not Verified'}
+                        </h3>
+                        <p class="text-gray-600 dark:text-gray-400 mb-4">
+                            ${data.status === 'pending' 
+                                ? 'Server wipe is being processed and verified.' 
+                                : 'Server wipe verification is not available.'}
+                        </p>
+                    </div>
+                    
+                    <div class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Status</p>
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                    data.status === 'pending' 
+                                        ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
+                                        : 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300'
+                                }">
+                                    ${data.status || 'Not Available'}
+                                </span>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Method</p>
+                                <p class="font-medium">${data.method_summary || 'Not Specified'}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
+                        <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-2">What This Means</h4>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">
+                            ${data.status === 'pending'
+                                ? 'The server wipe process has been initiated. Once completed and verified by our compliance team, the verification status will be updated here.'
+                                : 'This booking does not have a wipe verification record. Contact support if you have concerns about data security.'}
+                        </p>
+                    </div>
+                `;
+            }
+            
+            // Add close functionality - MANUAL
+            const closeBtn = modal.querySelector('[data-modal-hide="wipeVerificationModal"]');
+            if (closeBtn) {
+                closeBtn.onclick = () => {
+                    modal.classList.add('hidden');
+                    modal.style.display = 'none';
+                    modal.setAttribute('aria-hidden', 'true');
+                };
+            }
+            
+            // Close when clicking outside - MANUAL
+            modal.onclick = (e) => {
+                if (e.target === modal) {
+                    modal.classList.add('hidden');
+                    modal.style.display = 'none';
+                    modal.setAttribute('aria-hidden', 'true');
+                }
+            };
+            
+            // Close with Escape key - MANUAL
+            const escapeHandler = (e) => {
+                if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+                    modal.classList.add('hidden');
+                    modal.style.display = 'none';
+                    modal.setAttribute('aria-hidden', 'true');
+                    document.removeEventListener('keydown', escapeHandler);
+                }
+            };
+            document.addEventListener('keydown', escapeHandler);
+            
+        })
+        .catch(err => {
+            console.error("Error loading wipe verification:", err);
+            content.innerHTML = `
+                <div class="text-center text-red-600 dark:text-red-400">
+                    <svg class="w-12 h-12 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <h3 class="text-lg font-semibold mb-2">Error Loading Verification</h3>
+                    <p>${err.message || 'Failed to load wipe verification details.'}</p>
+                </div>
+            `;
+            
+            // Re-add close functionality for error state
+            const closeBtn = modal.querySelector('[data-modal-hide="wipeVerificationModal"]');
+            if (closeBtn) {
+                closeBtn.onclick = () => {
+                    modal.classList.add('hidden');
+                    modal.style.display = 'none';
+                    modal.setAttribute('aria-hidden', 'true');
+                };
+            }
         });
 }
 
@@ -600,26 +897,65 @@ function updateStats(stats) {
 }
 
 //Helper fxns
-//Helper fxns
 function rowHTML(b) {
-    const credentialsButton = b.status === 'active' ? `
-        <button class="view-credentials-btn inline-flex items-center gap-1 text-white bg-purple-600 hover:bg-purple-700 font-medium rounded-lg text-xs px-3 py-1.5 transition"
-                data-booking-id="${b.id}"
-                data-modal-target="credentialsModal"
-                data-modal-toggle="credentialsModal"
-                title="View access credentials for this booking">
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
-            </svg>
-            Credentials
-        </button>
-    ` : '';
+    const userRole = localStorage.getItem('user_role');
+    
+    let actionButtons = '';
+    
+    // Common: Credentials button for ACTIVE bookings (both buyers and providers can see)
+    if (b.status === 'active') {
+        actionButtons += `
+            <button class="view-credentials-btn inline-flex items-center gap-1 text-white bg-purple-600 hover:bg-purple-700 font-medium rounded-lg text-xs px-3 py-1.5 transition"
+                    data-booking-id="${b.id}"
+                    type="button"
+                    title="View access credentials for this booking">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
+                </svg>
+                Credentials
+            </button>
+        `;
+    }
+    
+    // Role-specific buttons for COMPLETED bookings
+    if (b.status === 'completed') {
+        if (userRole === 'buyer') {
+            // Buyer sees wipe verification
+            actionButtons += `
+                <button class="view-wipe-verification-btn inline-flex items-center gap-1 text-white bg-green-600 hover:bg-green-700 font-medium rounded-lg text-xs px-3 py-1.5 transition ml-2"
+                        data-booking-id="${b.id}"
+                        type="button"
+                        title="View server wipe verification">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    Wipe Verify
+                </button>
+            `;
+        } else if (userRole === 'provider') {
+            // Provider sees attestation details
+            actionButtons += `
+                <button class="view-provider-attestation-btn inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium rounded-lg text-xs px-3 py-1.5 transition ml-2 border border-blue-600 dark:border-blue-400"
+                        data-booking-id="${b.id}"
+                        type="button"
+                        title="View wipe attestation details for this booking">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    Attestation
+                </button>
+            `;
+        }
+
+    }
     
     return `
         <tr class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
             <td class="px-6 py-4">
                 <div class="font-medium text-gray-900 dark:text-white">#${b.id.substring(0, 8)}...</div>
-                <div class="mt-1">${credentialsButton}</div>
+                <div class="mt-1 flex flex-wrap gap-1">
+                    ${actionButtons}
+                </div>
             </td>
             <td class="px-6 py-4 text-gray-900 dark:text-white">${b.listing_title || "Listing " + b.listing_id}</td>
             <td class="px-6 py-4 text-gray-900 dark:text-white">${b.buyer_email || "Unknown"}</td>
@@ -660,3 +996,680 @@ function errorRow(msg) {
 function formatDate(str) {
     return str ? new Date(str).toLocaleString() : "-";
 }
+
+// Admin: Load all wipe attestations
+async function loadWipeAttestations() {
+    const container = document.getElementById('attestations-container');
+    if (!container) return;
+    
+    try {
+        const attestations = await apiGetAllAttestations();
+        renderWipeAttestations(attestations);
+    } catch (err) {
+        container.innerHTML = `
+            <div class="text-center py-8 text-red-600 dark:text-red-400">
+                Failed to load wipe attestations: ${err.message}
+            </div>
+        `;
+    }
+}
+
+// Admin: Render wipe attestations
+function renderWipeAttestations(attestations) {
+    const container = document.getElementById('attestations-container');
+    if (!container) return;
+    
+    if (attestations.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+                No wipe attestations found.
+            </div>
+        `;
+        return;
+    }
+    
+    const template = document.getElementById('attestation-row-template');
+    container.innerHTML = '';
+    
+    attestations.forEach(attestation => {
+        const clone = template.content.cloneNode(true);
+        const row = clone.firstElementChild;
+        
+        // Fill attestation data
+        row.querySelector('.booking-id').textContent = `#${attestation.booking_id.substring(0, 8)}...`;
+        row.querySelector('.machine-info').textContent = `#${attestation.machine_id.substring(0, 8)}...`;
+        row.querySelector('.wipe-method').textContent = attestation.method;
+        row.querySelector('.attested-date').textContent = new Date(attestation.attested_at).toLocaleString();
+        
+        // Status badge
+        const statusBadge = row.querySelector('.status-badge');
+        statusBadge.textContent = attestation.status;
+        
+        switch(attestation.status) {
+            case 'verified':
+                statusBadge.classList.add('bg-green-100', 'text-green-800', 'dark:bg-green-900', 'dark:text-green-300');
+                break;
+            case 'rejected':
+                statusBadge.classList.add('bg-red-100', 'text-red-800', 'dark:bg-red-900', 'dark:text-red-300');
+                break;
+            default:
+                statusBadge.classList.add('bg-yellow-100', 'text-yellow-800', 'dark:bg-yellow-900', 'dark:text-yellow-300');
+        }
+        
+        // Evidence link
+        const evidenceLink = row.querySelector('.evidence-link');
+        if (attestation.evidence_uri) {
+            evidenceLink.href = attestation.evidence_uri;
+            evidenceLink.textContent = 'View Evidence';
+        } else {
+            evidenceLink.parentElement.style.display = 'none';
+        }
+        
+        // Notes
+        const notesContent = row.querySelector('.notes-content');
+        notesContent.textContent = attestation.notes || 'No notes provided';
+        
+        // Buttons
+        const verifyBtn = row.querySelector('.verify-attestation-btn');
+        const rejectBtn = row.querySelector('.reject-attestation-btn');
+        const detailsBtn = row.querySelector('.view-details-btn');
+        
+        if (attestation.status === 'verified' || attestation.status === 'rejected') {
+            verifyBtn.style.display = 'none';
+            rejectBtn.style.display = 'none';
+        } else {
+            verifyBtn.addEventListener('click', () => reviewAttestation(attestation.id, 'verified'));
+            rejectBtn.addEventListener('click', () => reviewAttestation(attestation.id, 'rejected'));
+        }
+        
+        detailsBtn.addEventListener('click', () => showAttestationDetails(attestation.id, true));
+        
+        container.appendChild(row);
+    });
+}
+
+// Admin: Review attestation
+async function reviewAttestation(attestationId, status) {
+    if (!confirm(`Are you sure you want to ${status} this wipe attestation?`)) {
+        return;
+    }
+    
+    try {
+        await apiReviewAttestation(attestationId, status);
+        alert(`Attestation ${status} successfully!`);
+        await loadWipeAttestations(); // Reload the list
+    } catch (err) {
+        alert(`Error: ${err.message}`);
+    }
+}
+
+// Admin/Provider: Show attestation details
+async function showAttestationDetails(attestationId, isAdmin = false) {
+    const modal = document.getElementById('attestationDetailsModal');
+    const content = document.getElementById('attestationDetailsContent');
+    
+    try {
+        // For admin, get full admin view; for provider, get provider view
+        let attestation;
+        if (isAdmin) {
+            // We need booking ID first, then get admin view
+            const allAttestations = await apiGetAllAttestations();
+            const target = allAttestations.find(a => a.id === attestationId);
+            if (target) {
+                attestation = await apiGetAdminBookingAttestation(target.booking_id);
+            }
+        } else {
+            // Since we have attestationId directly, we can use machine attestations endpoint
+            // to find the specific attestation, then get provider view
+            const machineSelect = document.getElementById('wipeHistoryMachineSelect');
+            const machineId = machineSelect.value;
+            if (machineId) {
+                const machineAttestations = await apiGetMachineAttestations(machineId);
+                const target = machineAttestations.find(a => a.id === attestationId);
+                if (target) {
+                    attestation = await apiGetProviderBookingAttestation(target.booking_id);
+                }
+            }
+        }
+        
+        if (!attestation) {
+            throw new Error('Attestation not found');
+        }
+        
+        content.innerHTML = `
+            <div class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-4">
+                        <div>
+                            <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-2">Booking Information</h4>
+                            <div class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                                <div class="space-y-2">
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-gray-500 dark:text-gray-400">Booking ID:</span>
+                                        <span class="font-mono text-sm">${attestation.booking_id}</span>
+                                    </div>
+                                    ${isAdmin && attestation.booking ? `
+                                        <div class="flex justify-between">
+                                            <span class="text-sm text-gray-500 dark:text-gray-400">Buyer:</span>
+                                            <span class="text-sm">${attestation.booking.buyer_email || 'Unknown'}</span>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-2">Machine Information</h4>
+                            <div class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                                <div class="space-y-2">
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-gray-500 dark:text-gray-400">Machine ID:</span>
+                                        <span class="font-mono text-sm">${attestation.machine_id}</span>
+                                    </div>
+                                    ${attestation.machine ? `
+                                        <div class="flex justify-between">
+                                            <span class="text-sm text-gray-500 dark:text-gray-400">Hostname:</span>
+                                            <span class="text-sm">${attestation.machine.hostname || 'Unknown'}</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-sm text-gray-500 dark:text-gray-400">Location:</span>
+                                            <span class="text-sm">${attestation.machine.location_region || 'Unknown'}</span>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-2">Wipe Details</h4>
+                            <div class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                                <div class="space-y-3">
+                                    <div>
+                                        <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Method</p>
+                                        <p class="font-medium">${attestation.method}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Status</p>
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                            attestation.status === 'verified' 
+                                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
+                                                : attestation.status === 'rejected'
+                                                ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
+                                                : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
+                                        }">
+                                            ${attestation.status}
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Attested At</p>
+                                        <p class="font-medium">${new Date(attestation.attested_at).toLocaleString()}</p>
+                                    </div>
+                                    ${attestation.evidence_uri ? `
+                                        <div>
+                                            <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Evidence</p>
+                                            <a href="${attestation.evidence_uri}" 
+                                               target="_blank"
+                                               class="text-blue-600 dark:text-blue-400 hover:underline text-sm">
+                                                ${attestation.evidence_uri}
+                                            </a>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-2">Notes</h4>
+                    <div class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                        <p class="text-gray-700 dark:text-gray-300">${attestation.notes || 'No notes provided.'}</p>
+                    </div>
+                </div>
+                
+                ${isAdmin && attestation.status === 'pending' ? `
+                    <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
+                        <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-3">Admin Actions</h4>
+                        <div class="flex space-x-3">
+                            <button onclick="reviewAttestation('${attestation.id}', 'verified')"
+                                    class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+                                Verify Attestation
+                            </button>
+                            <button onclick="reviewAttestation('${attestation.id}', 'rejected')"
+                                    class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+                                Reject Attestation
+                            </button>
+                        </div>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+        
+        // Show modal
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+        modal.setAttribute('aria-hidden', 'false');
+        
+        // Add close functionality
+        const closeBtn = modal.querySelector('[data-modal-hide="attestationDetailsModal"]');
+        if (closeBtn) {
+            closeBtn.onclick = () => {
+                modal.classList.add('hidden');
+                modal.style.display = 'none';
+                modal.setAttribute('aria-hidden', 'true');
+            };
+        }
+        
+        // Close when clicking outside
+        modal.onclick = (e) => {
+            if (e.target === modal) {
+                modal.classList.add('hidden');
+                modal.style.display = 'none';
+                modal.setAttribute('aria-hidden', 'true');
+            }
+        };
+        
+        // Close with Escape key
+        const escapeHandler = (e) => {
+            if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+                modal.classList.add('hidden');
+                modal.style.display = 'none';
+                modal.setAttribute('aria-hidden', 'true');
+                document.removeEventListener('keydown', escapeHandler);
+            }
+        };
+        document.addEventListener('keydown', escapeHandler);
+        
+    } catch (err) {
+        content.innerHTML = `
+            <div class="text-center text-red-600 dark:text-red-400">
+                <svg class="w-12 h-12 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <h3 class="text-lg font-semibold mb-2">Error Loading Details</h3>
+                <p>${err.message || 'Failed to load attestation details.'}</p>
+            </div>
+        `;
+    }
+}
+
+// Provider: Setup wipe history
+function setupWipeHistory() {
+    const machineSelect = document.getElementById('wipeHistoryMachineSelect');
+    const container = document.getElementById('wipeHistoryContainer');
+    const listContainer = document.getElementById('wipeHistoryList');
+    
+    if (!machineSelect || !container) return;
+    
+    // Populate machine dropdown
+    if (machines.length > 0) {
+        machineSelect.innerHTML = '<option value="">Choose a machine...</option>' +
+            machines.map(m => 
+                `<option value="${m.id}" data-hostname="${m.hostname || 'Unnamed'}">
+                    ${m.hostname || "Machine #" + m.id}
+                </option>`
+            ).join("");
+    }
+    
+    // Handle machine selection
+    machineSelect.addEventListener('change', async function() {
+        const machineId = this.value;
+        const selectedOption = this.options[this.selectedIndex];
+        const machineName = selectedOption.getAttribute('data-hostname');
+        
+        if (machineId) {
+            // Show wipe history list
+            listContainer.classList.remove('hidden');
+            document.getElementById('selectedWipeMachineName').textContent = machineName;
+            
+            // Load wipe history
+            await loadWipeHistory(machineId);
+        } else {
+            // Hide wipe history list
+            listContainer.classList.add('hidden');
+        }
+    });
+}
+
+// Provider: Load wipe history for a machine
+async function loadWipeHistory(machineId) {
+    const container = document.getElementById('wipeHistoryContainer');
+    if (!container) return;
+    
+    try {
+        const attestations = await apiGetMachineAttestations(machineId);
+        renderWipeHistory(attestations);
+    } catch (err) {
+        container.innerHTML = `
+            <div class="text-red-600 dark:text-red-400">
+                Failed to load wipe history: ${err.message}
+            </div>
+        `;
+    }
+}
+
+// Provider: Render wipe history
+function renderWipeHistory(attestations) {
+    const container = document.getElementById('wipeHistoryContainer');
+    if (!container) return;
+    
+    if (attestations.length === 0) {
+        container.innerHTML = `
+            <div class="text-gray-500 dark:text-gray-400 italic">
+                No wipe history for this machine yet.
+            </div>
+        `;
+        return;
+    }
+    
+    const template = document.getElementById('wipe-history-template');
+    container.innerHTML = '';
+    
+    attestations.forEach(attestation => {
+        const clone = template.content.cloneNode(true);
+        const row = clone.firstElementChild;
+        
+        // Fill attestation data
+        row.querySelector('.booking-id').textContent = attestation.booking_id.substring(0, 8) + '...';
+        row.querySelector('.wipe-method').textContent = attestation.method;
+        row.querySelector('.attested-date').textContent = new Date(attestation.attested_at).toLocaleDateString();
+        
+        // Status badge
+        const statusBadge = row.querySelector('.status-badge');
+        statusBadge.textContent = attestation.status;
+        
+        switch(attestation.status) {
+            case 'verified':
+                statusBadge.classList.add('bg-green-100', 'text-green-800', 'dark:bg-green-900', 'dark:text-green-300');
+                break;
+            case 'rejected':
+                statusBadge.classList.add('bg-red-100', 'text-red-800', 'dark:bg-red-900', 'dark:text-red-300');
+                break;
+            default:
+                statusBadge.classList.add('bg-yellow-100', 'text-yellow-800', 'dark:bg-yellow-900', 'dark:text-yellow-300');
+        }
+        
+        // Evidence link (only show if available)
+        const evidenceContainer = row.querySelector('.evidence-link-container');
+        const evidenceLink = row.querySelector('.evidence-link');
+        if (attestation.evidence_uri) {
+            evidenceContainer.classList.remove('hidden');
+            evidenceLink.href = attestation.evidence_uri;
+            evidenceLink.textContent = 'View Evidence';
+        }
+        
+        // Notes
+        const notesContent = row.querySelector('.notes-content');
+        notesContent.textContent = attestation.notes || 'No notes provided';
+        
+        // Details button - store attestation ID, not booking ID
+        const detailsBtn = row.querySelector('.view-attestation-details-btn');
+        detailsBtn.setAttribute('data-attestation-id', attestation.id);
+        detailsBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const attestationId = detailsBtn.getAttribute('data-attestation-id');
+            showAttestationDetails(attestationId, false);
+        });
+        
+        container.appendChild(row);
+    });
+}
+
+// Provider: Load attestation for a booking
+async function loadProviderAttestation(bookingId) {
+    return await apiGetProviderBookingAttestation(bookingId);
+}
+
+// Show provider attestation details for a booking
+// Show provider attestation details for a booking
+function showProviderAttestationModal(bookingId) {
+    console.log("Fetching provider attestation for booking:", bookingId);
+    
+    // Use wipeVerificationModal instead (available to all users)
+    const modal = document.getElementById('wipeVerificationModal');
+    const content = document.getElementById('wipeVerificationContent');
+    
+    // Check if modal elements exist
+    if (!modal || !content) {
+        console.error('Modal elements not found');
+        alert('Error: Could not open attestation details. Please refresh the page.');
+        return;
+    }
+    
+    // Show loading state
+    content.innerHTML = `
+        <div class="text-center py-8">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            <p class="mt-2 text-gray-500 dark:text-gray-400">Loading attestation details...</p>
+        </div>
+    `;
+    
+    // Update modal title
+    const modalTitle = modal.querySelector('h3');
+    if (modalTitle) {
+        modalTitle.textContent = 'Wipe Attestation Details';
+    }
+    
+    // Show modal immediately - MANUALLY since Flowbite might not be initialized
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+    modal.setAttribute('aria-hidden', 'false');
+    
+    // Load attestation data
+    loadProviderAttestation(bookingId)
+        .then(data => {
+            console.log("Provider attestation response:", data);
+            
+            // Create provider-specific content
+            content.innerHTML = `
+                <div class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-4">
+                            <div>
+                                <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-2">Booking Information</h4>
+                                <div class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                                    <div class="space-y-2">
+                                        <div class="flex justify-between">
+                                            <span class="text-sm text-gray-500 dark:text-gray-400">Booking ID:</span>
+                                            <span class="font-mono text-sm">${data.booking_id}</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-sm text-gray-500 dark:text-gray-400">Status:</span>
+                                            <span class="text-sm font-medium ${data.status === 'verified' ? 'text-green-600' : data.status === 'rejected' ? 'text-red-600' : 'text-yellow-600'}">
+                                                ${data.status}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-2">Wipe Details</h4>
+                                <div class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                                    <div class="space-y-3">
+                                        <div>
+                                            <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Method</p>
+                                            <p class="font-medium">${data.method}</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Attested At</p>
+                                            <p class="font-medium">${new Date(data.attested_at).toLocaleString()}</p>
+                                        </div>
+                                        ${data.evidence_uri ? `
+                                            <div>
+                                                <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Evidence</p>
+                                                <a href="${data.evidence_uri}" 
+                                                   target="_blank"
+                                                   class="text-blue-600 dark:text-blue-400 hover:underline text-sm break-all">
+                                                    ${data.evidence_uri}
+                                                </a>
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-2">Status & Review</h4>
+                                <div class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                                    <div class="space-y-3">
+                                        <div>
+                                            <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Current Status</p>
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                                data.status === 'verified' 
+                                                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
+                                                    : data.status === 'rejected'
+                                                    ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
+                                                    : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
+                                            }">
+                                                ${data.status.toUpperCase()}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Review Progress</p>
+                                            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                                                <div class="h-2.5 rounded-full ${
+                                                    data.status === 'verified' ? 'bg-green-600 w-full' :
+                                                    data.status === 'rejected' ? 'bg-red-600 w-full' :
+                                                    data.status === 'pending' ? 'bg-yellow-600 w-1/2' : 'bg-gray-600 w-1/4'
+                                                }"></div>
+                                            </div>
+                                            <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                                <span>Submitted</span>
+                                                <span>${data.status === 'pending' ? 'Under Review' : data.status === 'verified' ? 'Verified' : 'Rejected'}</span>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Next Steps</p>
+                                            <p class="text-sm ${
+                                                data.status === 'pending' ? 'text-yellow-600 dark:text-yellow-400' :
+                                                data.status === 'verified' ? 'text-green-600 dark:text-green-400' :
+                                                'text-red-600 dark:text-red-400'
+                                            }">
+                                                ${
+                                                    data.status === 'pending' 
+                                                        ? 'Your wipe attestation is being reviewed by our compliance team.' 
+                                                        : data.status === 'verified'
+                                                        ? 'Your wipe attestation has been verified and approved.'
+                                                        : 'Your wipe attestation was rejected. Please check the notes and resubmit if needed.'
+                                                }
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-2">Notes & Additional Information</h4>
+                        <div class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                            <p class="text-gray-700 dark:text-gray-300">${data.notes || 'No additional notes provided.'}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
+                        <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-2">Compliance Information</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                                <h5 class="text-sm font-medium text-gray-900 dark:text-white mb-2">For Your Records</h5>
+                                <ul class="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                                    <li class="flex items-center">
+                                        <svg class="w-4 h-4 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                        Booking ID: ${data.booking_id}
+                                    </li>
+                                    <li class="flex items-center">
+                                        <svg class="w-4 h-4 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                        Machine ID: ${data.machine_id}
+                                    </li>
+                                    <li class="flex items-center">
+                                        <svg class="w-4 h-4 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                        Attestation ID: ${data.id}
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                                <h5 class="text-sm font-medium text-gray-900 dark:text-white mb-2">Support</h5>
+                                <p class="text-sm text-gray-600 dark:text-gray-400">
+                                    If you have questions about your wipe attestation status or need to update information, please contact our compliance team.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Add close functionality manually
+            const closeBtn = modal.querySelector('[data-modal-hide="wipeVerificationModal"]');
+            if (closeBtn) {
+                closeBtn.onclick = () => {
+                    modal.classList.add('hidden');
+                    modal.style.display = 'none';
+                    modal.setAttribute('aria-hidden', 'true');
+                };
+            }
+            
+            // Close when clicking outside
+            modal.onclick = (e) => {
+                if (e.target === modal) {
+                    modal.classList.add('hidden');
+                    modal.style.display = 'none';
+                    modal.setAttribute('aria-hidden', 'true');
+                }
+            };
+            
+            // Close with Escape key
+            const escapeHandler = (e) => {
+                if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+                    modal.classList.add('hidden');
+                    modal.style.display = 'none';
+                    modal.setAttribute('aria-hidden', 'true');
+                    document.removeEventListener('keydown', escapeHandler);
+                }
+            };
+            document.addEventListener('keydown', escapeHandler);
+            
+        })
+        .catch(err => {
+            console.error("Error loading provider attestation:", err);
+            
+            content.innerHTML = `
+                <div class="text-center">
+                    <div class="inline-flex items-center justify-center w-16 h-16 bg-red-100 dark:bg-red-900 rounded-full mb-4">
+                        <svg class="w-8 h-8 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-red-600 dark:text-red-400 mb-2">No Attestation Found</h3>
+                    <p class="text-gray-600 dark:text-gray-400 mb-4">
+                        ${err.message || 'No wipe attestation found for this booking.'}
+                    </p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                        Wipe attestations are created after bookings complete. If this booking has recently ended, please wait a few moments for the attestation to be generated.
+                    </p>
+                </div>
+            `;
+            
+            // Re-add close functionality for error state
+            const closeBtn = modal.querySelector('[data-modal-hide="wipeVerificationModal"]');
+            if (closeBtn) {
+                closeBtn.onclick = () => {
+                    modal.classList.add('hidden');
+                    modal.style.display = 'none';
+                    modal.setAttribute('aria-hidden', 'true');
+                };
+            }
+        });
+}
+
+window.reviewAttestation = reviewAttestation;

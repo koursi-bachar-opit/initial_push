@@ -3,7 +3,7 @@ from uuid import UUID
 
 from .models import Organization, OrganizationMembership, OrgRole
 
-class OrganizationRepository:
+class OrganizationsRepository:
 
     def create(self, db: Session, data: dict) -> Organization:
         org = Organization(**data)

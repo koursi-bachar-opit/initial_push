@@ -51,6 +51,7 @@ class ProviderAgentClient:
         Example return: {"gpu": 40, "cpu": 13, "mem_gb": 5.3}
         """
         #Mock values for now
+        #consider: add net_rx and net_tx
         return {
             "machine_id": str(machine_id),
             "gpu_util": 42,

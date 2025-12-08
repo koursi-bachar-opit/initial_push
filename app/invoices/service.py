@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.invoices.models import Invoice, InvoiceStatus
-from app.invoices.repository import InvoiceRepository
+from app.invoices.repository import InvoicesRepository
 from app.invoices.schemas import InvoiceCreate
 from app.bookings.public import BookingsPublic, get_bookings_public
 from app.payments.public import PaymentsPublic, get_payments_public
@@ -45,7 +45,7 @@ class InvoiceService:
     def __init__(
         self,
         db: Session,
-        repo: InvoiceRepository,
+        repo: InvoicesRepository,
         bookings_public: BookingsPublic,
         payments_public: PaymentsPublic,
         organizations_public: OrganizationsPublic,
@@ -73,6 +73,7 @@ class InvoiceService:
             raise ValueError("Organization not found.")
 
         existing = self.repo.get_for_period(
+            self.db,
             organization_id=invoice_in.organization_id,
             period_start=invoice_in.period_start,
             period_end=invoice_in.period_end,
@@ -89,6 +90,7 @@ class InvoiceService:
         total_amount = self._aggregate_total_amount(bookings)
 
         invoice = self.repo.create(
+            self.db,
             organization_id=invoice_in.organization_id,
             period_start=invoice_in.period_start,
             period_end=invoice_in.period_end,
@@ -117,6 +119,7 @@ class InvoiceService:
         self._ensure_org_exists(org_id)
 
         invoices = self.repo.list_for_org(
+            self.db,
             organization_id=org_id,
             skip=skip,
             limit=limit,
@@ -133,7 +136,7 @@ class InvoiceService:
     ) -> List[Invoice]:
         if not is_site_admin:
             raise PermissionError("Only site admins may list all invoices.")
-        return self.repo.list_all(skip=skip, limit=limit)
+        return self.repo.list_all(self.db, skip=skip, limit=limit)
 
     def get_invoice(
         self,
@@ -142,7 +145,7 @@ class InvoiceService:
         is_site_admin: bool,
         user_org_ids: Iterable[UUID],
     ) -> Invoice:
-        invoice = self.repo.get(invoice_id)
+        invoice = self.repo.get(self.db, invoice_id)
         if not invoice:
             raise ValueError("Invoice not found.")
 
@@ -160,14 +163,14 @@ class InvoiceService:
         if not is_site_admin:
             raise PermissionError("Only site admins may finalize invoices.")
 
-        invoice = self.repo.get(invoice_id)
+        invoice = self.repo.get(self.db, invoice_id)
         if not invoice:
             raise ValueError("Invoice not found.")
 
         if invoice.status != InvoiceStatus.PENDING:
             raise ValueError("Only pending invoices can be finalized.")
 
-        invoice = self.repo.update_status(invoice, InvoiceStatus.FINALIZED)
+        invoice = self.repo.update_status(self.db, invoice, InvoiceStatus.FINALIZED)
 
         self.notifications.invoice_finalized(invoice.organization, invoice)
 
@@ -182,14 +185,14 @@ class InvoiceService:
         if not is_site_admin:
             raise PermissionError("Only site admins may void invoices.")
 
-        invoice = self.repo.get(invoice_id)
+        invoice = self.repo.get(self.db, invoice_id)
         if not invoice:
             raise ValueError("Invoice not found.")
 
         if invoice.status == InvoiceStatus.PAID:
             raise ValueError("Cannot void a paid invoice.")
 
-        invoice = self.repo.update_status(invoice, InvoiceStatus.VOID)
+        invoice = self.repo.update_status(self.db, invoice, InvoiceStatus.VOID)
         return invoice
 
     def mark_invoice_paid(
@@ -204,14 +207,14 @@ class InvoiceService:
         if not is_site_admin:
             raise PermissionError("Only site admins may mark invoices as paid.")
 
-        invoice = self.repo.get(invoice_id)
+        invoice = self.repo.get(self.db, invoice_id)
         if not invoice:
             raise ValueError("Invoice not found.")
 
         if invoice.status != InvoiceStatus.FINALIZED:
             raise ValueError("Only finalized invoices can be marked as paid.")
 
-        invoice = self.repo.update_status(invoice, InvoiceStatus.PAID)
+        invoice = self.repo.update_status(self.db, invoice, InvoiceStatus.PAID)
         return invoice
 
     #Helpers
@@ -257,7 +260,7 @@ def get_invoice_service(
     organizations_public: OrganizationsPublic = Depends(get_organizations_public),
     notifications_public: NotificationsPublic = Depends(get_notifications_public),
 ) -> InvoiceService:
-    repo = InvoiceRepository(db)
+    repo = InvoicesRepository()
     return InvoiceService(
         db=db,
         repo=repo,

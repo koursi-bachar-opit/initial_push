@@ -8,13 +8,11 @@ from sqlalchemy import and_
 from .models import Invoice, InvoiceStatus
 
 
-class InvoiceRepository:
-    def __init__(self, db: Session) -> None:
-        self.db = db
-
+class InvoicesRepository:
     #CRUD
     def create(
         self,
+        db: Session,
         *,
         organization_id: UUID,
         period_start: datetime,
@@ -31,16 +29,17 @@ class InvoiceRepository:
             currency=currency,
             status=status,
         )
-        self.db.add(invoice)
-        self.db.commit()
-        self.db.refresh(invoice)
+        db.add(invoice)
+        db.commit()
+        db.refresh(invoice)
         return invoice
 
-    def get(self, invoice_id: UUID) -> Optional[Invoice]:
-        return self.db.query(Invoice).filter(Invoice.id == invoice_id).first()
+    def get(self, db: Session, invoice_id: UUID) -> Optional[Invoice]:
+        return db.query(Invoice).filter(Invoice.id == invoice_id).first()
 
     def get_for_period(
         self,
+        db: Session,
         *,
         organization_id: UUID,
         period_start: datetime,
@@ -51,7 +50,7 @@ class InvoiceRepository:
         you can extend this to check any overlap with [period_start, period_end].
         """
         return (
-            self.db.query(Invoice)
+            db.query(Invoice)
             .filter(
                 Invoice.organization_id == organization_id,
                 Invoice.period_start == period_start,
@@ -62,13 +61,14 @@ class InvoiceRepository:
 
     def list_for_org(
         self,
+        db: Session,
         organization_id: UUID,
         *,
         skip: int = 0,
         limit: int = 100,
     ) -> List[Invoice]:
         return (
-            self.db.query(Invoice)
+            db.query(Invoice)
             .filter(Invoice.organization_id == organization_id)
             .order_by(Invoice.period_start.desc())
             .offset(skip)
@@ -78,12 +78,13 @@ class InvoiceRepository:
 
     def list_all(
         self,
+        db: Session,
         *,
         skip: int = 0,
         limit: int = 100,
     ) -> List[Invoice]:
         return (
-            self.db.query(Invoice)
+            db.query(Invoice)
             .order_by(Invoice.created_at.desc())
             .offset(skip)
             .limit(limit)
@@ -92,11 +93,12 @@ class InvoiceRepository:
 
     def update_status(
         self,
+        db: Session,
         invoice: Invoice,
         new_status: InvoiceStatus,
     ) -> Invoice:
         invoice.status = new_status
-        self.db.add(invoice)
-        self.db.commit()
-        self.db.refresh(invoice)
+        db.add(invoice)
+        db.commit()
+        db.refresh(invoice)
         return invoice

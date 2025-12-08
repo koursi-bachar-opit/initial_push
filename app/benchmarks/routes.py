@@ -9,6 +9,7 @@ from app.users.models import User, UserRole
 router = APIRouter()
 
 #consider: more upfront validation if authorization is refactored
+#consider: pass BenchmarkCreate payload instead of as individual parameters
 #Provider upload
 router = APIRouter()
 

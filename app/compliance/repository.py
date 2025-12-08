@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload, joinedload #consider: no need for joined load if repo functions resolved
 from sqlalchemy import select
 from uuid import UUID
 
@@ -21,12 +21,36 @@ class ComplianceRepository:
         db.refresh(att)
         return att
 
-    def get_by_booking(self, db: Session, booking_id: UUID):
-        stmt = select(WipeAttestation).where(
-            WipeAttestation.booking_id == booking_id
-        )
-        result = db.execute(stmt)
-        return result.scalar_one_or_none()
+    #update tests
+    def get_by_booking(self, db: Session, booking_id: UUID, include_relations: bool = False):
+        query = db.query(WipeAttestation)
+        
+        #consider: include_relations not necessary with get_by_booking_with_relations, check if anything depends on this function
+        if include_relations:
+            query = query.options(
+                joinedload(WipeAttestation.booking),
+                joinedload(WipeAttestation.machine)
+            )
+            
+        return query.filter_by(booking_id=booking_id).first()
+    
+    # def get_by_booking(self, db: Session, booking_id: UUID):
+    #     stmt = select(WipeAttestation).where(
+    #         WipeAttestation.booking_id == booking_id
+    #     )
+    #     result = db.execute(stmt)
+    #     return result.scalar_one_or_none()
+    
+    def get_by_booking_with_relations(self, db: Session, booking_id: UUID):
+        """
+        Get attestation with all necessary relationships pre-loaded.
+        Uses selectinload for better performance with nested relationships.
+        """
+        return db.query(WipeAttestation).options(
+            selectinload(WipeAttestation.booking),  # For ownership check
+            selectinload(WipeAttestation.machine)   # For provider check
+        ).filter_by(booking_id=booking_id).first()
+    #update tests
 
     def list_machine_attestations(self, db: Session, machine_id: UUID):
         stmt = select(WipeAttestation).where(

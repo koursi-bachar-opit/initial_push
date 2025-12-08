@@ -38,7 +38,18 @@ document.addEventListener("DOMContentLoaded", () => {
         const { data: userData } = await supabase.auth.getUser();
         const role = userData?.user?.user_metadata?.role || "buyer";
         localStorage.setItem("user_role", role);
+        
+        // Store token for immediate navbar update
+        localStorage.setItem("access_token", session.access_token);
 
-        window.location.href = "/";
+        // Update navbar immediately before redirect
+        if (typeof updateNavbar === 'function') {
+            updateNavbar();
+        }
+
+        // Small delay to ensure navbar updates, then redirect
+        setTimeout(() => {
+            window.location.href = "/";
+        }, 100);
     });
 });
