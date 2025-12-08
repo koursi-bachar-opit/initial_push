@@ -8,6 +8,7 @@ from app.listings.schemas import ListingRead
 
 
 class BookingStatus(str, Enum):
+    PENDING_PAYMENT = "pending_payment" #new status
     REQUESTED = "requested"
     CONFIRMED = "confirmed"
     ACTIVE = "active"
