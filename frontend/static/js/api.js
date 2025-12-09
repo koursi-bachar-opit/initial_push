@@ -219,10 +219,6 @@ export function apiCreateOrganization(payload) {
     });
 }
 
-export function apiGetOrgMembers(orgId) {
-    return request(`/organizations/${orgId}/members`);
-}
-
 export function apiChangeMemberRole(orgId, userId, role) {
     return request(`/organizations/${orgId}/members/${userId}`, {
         method: "PATCH",
