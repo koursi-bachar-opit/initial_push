@@ -16,6 +16,18 @@ import {
     apiReviewAttestation,
     apiGetProviderBookingAttestation,
     apiGetAdminBookingAttestation,
+    apiGetOrganizations,
+    apiGetOrgMembers,
+    apiGetOrgStats,
+    apiCreateOrganization,
+    apiInviteMember,
+    apiChangeMemberRole,
+    apiRemoveMember,
+    apiGetOrgBookings,
+    apiGetOrgInvoices,
+    apiGetOrgMembersDetails,
+    apiGetMemberUsage,
+    apiAddMember,
 } from "./api.js";
 
 //body targets
@@ -173,6 +185,65 @@ async function loadUserDashboard() {
             }
         });
     }
+
+    // Load organizations
+    await loadOrganizations();
+    
+    // Setup create org form
+    if (document.getElementById('create-org-form')) {
+        document.getElementById('create-org-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const fd = new FormData(e.target);
+            const payload = {
+                name: fd.get('name'),
+                billing_email: fd.get('billing_email'),
+            };
+            
+            try {
+                await apiCreateOrganization(payload);
+                alert('Organization created successfully!');
+                location.reload();
+            } catch (err) {
+                alert('Error creating organization: ' + err.message);
+            }
+        });
+    }
+
+    const addMemberForm = document.getElementById('add-member-form');
+    if (addMemberForm) {
+        addMemberForm.addEventListener('submit', addMemberToOrganization);
+    }
+
+    
+    // Setup add member modal button
+    const openAddMemberBtn = document.getElementById('openAddMemberModal');
+    if (openAddMemberBtn) {
+        openAddMemberBtn.addEventListener('click', () => {
+            openAddMemberModal();
+        });
+    }
+
+    // // Setup invite member form
+    // if (document.getElementById('invite-member-form')) {
+    //     document.getElementById('invite-member-form').addEventListener('submit', async (e) => {
+    //         e.preventDefault();
+    //         const fd = new FormData(e.target);
+    //         const payload = {
+    //             user_email: fd.get('user_email'),
+    //             role: fd.get('role'),
+    //             message: fd.get('message'),
+    //         };
+            
+    //         try {
+    //             await apiInviteMember(selectedOrgId, payload);
+    //             alert('Invitation sent successfully!');
+    //             document.querySelector('[data-modal-hide="inviteMemberModal"]')?.click();
+    //             await loadOrgMembers(selectedOrgId);
+    //         } catch (err) {
+    //             alert('Error sending invitation: ' + err.message);
+    //         }
+    //     });
+    // }
 }
 
 async function loadAdminDashboard() {
@@ -1673,3 +1744,814 @@ function showProviderAttestationModal(bookingId) {
 }
 
 window.reviewAttestation = reviewAttestation;
+
+// Organizations functionality
+let currentOrganizations = [];
+let selectedOrgId = null;
+let currentOrgMembers = [];
+let currentOrgBookings = [];
+let currentOrgInvoices = [];
+
+function renderOrganizations() {
+    const container = document.getElementById('organizationsContainer');
+    if (!container) return;
+    
+    if (currentOrganizations.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-8">
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full mb-4">
+                    <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Organizations Yet</h3>
+                <p class="text-gray-600 dark:text-gray-400 mb-4">Create your first organization to manage team access and billing.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = currentOrganizations.map(org => `
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer organization-card"
+             data-org-id="${org.id}">
+            <div class="flex justify-between items-start">
+                <div class="flex-1">
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="inline-flex items-center justify-center w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-full">
+                            <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">${org.name}</h3>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">${org.billing_email}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 mb-3">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${org.status === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300'}">
+                            ${org.status}
+                        </span>
+                        <span class="text-xs text-gray-500 dark:text-gray-400">
+                            Created: ${new Date(org.created_at).toLocaleDateString()}
+                        </span>
+                    </div>
+                </div>
+                <div class="ml-4">
+                    <button class="manage-org-btn bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-xs font-medium transition"
+                            data-org-id="${org.id}"
+                            onclick="selectOrganization('${org.id}')">
+                        Manage
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Quick Stats -->
+            <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 grid grid-cols-3 gap-4">
+                <div class="text-center">
+                    <div class="text-sm text-gray-500 dark:text-gray-400">Members</div>
+                    <div class="text-lg font-semibold text-gray-900 dark:text-white org-member-count">...</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-sm text-gray-500 dark:text-gray-400">Bookings</div>
+                    <div class="text-lg font-semibold text-gray-900 dark:text-white org-booking-count">...</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-sm text-gray-500 dark:text-gray-400">Spending</div>
+                    <div class="text-lg font-semibold text-gray-900 dark:text-white org-spending">...</div>
+                </div>
+            </div>
+        </div>
+    `).join('');
+    
+    // Load stats for each org
+    currentOrganizations.forEach(org => {
+        loadOrgStats(org.id);
+    });
+}
+
+
+
+async function selectOrganization(orgId) {
+    selectedOrgId = orgId;
+    const org = currentOrganizations.find(o => o.id === orgId);
+    
+    if (!org) return;
+    
+    // Show management section
+    const managementSection = document.getElementById('orgManagementSection');
+    if (managementSection) {
+        managementSection.classList.remove('hidden');
+        
+        // Scroll to management section
+        managementSection.scrollIntoView({ behavior: 'smooth' });
+    }
+    
+    // Update selected org info
+    const infoContainer = document.getElementById('selectedOrgInfo');
+    if (infoContainer) {
+        infoContainer.innerHTML = `
+            <div class="flex items-start justify-between">
+                <div>
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white">${org.name}</h3>
+                    <p class="text-gray-600 dark:text-gray-400">${org.billing_email}</p>
+                    <div class="mt-2 flex items-center gap-2">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${org.status === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300'}">
+                            ${org.status}
+                        </span>
+                        <span class="text-sm text-gray-500 dark:text-gray-400">
+                            ID: ${org.id.substring(0, 8)}...
+                        </span>
+                    </div>
+                </div>
+                <div>
+                    <button class="text-sm text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 font-medium"
+                            onclick="leaveOrganization('${orgId}')">
+                        Leave Organization
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+    
+    // Load initial tab (members)
+    await loadOrgMembers(orgId);
+    setupOrgManagementTabs();
+}
+
+function setupOrgManagementTabs() {
+    const tabs = document.querySelectorAll('.org-management-tab');
+    const contents = document.querySelectorAll('.org-tab-content');
+    
+    tabs.forEach(tab => {
+        tab.addEventListener('click', async () => {
+            const tabName = tab.getAttribute('data-tab');
+            
+            // Update active tab
+            tabs.forEach(t => {
+                t.setAttribute('aria-selected', 'false');
+                t.classList.remove('border-blue-600', 'text-blue-600', 'dark:text-blue-500', 'dark:border-blue-500');
+                t.classList.add('border-transparent');
+            });
+            
+            tab.setAttribute('aria-selected', 'true');
+            tab.classList.add('border-blue-600', 'text-blue-600', 'dark:text-blue-500', 'dark:border-blue-500');
+            tab.classList.remove('border-transparent');
+            
+            // Show active content
+            contents.forEach(content => {
+                content.classList.add('hidden');
+            });
+            
+            document.getElementById(`org${capitalizeFirst(tabName)}Tab`).classList.remove('hidden');
+            
+            // Load data for this tab
+            if (tabName === 'members') {
+                await loadOrgMembers(selectedOrgId);
+            } else if (tabName === 'bookings') {
+                await loadOrgBookings(selectedOrgId);
+            } else if (tabName === 'invoices') {
+                await loadOrgInvoices(selectedOrgId);
+            }
+        });
+    });
+}
+
+
+// dashboard.js - Complete renderOrgMembers function
+function renderOrgMembers() {
+    const container = document.getElementById('orgMembersContainer');
+    if (!container) return;
+    
+    const userRole = localStorage.getItem('user_role');
+    const userId = localStorage.getItem('user_id');
+
+    const addMemberBtn = document.getElementById('openAddMemberModal');
+    if (addMemberBtn) {
+        addMemberBtn.style.display = 'inline-flex'; // Always show
+    }
+
+    // // Check if current user is org admin
+    // const currentUserMembership = currentOrgMembers.find(m => m.user_id === userId);
+    // const isCurrentUserAdmin = currentUserMembership?.org_role === 'admin';
+    
+    // // Show "Add Member" button only if user is admin
+    // const addMemberBtn = document.getElementById('openAddMemberModal');
+    // if (addMemberBtn) {
+    //     addMemberBtn.style.display = isCurrentUserAdmin ? 'inline-flex' : 'none';
+    // }
+    
+    if (currentOrgMembers.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-8">
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full mb-4">
+                    <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13 0A9 9 0 008.5 3M15 5a9 9 0 00-8.5 11"></path>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Members Yet</h3>
+                <p class="text-gray-600 dark:text-gray-400 mb-4">
+                    ${isCurrentUserAdmin 
+                        ? 'Add members to your organization to collaborate on bookings.' 
+                        : 'No other members in this organization yet.'}
+                </p>
+                <button id="addFirstMemberBtn"
+                        class="inline-flex items-center gap-2 text-white bg-green-600 hover:bg-green-700 font-medium rounded-lg text-sm px-4 py-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                    </svg>
+                    Add Your First Member
+                </button>
+            </div>
+        `;
+        
+        // Add click handler for "Add Your First Member" button
+        const addFirstMemberBtn = document.getElementById('addFirstMemberBtn');
+        if (addFirstMemberBtn) {
+            addFirstMemberBtn.addEventListener('click', openAddMemberModal);
+        }
+        
+        return;
+    }
+    
+    container.innerHTML = currentOrgMembers.map(member => {
+        const isCurrentUser = member.user_id === userId;
+        const isAdmin = member.org_role === 'admin';
+        
+        return `
+            <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-4">
+                <div class="flex justify-between items-start">
+                    <div class="flex items-center gap-3">
+                        <div class="inline-flex items-center justify-center w-12 h-12 ${isAdmin ? 'bg-purple-100 dark:bg-purple-900' : 'bg-gray-100 dark:bg-gray-700'} rounded-full">
+                            <svg class="w-6 h-6 ${isAdmin ? 'text-purple-600 dark:text-purple-400' : 'text-gray-600 dark:text-gray-400'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-900 dark:text-white">
+                                ${member.user_email || 'User #' + member.user_id.substring(0, 8)}
+                                ${isCurrentUser ? ' <span class="text-blue-600 dark:text-blue-400">(You)</span>' : ''}
+                            </p>
+                            <div class="flex items-center gap-2 mt-1">
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${isAdmin ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300' : 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300'}">
+                                    ${member.org_role}
+                                </span>
+                                <span class="text-xs text-gray-500 dark:text-gray-400">
+                                    ${member.usage_stats?.usage_tier || 'Medium'} Usage
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex flex-col items-end gap-2">
+                        <div class="flex gap-2">
+                            <button class="change-role-btn text-xs ${isAdmin ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' : 'bg-blue-100 text-blue-800 hover:bg-blue-200'} dark:bg-gray-700 dark:text-white px-2 py-1 rounded transition"
+                                    data-member-id="${member.id}"
+                                    data-user-id="${member.user_id}"
+                                    data-current-role="${member.org_role}">
+                                ${isAdmin ? 'Demote to Member' : 'Promote to Admin'}
+                            </button>
+                            <button class="remove-member-btn text-xs bg-red-100 text-red-800 hover:bg-red-200 dark:bg-red-900 dark:text-red-300 px-2 py-1 rounded transition"
+                                    data-member-id="${member.id}"
+                                    data-user-id="${member.user_id}">
+                                Remove
+                            </button>
+                        </div>
+                        <button class="view-usage-btn text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
+                                data-user-id="${member.user_id}">
+                            View Usage
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Quick stats row -->
+                <div class="mt-4 grid grid-cols-4 gap-4 text-center">
+                    <div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">Hours</div>
+                        <div class="text-lg font-semibold text-gray-900 dark:text-white">
+                            ${member.usage_stats?.total_hours || 0}
+                        </div>
+                    </div>
+                    <div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">Spending</div>
+                        <div class="text-lg font-semibold text-gray-900 dark:text-white">
+                            $${(member.usage_stats?.total_spending || 0).toFixed(2)}
+                        </div>
+                    </div>
+                    <div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">Bookings</div>
+                        <div class="text-lg font-semibold text-gray-900 dark:text-white">
+                            ${(member.usage_stats?.active_bookings || 0) + (member.usage_stats?.completed_bookings || 0)}
+                        </div>
+                    </div>
+                    <div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">Avg Session</div>
+                        <div class="text-lg font-semibold text-gray-900 dark:text-white">
+                            ${member.usage_stats?.avg_session_hours || 0}h
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-3 text-sm text-gray-500 dark:text-gray-400">
+                    Joined: ${new Date(member.created_at).toLocaleDateString()}
+                    • Last active: ${member.usage_stats?.last_active ? new Date(member.usage_stats.last_active).toLocaleDateString() : 'Recently'}
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    // Add event listeners
+    setupMemberActionHandlers();
+}
+
+async function loadOrgStats(orgId) {
+    try {
+        const stats = await apiGetOrgStats(orgId);
+        
+        // Update card stats
+        const card = document.querySelector(`.organization-card[data-org-id="${orgId}"]`);
+        if (card) {
+            card.querySelector('.org-member-count').textContent = stats.member_count || 0;
+            card.querySelector('.org-booking-count').textContent = stats.booking_count || 0;
+            card.querySelector('.org-spending').textContent = stats.total_spending ? 
+                `$${parseFloat(stats.total_spending).toFixed(2)}` : '$0.00';
+        }
+    } catch (err) {
+        console.error('Failed to load org stats:', err);
+    }
+}
+
+// Organizations functionality - clean implementation
+async function loadOrganizations() {
+    const container = document.getElementById('organizationsContainer');
+    if (!container) return;
+    
+    try {
+        currentOrganizations = await apiGetOrganizations();
+        renderOrganizations();
+        
+        // Set up click handlers for manage buttons
+        setTimeout(() => {
+            setupOrganizationManagement();
+        }, 100);
+    } catch (err) {
+        console.error('Failed to load organizations:', err);
+        container.innerHTML = `
+            <div class="text-center py-8 text-red-600 dark:text-red-400">
+                Failed to load organizations: ${err.message}
+            </div>
+        `;
+    }
+}
+
+
+async function loadOrgMembers(orgId) {
+    const container = document.getElementById('orgMembersContainer');
+    if (!container) return;
+    
+    try {
+        // Use the new detailed endpoint
+        currentOrgMembers = await apiGetOrgMembersDetails(orgId);
+        renderOrgMembers();
+    } catch (err) {
+        console.error('Failed to load org members:', err);
+        container.innerHTML = `
+            <div class="text-red-600 dark:text-red-400">
+                Failed to load members: ${err.message}
+            </div>
+        `;
+    }
+}
+
+
+async function loadOrgBookings(orgId) {
+    const container = document.getElementById('orgBookingsContainer');
+    if (!container) return;
+    
+    try {
+        currentOrgBookings = await apiGetOrgBookings(orgId);
+        renderOrgBookings();
+    } catch (err) {
+        console.error('Failed to load org bookings:', err);
+        container.innerHTML = `
+            <div class="text-red-600 dark:text-red-400">
+                Failed to load bookings: ${err.message}
+            </div>
+        `;
+    }
+}
+
+async function loadOrgInvoices(orgId) {
+    const container = document.getElementById('orgInvoicesContainer');
+    if (!container) return;
+    
+    try {
+        currentOrgInvoices = await apiGetOrgInvoices(orgId);
+        renderOrgInvoices();
+    } catch (err) {
+        console.error('Failed to load org invoices:', err);
+        container.innerHTML = `
+            <div class="text-red-600 dark:text-red-400">
+                Failed to load invoices: ${err.message}
+            </div>
+        `;
+    }
+}
+
+function renderOrgBookings() {
+    const container = document.getElementById('orgBookingsContainer');
+    if (!container) return;
+    
+    if (currentOrgBookings.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+                No bookings for this organization yet.
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = currentOrgBookings.map(booking => `
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h4 class="font-medium text-gray-900 dark:text-white">${booking.listing_title || 'Booking'}</h4>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        ${formatDate(booking.start_time)} - ${formatDate(booking.end_time)}
+                    </p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">
+                        Buyer: ${booking.buyer_email || 'N/A'}
+                    </p>
+                </div>
+                <div>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(booking.status)}">
+                        ${booking.status}
+                    </span>
+                    <p class="text-sm font-semibold text-gray-900 dark:text-white mt-1">
+                        $${parseFloat(booking.actual_price_charged || booking.total_price_estimate || 0).toFixed(2)}
+                    </p>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function renderOrgInvoices() {
+    const container = document.getElementById('orgInvoicesContainer');
+    if (!container) return;
+    
+    if (currentOrgInvoices.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+                No invoices for this organization yet.
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = currentOrgInvoices.map(invoice => `
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h4 class="font-medium text-gray-900 dark:text-white">Invoice #${invoice.id.substring(0, 8)}</h4>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        Period: ${formatDate(invoice.period_start)} - ${formatDate(invoice.period_end)}
+                    </p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">
+                        Due: ${formatDate(invoice.due_date || invoice.created_at)}
+                    </p>
+                </div>
+                <div class="text-right">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getInvoiceStatusColor(invoice.status)}">
+                        ${invoice.status}
+                    </span>
+                    <p class="text-lg font-semibold text-gray-900 dark:text-white mt-1">
+                        $${parseFloat(invoice.total_amount).toFixed(2)}
+                    </p>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+// Helper functions
+function getStatusColor(status) {
+    const colors = {
+        'pending_payment': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
+        'requested': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
+        'confirmed': 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
+        'active': 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
+        'completed': 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300',
+        'cancelled': 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
+    };
+    return colors[status] || 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300';
+}
+
+function getInvoiceStatusColor(status) {
+    const colors = {
+        'pending': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
+        'finalized': 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
+        'paid': 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
+        'void': 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
+    };
+    return colors[status] || 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300';
+}
+
+function setupOrganizationManagement() {
+    // Handle manage button clicks
+    document.querySelectorAll('.manage-org-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const orgId = btn.getAttribute('data-org-id');
+            await selectOrganization(orgId);
+        });
+    });
+}
+
+function setupMemberActionHandlers() {
+    // Role change buttons
+    document.querySelectorAll('.change-role-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const memberId = btn.getAttribute('data-member-id');
+            const userId = btn.getAttribute('data-user-id');
+            const currentRole = btn.getAttribute('data-current-role');
+            const newRole = currentRole === 'admin' ? 'member' : 'admin';
+            
+            if (confirm(`Are you sure you want to change this user's role to ${newRole}?`)) {
+                await changeMemberRole(selectedOrgId, userId, newRole);
+            }
+        });
+    });
+    
+    // Remove member buttons
+    document.querySelectorAll('.remove-member-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const memberId = btn.getAttribute('data-member-id');
+            const userId = btn.getAttribute('data-user-id');
+            
+            if (confirm('Are you sure you want to remove this member from the organization?')) {
+                await removeMember(selectedOrgId, userId);
+            }
+        });
+    });
+    
+    // View usage buttons
+    document.querySelectorAll('.view-usage-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const userId = btn.getAttribute('data-user-id');
+            await showMemberUsageModal(userId);
+        });
+    });
+}
+
+async function showMemberUsageModal(userId) {
+    try {
+        const usage = await apiGetMemberUsage(selectedOrgId, userId);
+        
+        // Create and show modal
+        const modal = document.createElement('div');
+        modal.id = 'memberUsageModal';
+        modal.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black/50';
+        modal.innerHTML = `
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl mx-4">
+                <div class="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white">Usage Statistics</h3>
+                    <button onclick="closeMemberUsageModal()" class="text-gray-400 hover:text-gray-900 dark:hover:text-white text-2xl">
+                        x
+                    </button>
+                </div>
+                <div class="p-6">
+                    <div class="grid grid-cols-2 gap-6 mb-6">
+                        <div class="space-y-4">
+                            <div>
+                                <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Usage</h4>
+                                <p class="text-2xl font-bold text-gray-900 dark:text-white">${usage.total_hours} hours</p>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Spending</h4>
+                                <p class="text-2xl font-bold text-green-600 dark:text-green-400">$${usage.total_spending.toFixed(2)}</p>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400">Usage Tier</h4>
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getUsageTierColor(usage.usage_tier)}">
+                                    ${usage.usage_tier}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="space-y-4">
+                            <div>
+                                <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400">Bookings</h4>
+                                <div class="flex gap-4 mt-2">
+                                    <div class="text-center">
+                                        <div class="text-lg font-semibold text-blue-600 dark:text-blue-400">${usage.active_bookings}</div>
+                                        <div class="text-xs text-gray-500 dark:text-gray-400">Active</div>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="text-lg font-semibold text-gray-900 dark:text-white">${usage.completed_bookings}</div>
+                                        <div class="text-xs text-gray-500 dark:text-gray-400">Completed</div>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="text-lg font-semibold text-gray-900 dark:text-white">${usage.avg_session_hours}h</div>
+                                        <div class="text-xs text-gray-500 dark:text-gray-400">Avg Session</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400">Preferred Resources</h4>
+                                <div class="flex flex-wrap gap-2 mt-2">
+                                    ${usage.preferred_resources.map(resource => `
+                                        <span class="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 text-xs rounded">
+                                            ${resource}
+                                        </span>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">Last 30 Days Activity</h4>
+                        <div class="space-y-2 max-h-64 overflow-y-auto">
+                            ${usage.last_30_days.map(day => `
+                                <div class="flex justify-between items-center bg-gray-50 dark:bg-gray-900 p-3 rounded">
+                                    <span class="text-sm text-gray-900 dark:text-white">${day.date}</span>
+                                    <div class="flex gap-4">
+                                        <span class="text-sm text-gray-600 dark:text-gray-400">${day.hours}h</span>
+                                        <span class="text-sm font-medium text-green-600 dark:text-green-400">$${day.spending.toFixed(2)}</span>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Add to window object for close function
+        window.closeMemberUsageModal = function() {
+            document.getElementById('memberUsageModal')?.remove();
+        };
+        
+    } catch (err) {
+        console.error('Failed to load usage stats:', err);
+        alert('Failed to load usage statistics: ' + err.message);
+    }
+}
+
+function getUsageTierColor(tier) {
+    const colors = {
+        'Low': 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
+        'Medium': 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
+        'High': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
+        'Very High': 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
+    };
+    return colors[tier] || 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300';
+}
+
+// Add these helper functions at the top or bottom of dashboard.js
+
+function capitalizeFirst(string) {
+    return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
+async function leaveOrganization(orgId) {
+    if (!confirm('Are you sure you want to leave this organization?')) {
+        return;
+    }
+    
+    try {
+        const userId = localStorage.getItem('user_id');
+        await apiRemoveMember(orgId, userId);
+        alert('You have left the organization.');
+        location.reload(); // Reload to update the UI
+    } catch (err) {
+        alert('Error leaving organization: ' + err.message);
+    }
+}
+
+async function changeMemberRole(orgId, userId, role) {
+    try {
+        await apiChangeMemberRole(orgId, userId, role);
+        alert(`Member role updated to ${role}.`);
+        await loadOrgMembers(orgId); // Reload members list
+    } catch (err) {
+        alert('Error changing role: ' + err.message);
+    }
+}
+
+async function removeMember(orgId, userId) {
+    try {
+        await apiRemoveMember(orgId, userId);
+        alert('Member removed from organization.');
+        await loadOrgMembers(orgId); // Reload members list
+    } catch (err) {
+        alert('Error removing member: ' + err.message);
+    }
+}
+
+// Function to open add member modal
+function openAddMemberModal() {
+    if (!selectedOrgId) {
+        alert('Please select an organization first.');
+        return;
+    }
+    
+    // Set the org ID in the hidden field
+    document.getElementById('addMemberOrgId').value = selectedOrgId;
+    
+    // Reset form
+    document.getElementById('addMemberUserId').value = '';
+    document.getElementById('addMemberRole').value = 'member';
+    
+    // Show modal manually (since Flowbite might not work)
+    const modal = document.getElementById('addMemberModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+        modal.setAttribute('aria-hidden', 'false');
+        
+        // Add close functionality
+        const closeBtn = modal.querySelector('[data-modal-hide="addMemberModal"]');
+        if (closeBtn) {
+            closeBtn.onclick = () => {
+                modal.classList.add('hidden');
+                modal.style.display = 'none';
+                modal.setAttribute('aria-hidden', 'true');
+            };
+        }
+        
+        // Close when clicking outside
+        modal.onclick = (e) => {
+            if (e.target === modal) {
+                modal.classList.add('hidden');
+                modal.style.display = 'none';
+                modal.setAttribute('aria-hidden', 'true');
+            }
+        };
+        
+        // Close with Escape key
+        const escapeHandler = (e) => {
+            if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+                modal.classList.add('hidden');
+                modal.style.display = 'none';
+                modal.setAttribute('aria-hidden', 'true');
+                document.removeEventListener('keydown', escapeHandler);
+            }
+        };
+        document.addEventListener('keydown', escapeHandler);
+    }
+}
+
+// Function to add member
+async function addMemberToOrganization(e) {
+    // If called from form submit, prevent default behavior
+    if (e) {
+        e.preventDefault();
+    }
+    
+    // Get values from form
+    const orgId = document.getElementById('addMemberOrgId').value;
+    const userId = document.getElementById('addMemberUserId').value;
+    const role = document.getElementById('addMemberRole').value;
+    
+    // Validate UUID
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(userId)) {
+        alert('Please enter a valid UUID (e.g., 123e4567-e89b-12d3-a456-426614174000)');
+        return;
+    }
+    
+    if (!orgId) {
+        alert('Organization ID is missing.');
+        return;
+    }
+    
+    try {
+        const payload = {
+            user_id: userId,
+            role: role
+        };
+        
+        await apiAddMember(orgId, payload);
+        
+        // Close modal
+        const modal = document.getElementById('addMemberModal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.style.display = 'none';
+            modal.setAttribute('aria-hidden', 'true');
+        }
+        
+        // Clear the form
+        document.getElementById('addMemberUserId').value = '';
+        document.getElementById('addMemberRole').value = 'member';
+        
+        alert('Member added successfully!');
+        
+        // Reload members list
+        await loadOrgMembers(orgId);
+        
+    } catch (err) {
+        alert('Error adding member: ' + err.message);
+    }
+}

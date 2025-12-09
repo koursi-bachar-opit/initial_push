@@ -281,10 +281,148 @@
 
 {% endif %}
 
+<!-- Add after stats section, before tabs -->
+{% if user.role == "buyer" %}
+<div class="mb-8" id="organizations-section">
+    <div class="flex justify-between items-center mb-4">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white">My Organizations</h2>
+        <button id="openCreateOrgModal"
+                data-modal-target="createOrgModal"
+                data-modal-toggle="createOrgModal"
+                class="inline-flex items-center gap-2 text-white bg-blue-600 hover:bg-blue-700 font-medium rounded-lg text-sm px-4 py-2">
+            + Create Organization
+        </button>
+    </div>
+    
+    <!-- Organizations List -->
+    <div id="organizationsContainer" class="space-y-4">
+        <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+            Loading organizations...
+        </div>
+    </div>
+</div>
+
+<!-- Organization Management Section (for org admins) -->
+<!-- Find this section and remove the invite button -->
+<div id="orgManagementSection" class="mb-8 hidden">
+    <h2 class="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Organization Management</h2>
+    
+    <!-- Selected Org Info -->
+    <div id="selectedOrgInfo" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mb-6">
+        <!-- Will be populated when org is selected -->
+    </div>
+    
+    <!-- Tabs for Org Management -->
+    <div class="mb-4 border-b border-gray-200 dark:border-gray-700">
+        <ul class="flex flex-wrap -mb-px text-sm font-medium text-center text-gray-500 dark:text-gray-400"
+            id="orgManagementTabs">
+            <li class="mr-2">
+                <button class="org-management-tab inline-block p-4 border-b-2 border-transparent rounded-t-lg hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300"
+                        data-tab="members"
+                        aria-selected="true">
+                    Members
+                </button>
+            </li>
+            <li class="mr-2">
+                <button class="org-management-tab inline-block p-4 border-b-2 border-transparent rounded-t-lg hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300"
+                        data-tab="stats"
+                        aria-selected="false">
+                    Statistics
+                </button>
+            </li>
+            <!-- Remove invoices tab for now -->
+        </ul>
+    </div>
+    
+    <!-- Tab Content -->
+    <div id="orgManagementContent">
+        <div id="orgMembersTab" class="org-tab-content">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Organization Members</h3>
+                <button id="openAddMemberModal"
+                        data-modal-target="addMemberModal"
+                        data-modal-toggle="addMemberModal"
+                        class="inline-flex items-center gap-2 text-white bg-green-600 hover:bg-green-700 font-medium rounded-lg text-sm px-4 py-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                    </svg>
+                    Add Member
+                </button>
+            </div>
+            <div id="orgMembersContainer" class="space-y-3">
+                <!-- Members will be loaded here -->
+            </div>
+        </div>
+        
+        <div id="orgStatsTab" class="org-tab-content hidden">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Organization Statistics</h3>
+            <div id="orgStatsContainer" class="space-y-3">
+                <!-- Stats will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Add Member Modal -->
+<div id="addMemberModal"
+     tabindex="-1"
+     aria-hidden="true"
+     class="hidden overflow-y-auto overflow-x-hidden fixed inset-0 z-50 flex justify-center items-center bg-black/40">
+     
+    <div class="relative p-4 w-full max-w-md">
+        <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+            
+            <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                    Add Member to Organization
+                </h3>
+                <button type="button"
+                        class="text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-lg text-sm p-1.5"
+                        data-modal-hide="addMemberModal">
+                    X
+                </button>
+            </div>
+            
+            <form id="add-member-form" class="p-6 space-y-4">
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">User ID (UUID)</label>
+                    <input type="text" 
+                           name="user_id"
+                           id="addMemberUserId"
+                           class="bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-sm rounded-lg block w-full p-2.5 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                           placeholder="123e4567-e89b-12d3-a456-426614174000"
+                           required>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        Enter the UUID of the user to add. User must already have an account.
+                    </p>
+                </div>
+                
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Role</label>
+                    <select name="role"
+                            id="addMemberRole"
+                            class="bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-sm rounded-lg block w-full p-2.5 text-gray-900 dark:text-white">
+                        <option value="member">Member</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+                
+                <input type="hidden" name="org_id" id="addMemberOrgId" value="">
+                
+                <button type="submit"
+                        class="w-full text-white bg-green-600 hover:bg-green-700 font-medium rounded-lg text-sm px-4 py-2.5 transition">
+                    Add Member
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+
 <!--Tabs (for buyers and providers)-->
 {% if user.role == "buyer" or user.role == "provider" %}
-
-
 <!--  -->
 
 <!--Tab Panels (for buyers and providers)-->
@@ -870,6 +1008,66 @@
         </div>
     </div>
 </div>
+{% endif %}
+
+
+<!-- Create Organization Modal -->
+{% if user.role == "buyer" %}
+<div id="createOrgModal"
+     tabindex="-1"
+     aria-hidden="true"
+     class="hidden overflow-y-auto overflow-x-hidden fixed inset-0 z-50 flex justify-center items-center bg-black/40">
+     
+    <div class="relative p-4 w-full max-w-md">
+        <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+            
+            <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                    Create Organization
+                </h3>
+                <button type="button"
+                        class="text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-lg text-sm p-1.5"
+                        data-modal-hide="createOrgModal">
+                    X
+                </button>
+            </div>
+            
+            <form id="create-org-form" class="p-6 space-y-4">
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Organization Name *</label>
+                    <input name="name"
+                           type="text"
+                           required
+                           class="bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-sm rounded-lg block w-full p-2.5 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                           placeholder="e.g., Stanford AI Research Lab" />
+                </div>
+                
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Billing Email *</label>
+                    <input name="billing_email"
+                           type="email"
+                           required
+                           class="bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-sm rounded-lg block w-full p-2.5 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                           placeholder="billing@university.edu" />
+                </div>
+                
+                <div class="pt-2">
+                    <label class="inline-flex items-center cursor-pointer">
+                        <input type="checkbox" name="institutional_billing" class="sr-only peer" checked>
+                        <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                        <span class="ml-3 text-sm font-medium text-gray-900 dark:text-gray-300">Enable institutional billing (invoices/POs)</span>
+                    </label>
+                </div>
+                
+                <button type="submit"
+                        class="w-full text-white bg-blue-600 hover:bg-blue-700 font-medium rounded-lg text-sm px-4 py-2.5 transition">
+                    Create Organization
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
 {% endif %}
 
 <script type="module" src="/static/js/dashboard.js"></script>
