@@ -5,6 +5,7 @@ from enum import Enum
 import uuid
 
 from app.database import Base
+from datetime import datetime, timezone
 
 
 class BookingStatus(str, Enum):
@@ -66,9 +67,15 @@ class Booking(Base):
     active_session_start = Column(DateTime(timezone=True), nullable=True)
     active_session_end = Column(DateTime(timezone=True), nullable=True)
 
+    created_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False
+    )
+
     #Relationships
     listing = relationship("Listing", back_populates="bookings")
-    buyer = relationship("User")
+    buyer = relationship("User", back_populates="bookings")
 
     access_credentials = relationship(
         "AccessCredential",
@@ -83,6 +90,7 @@ class Booking(Base):
         cascade="all, delete-orphan"
     )
 
+    organization = relationship("Organization", back_populates="bookings")
 
     """
     Additional temporary computed fields for API responses 
