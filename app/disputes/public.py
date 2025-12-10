@@ -47,6 +47,9 @@ class DisputesPublic(Protocol):
     def close_dispute(self, dispute_id: UUID) -> Dispute:
         ...
 
+    def list_all_for_admin(self) -> List[Dispute]:
+        ...
+
 
 class DisputesPublicImpl(DisputesPublic):
     def __init__(self, service: DisputeService):
@@ -65,7 +68,7 @@ class DisputesPublicImpl(DisputesPublic):
 
 
     #Admin operations
-    def list_open_for_admin(self):
+    def list_open_for_admin(self) -> List[Dispute]:  
         return self.service.list_open_for_admin()
 
     def set_status(
@@ -86,6 +89,9 @@ class DisputesPublicImpl(DisputesPublic):
 
     def close_dispute(self, dispute_id: UUID):
         return self.service.close_dispute(dispute_id)
+    
+    def list_all_for_admin(self) -> List[Dispute]:
+        return self.service.list_all_for_admin()
 
 
 def get_disputes_public(

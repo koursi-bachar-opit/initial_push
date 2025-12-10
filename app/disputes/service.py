@@ -174,6 +174,7 @@ class DisputeService:
         dispute = self._get_dispute_or_raise(dispute_id)
 
         if dispute.status not in {
+            DisputeStatus.OPEN,
             DisputeStatus.IN_REVIEW,
             DisputeStatus.NEEDS_INFO,
         }:
@@ -245,6 +246,11 @@ class DisputeService:
             resolved_at=dispute.resolved_at,
         )
         return updated
+    
+    def list_all_for_admin(self):
+        """Return ALL disputes for admin dashboard (including resolved/closed)"""
+        return self.repo.list_all_for_admin(self.db)
+
 
 
 def get_disputes_service(

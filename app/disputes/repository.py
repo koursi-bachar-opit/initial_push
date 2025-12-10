@@ -110,3 +110,11 @@ class DisputesRepository:
         db.commit()
 
         return self.get_by_id(db, dispute_id)
+    
+    def list_all_for_admin(self, db: Session) -> List[Dispute]:
+        """Return all disputes for admin dashboard"""
+        stmt = (
+            select(Dispute)
+            .order_by(Dispute.created_at.desc())  # Most recent first for dashboard
+        )
+        return list(db.scalars(stmt))

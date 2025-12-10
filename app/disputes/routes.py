@@ -126,3 +126,13 @@ def close_dispute(
         return disputes.close_dispute(dispute_id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    
+@router.get("/admin/all", response_model=list[DisputeListItem])
+def list_all_disputes_for_admin(
+    user: User = Depends(get_current_user),
+    disputes: DisputesPublic = Depends(get_disputes_public),
+):
+    if user.role != UserRole.ADMIN:
+        raise HTTPException(403, "Admins only")
+    
+    return disputes.list_all_for_admin()
