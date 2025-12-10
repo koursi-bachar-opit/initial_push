@@ -26,6 +26,14 @@ import {
     apiGetOrgMembersDetails,
     apiGetMemberUsage,
     apiAddMember,
+    apiOpenDispute,
+    apiGetMyDisputes,
+    apiGetAdminDisputes,
+    apiGetBookingDisputes,
+    apiUpdateDisputeStatus,
+    apiResolveDispute,
+    apiCloseDispute,
+    apiGetAllAdminDisputes,
 } from "./api.js";
 
 //body targets
@@ -65,7 +73,48 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 });
 
+// async function loadUserDashboard() {
 async function loadUserDashboard() {
+    // Initialize disputes system for buyers
+    const userRole = localStorage.getItem('user_role');
+    if (userRole === 'buyer') {
+        try {
+            window.myDisputes = await apiGetMyDisputes();
+            setupBuyerDisputeModal();
+        } catch (err) {
+            console.error('Failed to load user disputes:', err);
+            window.myDisputes = [];
+        }
+    }
+    
+    // Initialize disputes system for admins
+    if (userRole === 'admin') {
+        await initDisputes();
+    }
+    // Load machines first (for providers)
+    if (machineSelect) {
+        await loadMachines();
+    }
+
+    setupBenchmarkForm();
+
+    if (document.getElementById('wipeHistoryMachineSelect')) {
+        setupWipeHistory();
+    }
+
+    // Load bookings
+    await loadBookings();
+    
+    // Load user disputes if buyer
+    if (userRole === 'buyer') {
+        try {
+            window.myDisputes = await apiGetMyDisputes();
+        } catch (err) {
+            console.error('Failed to load user disputes:', err);
+            window.myDisputes = [];
+        }
+    }
+
     //Load machines first (for providers)
     if (machineSelect) {
         await loadMachines();
@@ -220,34 +269,13 @@ async function loadUserDashboard() {
             openAddMemberModal();
         });
     }
-
-    // // Setup invite member form
-    // if (document.getElementById('invite-member-form')) {
-    //     document.getElementById('invite-member-form').addEventListener('submit', async (e) => {
-    //         e.preventDefault();
-    //         const fd = new FormData(e.target);
-    //         const payload = {
-    //             user_email: fd.get('user_email'),
-    //             role: fd.get('role'),
-    //             message: fd.get('message'),
-    //         };
-            
-    //         try {
-    //             await apiInviteMember(selectedOrgId, payload);
-    //             alert('Invitation sent successfully!');
-    //             document.querySelector('[data-modal-hide="inviteMemberModal"]')?.click();
-    //             await loadOrgMembers(selectedOrgId);
-    //         } catch (err) {
-    //             alert('Error sending invitation: ' + err.message);
-    //         }
-    //     });
-    // }
 }
 
 async function loadAdminDashboard() {
     await loadProviders();
     await loadStats();
     await loadWipeAttestations();
+    await initDisputes();
 }
 
 //Load machines and update UI state
@@ -1001,6 +1029,37 @@ function rowHTML(b) {
                     Wipe Verify
                 </button>
             `;
+            
+            // ADD DISPUTE BUTTON FOR BUYERS ON COMPLETED BOOKINGS
+            // Check if dispute already exists
+            const hasDispute = window.myDisputes && window.myDisputes.some(d => d.booking_id === b.id);
+            
+            if (!hasDispute) {
+                actionButtons += `
+                    <button class="open-dispute-btn inline-flex items-center gap-1 text-white bg-red-600 hover:bg-red-700 font-medium rounded-lg text-xs px-3 py-1.5 transition ml-2"
+                            data-booking-id="${b.id}"
+                            data-booking-title="${b.listing_title || 'Booking'}"
+                            type="button"
+                            title="Open a dispute for this booking">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.73-.833-2.464 0L4.196 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                        </svg>
+                        Dispute
+                    </button>
+                `;
+            } else {
+                // Show dispute indicator if dispute already exists
+                actionButtons += `
+                    <span class="inline-flex items-center gap-1 bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300 font-medium rounded-lg text-xs px-2 py-1 ml-2"
+                          title="Dispute already filed for this booking">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.73-.833-2.464 0L4.196 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                        </svg>
+                        Dispute Filed
+                    </span>
+                `;
+            }
+            
         } else if (userRole === 'provider') {
             // Provider sees attestation details
             actionButtons += `
@@ -1492,7 +1551,6 @@ async function loadProviderAttestation(bookingId) {
 }
 
 // Show provider attestation details for a booking
-// Show provider attestation details for a booking
 function showProviderAttestationModal(bookingId) {
     console.log("Fetching provider attestation for booking:", bookingId);
     
@@ -1927,16 +1985,6 @@ function renderOrgMembers() {
     if (addMemberBtn) {
         addMemberBtn.style.display = 'inline-flex'; // Always show
     }
-
-    // // Check if current user is org admin
-    // const currentUserMembership = currentOrgMembers.find(m => m.user_id === userId);
-    // const isCurrentUserAdmin = currentUserMembership?.org_role === 'admin';
-    
-    // // Show "Add Member" button only if user is admin
-    // const addMemberBtn = document.getElementById('openAddMemberModal');
-    // if (addMemberBtn) {
-    //     addMemberBtn.style.display = isCurrentUserAdmin ? 'inline-flex' : 'none';
-    // }
     
     if (currentOrgMembers.length === 0) {
         container.innerHTML = `
@@ -2553,3 +2601,627 @@ async function addMemberToOrganization(e) {
         alert('Error adding member: ' + err.message);
     }
 }
+
+// Global variables for disputes
+let currentDisputes = [];
+let currentBookingDisputes = {};
+
+
+// Initialize disputes system based on user role
+async function initDisputes() {
+    const userRole = localStorage.getItem('user_role');
+    
+    if (userRole === 'admin') {
+        await loadAdminDisputes();
+        setupDisputesModals();
+    }
+    
+    // For all users, check for booking disputes and update UI
+    await checkBookingDisputes();
+}
+
+
+async function loadAdminDisputes() {
+    const container = document.getElementById('disputes-container');
+    if (!container) return;
+    
+    try {
+        console.log('Fetching ALL admin disputes...');
+        currentDisputes = await apiGetAllAdminDisputes();  // Changed to new endpoint
+        console.log('All disputes API response:', currentDisputes);
+        
+        renderDisputes();
+        updateDisputeStats();
+    } catch (err) {
+        console.error('Failed to load disputes:', err);
+        // Fallback to original endpoint if new one doesn't exist yet
+        try {
+            console.log('Trying fallback to original endpoint...');
+            currentDisputes = await apiGetAdminDisputes();
+            renderDisputes();
+            updateDisputeStats();
+        } catch (fallbackErr) {
+            container.innerHTML = `
+                <div class="text-center py-8 text-red-600 dark:text-red-400">
+                    Failed to load disputes: ${fallbackErr.message}
+                </div>
+            `;
+        }
+    }
+}
+
+function renderDisputes() {
+    const container = document.getElementById('disputes-container');
+    if (!container) return;
+    
+    if (currentDisputes.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+                No disputes found.
+            </div>
+        `;
+        return;
+    }
+    
+    const template = document.getElementById('dispute-row-template');
+    container.innerHTML = '';
+    
+    currentDisputes.forEach(dispute => {
+        const clone = template.content.cloneNode(true);
+        const row = clone.firstElementChild;
+        
+        // Fill dispute data - SAFELY handle undefined/null
+        row.querySelector('.dispute-booking-id').textContent = `#${dispute.booking_id ? dispute.booking_id.substring(0, 8) + '...' : 'N/A'}`;
+        
+        // Handle opened_by_user safely
+        const openedByText = dispute.opened_by_user_email || 
+                           (dispute.opened_by_user_id ? 'User #' + dispute.opened_by_user_id.substring(0, 8) : 'Unknown User');
+        row.querySelector('.dispute-opened-by').textContent = `Opened by: ${openedByText}`;
+        
+        // Handle reason safely
+        const reasonText = dispute.reason || 'No reason provided';
+        row.querySelector('.dispute-reason').textContent = reasonText.length > 50 ? reasonText.substring(0, 50) + '...' : reasonText;
+        
+        // Handle date safely
+        const createdDate = dispute.created_at ? new Date(dispute.created_at).toLocaleString() : 'Unknown date';
+        row.querySelector('.dispute-created').textContent = `Opened: ${createdDate}`;
+        
+        // Status badge
+        const statusBadge = row.querySelector('.status-badge');
+        const statusText = dispute.status ? dispute.status.replace('_', ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase()) : 'Unknown';
+        statusBadge.textContent = statusText;
+        
+        // Status badge color
+        if (dispute.status) {
+            switch(dispute.status.toLowerCase()) {
+                case 'open':
+                    statusBadge.classList.add('bg-red-100', 'text-red-800', 'dark:bg-red-900', 'dark:text-red-300');
+                    break;
+                case 'in_review':
+                    statusBadge.classList.add('bg-yellow-100', 'text-yellow-800', 'dark:bg-yellow-900', 'dark:text-yellow-300');
+                    break;
+                case 'needs_info':
+                    statusBadge.classList.add('bg-orange-100', 'text-orange-800', 'dark:bg-orange-900', 'dark:text-orange-300');
+                    break;
+                case 'resolved_refunded':
+                    statusBadge.classList.add('bg-green-100', 'text-green-800', 'dark:bg-green-900', 'dark:text-green-300');
+                    break;
+                case 'resolved_denied':
+                    statusBadge.classList.add('bg-gray-100', 'text-gray-800', 'dark:bg-gray-900', 'dark:text-gray-300');
+                    break;
+                case 'closed':
+                    statusBadge.classList.add('bg-gray-100', 'text-gray-800', 'dark:bg-gray-900', 'dark:text-gray-300');
+                    break;
+                default:
+                    statusBadge.classList.add('bg-gray-100', 'text-gray-800', 'dark:bg-gray-900', 'dark:text-gray-300');
+            }
+        } else {
+            statusBadge.classList.add('bg-gray-100', 'text-gray-800', 'dark:bg-gray-900', 'dark:text-gray-300');
+        }
+        
+        // Resolution info if resolved
+        const resolvedInfo = row.querySelector('#dispute-resolved-info');
+        if (dispute.resolved_at) {
+            const resolvedDate = new Date(dispute.resolved_at).toLocaleDateString();
+            const notesPreview = dispute.resolution_notes ? 'Notes: ' + dispute.resolution_notes.substring(0, 30) + '...' : '';
+            resolvedInfo.innerHTML = `
+                Resolved: ${resolvedDate}<br>
+                ${notesPreview}
+            `;
+        } else {
+            resolvedInfo.innerHTML = '';
+        }
+        
+        // Buttons
+        const detailsBtn = row.querySelector('.view-dispute-details-btn');
+        const resolveBtn = row.querySelector('.resolve-dispute-btn');
+        const closeBtn = row.querySelector('.close-dispute-btn');
+        
+        // Show/hide buttons based on status
+        if (dispute.status === 'closed') {
+            resolveBtn.style.display = 'none';
+            closeBtn.style.display = 'none';
+        } else if (dispute.status === 'resolved_refunded' || dispute.status === 'resolved_denied') {
+            resolveBtn.style.display = 'none';
+        }
+        
+        // Add event listeners - check if dispute.id exists
+        if (dispute.id) {
+            detailsBtn.addEventListener('click', () => showDisputeDetails(dispute.id));
+            resolveBtn.addEventListener('click', () => openResolutionModal(dispute.id));
+            closeBtn.addEventListener('click', () => closeDispute(dispute.id));
+        } else {
+            // Disable buttons if no ID
+            detailsBtn.disabled = true;
+            resolveBtn.disabled = true;
+            closeBtn.disabled = true;
+        }
+        
+        container.appendChild(row);
+    });
+}
+
+
+// Update dispute statistics
+function updateDisputeStats() {
+    console.log('Updating dispute stats...');   //
+    console.log('All disputes:', currentDisputes);  //
+
+    const stats = {
+        open: 0,
+        in_review: 0,
+        needs_info: 0,
+        resolved: 0,
+        closed: 0
+    };
+    
+    currentDisputes.forEach(dispute => {
+        console.log(`Dispute ${dispute.id}: status = ${dispute.status}`);   //
+
+        if (!dispute.status) return;
+        
+        const status = dispute.status.toLowerCase();
+        
+        if (status === 'open') stats.open++;
+        else if (status === 'in_review') stats.in_review++;
+        else if (status === 'needs_info') stats.needs_info++;
+        else if (status === 'resolved_refunded' || status === 'resolved_denied') stats.resolved++;
+        else if (status === 'closed') stats.closed++;
+    });
+    
+    // Update UI
+    const openEl = document.getElementById('stat-open-disputes');
+    const reviewEl = document.getElementById('stat-review-disputes');
+    const needsInfoEl = document.getElementById('stat-needs-info-disputes');
+    const resolvedEl = document.getElementById('stat-resolved-disputes');
+    const closedEl = document.getElementById('stat-closed-disputes'); // Add this if you have it
+    
+    if (openEl) openEl.textContent = stats.open;
+    if (reviewEl) reviewEl.textContent = stats.in_review;
+    if (needsInfoEl) needsInfoEl.textContent = stats.needs_info;
+    if (resolvedEl) resolvedEl.textContent = stats.resolved;
+    if (closedEl) closedEl.textContent = stats.closed;
+}
+
+// Check for disputes on bookings and update UI
+async function checkBookingDisputes() {
+    // This function updates the bookings table with dispute indicators
+    // We'll modify the rowHTML function instead
+    
+    // For now, we'll just load disputes for the current user
+    const userRole = localStorage.getItem('user_role');
+    if (userRole === 'buyer') {
+        try {
+            const myDisputes = await apiGetMyDisputes();
+            // Store for later reference
+            window.myDisputes = myDisputes;
+        } catch (err) {
+            console.error('Failed to load user disputes:', err);
+        }
+    }
+}
+
+// Show dispute details
+async function showDisputeDetails(disputeId) {
+    const modal = document.getElementById('disputeDetailsModal');
+    const content = document.getElementById('disputeDetailsContent');
+    
+    // Find dispute in current list
+    const dispute = currentDisputes.find(d => d.id === disputeId);
+    if (!dispute) {
+        content.innerHTML = `
+            <div class="text-center text-red-600 dark:text-red-400">
+                Dispute not found.
+            </div>
+        `;
+        return;
+    }
+    
+    content.innerHTML = `
+        <div class="space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-4">
+                    <div>
+                        <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-2">Booking Information</h4>
+                        <div class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                            <div class="space-y-2">
+                                <div class="flex justify-between">
+                                    <span class="text-sm text-gray-500 dark:text-gray-400">Booking ID:</span>
+                                    <span class="font-mono text-sm">${dispute.booking_id}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-sm text-gray-500 dark:text-gray-400">Opened By:</span>
+                                    <span class="text-sm">${dispute.opened_by_user_email || 'User #' + dispute.opened_by_user_id.substring(0, 8)}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-2">Dispute Details</h4>
+                        <div class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                            <div class="space-y-3">
+                                <div>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Status</p>
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getDisputeStatusColor(dispute.status)}">
+                                        ${dispute.status.replace('_', ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
+                                    </span>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Created At</p>
+                                    <p class="font-medium">${new Date(dispute.created_at).toLocaleString()}</p>
+                                </div>
+                                ${dispute.resolved_at ? `
+                                    <div>
+                                        <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Resolved At</p>
+                                        <p class="font-medium">${new Date(dispute.resolved_at).toLocaleString()}</p>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="space-y-4">
+                    <div>
+                        <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-2">Reason</h4>
+                        <div class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                            <p class="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">${dispute.reason}</p>
+                        </div>
+                    </div>
+                    
+                    ${dispute.resolution_notes ? `
+                        <div>
+                            <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-2">Resolution Notes</h4>
+                            <div class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                                <p class="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">${dispute.resolution_notes}</p>
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+            
+            ${dispute.status === 'open' || dispute.status === 'in_review' || dispute.status === 'needs_info' ? `
+                <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-3">Admin Actions</h4>
+                    <div class="flex space-x-3">
+                        <button onclick="openResolutionModal('${dispute.id}')"
+                                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+                            Resolve Dispute
+                        </button>
+                        ${dispute.status === 'open' ? `
+                            <button onclick="updateDisputeStatus('${dispute.id}', 'in_review')"
+                                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+                                Mark as In Review
+                            </button>
+                        ` : ''}
+                        ${dispute.status === 'in_review' ? `
+                            <button onclick="updateDisputeStatus('${dispute.id}', 'needs_info')"
+                                    class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+                                Request More Info
+                            </button>
+                        ` : ''}
+                        ${dispute.status === 'needs_info' ? `
+                            <button onclick="updateDisputeStatus('${dispute.id}', 'in_review')"
+                                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+                                Return to Review
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            ` : ''}
+        </div>
+    `;
+    
+    // Show modal
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+    modal.setAttribute('aria-hidden', 'false');
+    
+    // Add close functionality
+    const closeBtn = modal.querySelector('[data-modal-hide="disputeDetailsModal"]');
+    if (closeBtn) {
+        closeBtn.onclick = () => {
+            modal.classList.add('hidden');
+            modal.style.display = 'none';
+            modal.setAttribute('aria-hidden', 'true');
+        };
+    }
+    
+    // Close when clicking outside
+    modal.onclick = (e) => {
+        if (e.target === modal) {
+            modal.classList.add('hidden');
+            modal.style.display = 'none';
+            modal.setAttribute('aria-hidden', 'true');
+        }
+    };
+}
+
+// Open resolution modal
+async function openResolutionModal(disputeId) {
+    const modal = document.getElementById('disputeResolutionModal');
+    const dispute = currentDisputes.find(d => d.id === disputeId);
+    
+    if (!dispute) return;
+    
+    // Set dispute ID
+    document.getElementById('disputeResolutionId').value = disputeId;
+    
+    // Reset form
+    document.getElementById('disputeDecision').value = '';
+    document.getElementById('disputeRefundAmount').value = '';
+    document.getElementById('disputeResolutionNotes').value = '';
+    
+    // Show modal
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+    modal.setAttribute('aria-hidden', 'false');
+}
+
+// Update dispute status
+async function updateDisputeStatus(disputeId, newStatus) {
+    if (!confirm(`Are you sure you want to change this dispute status to "${newStatus.replace('_', ' ')}"?`)) {
+        return;
+    }
+    
+    const notes = prompt('Enter notes (optional):') || '';
+    
+    try {
+        await apiUpdateDisputeStatus(disputeId, newStatus, notes);
+        alert('Dispute status updated successfully!');
+        await loadAdminDisputes(); // Reload disputes
+    } catch (err) {
+        alert('Error updating dispute: ' + err.message);
+    }
+}
+
+// Close dispute
+async function closeDispute(disputeId) {
+    if (!confirm('Are you sure you want to close this dispute? This action cannot be undone.')) {
+        return;
+    }
+    
+    try {
+        await apiCloseDispute(disputeId);
+        alert('Dispute closed successfully!');
+        await loadAdminDisputes(); // Reload disputes
+    } catch (err) {
+        alert('Error closing dispute: ' + err.message);
+    }
+}
+
+// Setup disputes modals
+function setupDisputesModals() {
+    // Resolution form submission
+    const resolutionForm = document.getElementById('dispute-resolution-form');
+    if (resolutionForm) {
+        resolutionForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const disputeId = document.getElementById('disputeResolutionId').value;
+            const decision = document.getElementById('disputeDecision').value;
+            const resolutionNotes = document.getElementById('disputeResolutionNotes').value;
+            
+            if (!disputeId || !decision || !resolutionNotes) {
+                alert('Please fill in all required fields.');
+                return;
+            }
+            
+            const payload = {
+                decision: decision,
+                resolution_notes: resolutionNotes
+            };
+            
+            // Add refund amount if refund decision
+            if (decision === 'refund') {
+                const refundAmount = document.getElementById('disputeRefundAmount').value;
+                if (refundAmount) {
+                    payload.refund_amount = parseFloat(refundAmount);
+                }
+            }
+            
+            try {
+                await apiResolveDispute(disputeId, payload);
+                alert('Dispute resolved successfully!');
+                
+                // Close modal
+                const modal = document.getElementById('disputeResolutionModal');
+                modal.classList.add('hidden');
+                modal.style.display = 'none';
+                modal.setAttribute('aria-hidden', 'true');
+                
+                // Reload disputes
+                await loadAdminDisputes();
+            } catch (err) {
+                alert('Error resolving dispute: ' + err.message);
+            }
+        });
+    }
+    
+    // Decision change handler for refund amount field
+    const decisionSelect = document.getElementById('disputeDecision');
+    const refundContainer = document.getElementById('refundAmountContainer');
+    
+    if (decisionSelect && refundContainer) {
+        decisionSelect.addEventListener('change', function() {
+            if (this.value === 'refund') {
+                refundContainer.classList.remove('hidden');
+            } else {
+                refundContainer.classList.add('hidden');
+            }
+        });
+    }
+}
+
+// Helper function for dispute status color
+function getDisputeStatusColor(status) {
+    switch(status) {
+        case 'open':
+            return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
+        case 'in_review':
+            return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
+        case 'needs_info':
+            return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300';
+        case 'resolved_refunded':
+            return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
+        case 'resolved_denied':
+            return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300';
+        case 'closed':
+            return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300';
+        default:
+            return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300';
+    }
+}
+
+// ========================================
+// MODIFICATIONS TO EXISTING FUNCTIONS
+// ========================================
+
+// Modify rowHTML function to add dispute buttons for buyers
+// We'll wrap the existing rowHTML function
+const originalRowHTML = window.rowHTML || rowHTML;
+
+function enhancedRowHTML(b) {
+    const userRole = localStorage.getItem('user_role');
+    let actionButtons = '';
+    
+    // Get base HTML from original function
+    let baseHTML = originalRowHTML(b);
+    
+    // If this is a buyer and booking is completed, add dispute button
+    if (userRole === 'buyer' && b.status === 'completed') {
+        // Check if dispute already exists for this booking
+        const hasDispute = window.myDisputes && window.myDisputes.some(d => d.booking_id === b.id);
+        
+        if (!hasDispute) {
+            // Add dispute button
+            const disputeButton = `
+                <button class="open-dispute-btn inline-flex items-center gap-1 text-white bg-red-600 hover:bg-red-700 font-medium rounded-lg text-xs px-3 py-1.5 transition ml-2"
+                        data-booking-id="${b.id}"
+                        data-booking-title="${b.listing_title || 'Booking'}"
+                        type="button"
+                        title="Open a dispute for this booking">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.73-.833-2.464 0L4.196 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                    </svg>
+                    Dispute
+                </button>
+            `;
+            
+            // Insert the dispute button into the base HTML
+            // We'll need to modify this carefully
+            baseHTML = baseHTML.replace('</div>\n            </td>', `${disputeButton}\n                </div>\n            </td>`);
+        } else {
+            // Show dispute indicator
+            const disputeIndicator = `
+                <span class="inline-flex items-center gap-1 bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300 font-medium rounded-lg text-xs px-2 py-1 ml-2">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.73-.833-2.464 0L4.196 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                    </svg>
+                    Dispute Filed
+                </span>
+            `;
+            
+            baseHTML = baseHTML.replace('</div>\n            </td>', `${disputeIndicator}\n                </div>\n            </td>`);
+        }
+    }
+    
+    return baseHTML;
+}
+
+
+// Setup open dispute modal for buyers
+function setupBuyerDisputeModal() {
+    const openDisputeForm = document.getElementById('open-dispute-form');
+    if (openDisputeForm) {
+        openDisputeForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const bookingId = document.getElementById('disputeBookingId').value;
+            const reason = document.getElementById('disputeReason').value;
+            
+            if (!bookingId || !reason.trim()) {
+                alert('Please provide a reason for the dispute.');
+                return;
+            }
+            
+            const payload = {
+                booking_id: bookingId,
+                reason: reason.trim()
+            };
+            
+            try {
+                await apiOpenDispute(payload);
+                alert('Dispute opened successfully! Our team will review it soon.');
+                
+                // Close modal
+                const modal = document.getElementById('openDisputeModal');
+                modal.classList.add('hidden');
+                modal.style.display = 'none';
+                modal.setAttribute('aria-hidden', 'true');
+                
+                // Reset form
+                document.getElementById('disputeReason').value = '';
+                
+                // Reload bookings to update UI
+                await loadBookings();
+                
+                // Reload user disputes
+                window.myDisputes = await apiGetMyDisputes();
+                
+            } catch (err) {
+                alert('Error opening dispute: ' + err.message);
+            }
+        });
+    }
+    
+    // Add click handlers for open dispute buttons (added dynamically)
+    document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('open-dispute-btn') || e.target.closest('.open-dispute-btn')) {
+            const button = e.target.classList.contains('open-dispute-btn') ? e.target : e.target.closest('.open-dispute-btn');
+            const bookingId = button.getAttribute('data-booking-id');
+            const bookingTitle = button.getAttribute('data-booking-title');
+            
+            // Set booking info in modal
+            document.getElementById('disputeBookingId').value = bookingId;
+            document.getElementById('disputeBookingInfo').textContent = bookingTitle;
+            
+            // Show modal
+            const modal = document.getElementById('openDisputeModal');
+            modal.classList.remove('hidden');
+            modal.style.display = 'flex';
+            modal.setAttribute('aria-hidden', 'false');
+        }
+    });
+}
+
+async function initDisputesSystem() {
+    await initDisputes();
+    setupBuyerDisputeModal();
+}
+
+// Add these functions to window for modal button access
+window.openResolutionModal = openResolutionModal;
+window.updateDisputeStatus = updateDisputeStatus;
+window.closeDispute = closeDispute;

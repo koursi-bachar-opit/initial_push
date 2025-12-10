@@ -182,24 +182,6 @@ export function apiGetAdminBookingAttestation(bookingId) {
     return request(`/compliance/admin/booking/${bookingId}/wipe-attestation`);
 }
 
-// export async function apiRequestBookingWithPayment(payload) {
-//     const response = await fetch('/api/v1/bookings/request-with-payment', {
-//         method: 'POST',
-//         headers: {
-//             'Content-Type': 'application/json',
-//             'Authorization': `Bearer ${localStorage.getItem('access_token')}`
-//         },
-//         body: JSON.stringify(payload)
-//     });
-    
-//     if (!response.ok) {
-//         const error = await response.json();
-//         throw new Error(error.detail || 'Failed to create booking');
-//     }
-    
-//     return await response.json();
-// }
-
 export function apiRequestBookingWithPayment(payload) {
     return request("/bookings/request-with-payment", {
         method: "POST",
@@ -291,4 +273,53 @@ export async function apiAddMember(orgId, payload) {
         method: 'POST',
         body: JSON.stringify(payload)
     });
+}
+
+// Disputes API
+export function apiOpenDispute(payload) {
+    return request("/disputes/", {
+        method: "POST",
+        body: JSON.stringify(payload),
+    });
+}
+
+export function apiGetMyDisputes() {
+    return request("/disputes/me");
+}
+
+
+export function apiGetAdminDisputes() {
+    return request("/disputes/admin");
+}
+
+export function apiGetBookingDisputes(bookingId) {
+    return request(`/disputes/booking/${bookingId}`);
+}
+
+export function apiUpdateDisputeStatus(disputeId, newStatus, resolutionNotes = null) {
+    const payload = { new_status: newStatus };
+    if (resolutionNotes) {
+        payload.resolution_notes = resolutionNotes;
+    }
+    return request(`/disputes/${disputeId}/status`, {
+        method: "PUT",
+        body: JSON.stringify(payload),
+    });
+}
+
+export function apiResolveDispute(disputeId, payload) {
+    return request(`/disputes/${disputeId}/resolve`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+    });
+}
+
+export function apiCloseDispute(disputeId) {
+    return request(`/disputes/${disputeId}/close`, {
+        method: "POST",
+    });
+}
+
+export function apiGetAllAdminDisputes() {
+    return request("/disputes/admin/all");
 }

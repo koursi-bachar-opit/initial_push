@@ -1070,6 +1070,238 @@
 
 {% endif %}
 
+
+<!-- Admin: Disputes Management Section -->
+{% if user.role == "admin" %}
+<div class="mb-8">
+    <div class="flex justify-between items-center mb-4">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Disputes Management</h2>
+    </div>
+
+    <!-- Dispute Stats -->
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+        <div class="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+            <div class="text-sm text-gray-500 dark:text-gray-400">Open Disputes</div>
+            <div id="stat-open-disputes" class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">0</div>
+        </div>
+        <div class="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+            <div class="text-sm text-gray-500 dark:text-gray-400">In Review</div>
+            <div id="stat-review-disputes" class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">0</div>
+        </div>
+        <div class="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+            <div class="text-sm text-gray-500 dark:text-gray-400">Needs Info</div>
+            <div id="stat-needs-info-disputes" class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">0</div>
+        </div>
+        <div class="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+            <div class="text-sm text-gray-500 dark:text-gray-400">Resolved</div>
+            <div id="stat-resolved-disputes" class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">0</div>
+        </div>
+    </div>
+
+    <!-- Disputes List -->
+    <div id="disputes-container" class="space-y-4">
+        <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+            Loading disputes...
+        </div>
+    </div>
+</div>
+
+<!-- Dispute Details Modal -->
+<div id="disputeDetailsModal"
+     tabindex="-1"
+     aria-hidden="true"
+     class="hidden overflow-y-auto overflow-x-hidden fixed inset-0 z-50 flex justify-center items-center bg-black/40">
+     
+    <div class="relative p-4 w-full max-w-4xl">
+        <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+            
+            <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                    Dispute Details
+                </h3>
+                <button type="button"
+                        class="text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-lg text-sm p-1.5"
+                        data-modal-hide="disputeDetailsModal">
+                    X
+                </button>
+            </div>
+            
+            <div id="disputeDetailsContent" class="p-6">
+                <div class="space-y-4">
+                    <!-- Details will be populated by JavaScript -->
+                    <div class="text-center py-8">
+                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                        <p class="mt-2 text-gray-500 dark:text-gray-400">Loading dispute details...</p>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+</div>
+
+<!-- Dispute Resolution Modal -->
+<div id="disputeResolutionModal"
+     tabindex="-1"
+     aria-hidden="true"
+     class="hidden overflow-y-auto overflow-x-hidden fixed inset-0 z-50 flex justify-center items-center bg-black/40">
+     
+    <div class="relative p-4 w-full max-w-md">
+        <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+            
+            <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                    Resolve Dispute
+                </h3>
+                <button type="button"
+                        class="text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-lg text-sm p-1.5"
+                        data-modal-hide="disputeResolutionModal">
+                    X
+                </button>
+            </div>
+            
+            <form id="dispute-resolution-form" class="p-6 space-y-4">
+                <input type="hidden" id="disputeResolutionId" name="dispute_id">
+                
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Decision *</label>
+                    <select name="decision"
+                            id="disputeDecision"
+                            required
+                            class="bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-sm rounded-lg block w-full p-2.5 text-gray-900 dark:text-white">
+                        <option value="">Select a decision...</option>
+                        <option value="refund">Refund (Full Refund)</option>
+                        <option value="deny">Deny (No Action)</option>
+                    </select>
+                </div>
+                
+                <div id="refundAmountContainer" class="hidden">
+                    <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Refund Amount</label>
+                    <input type="number"
+                           name="refund_amount"
+                           id="disputeRefundAmount"
+                           step="0.01"
+                           min="0.01"
+                           class="bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-sm rounded-lg block w-full p-2.5 text-gray-900 dark:text-white"
+                           placeholder="0.00">
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        Enter refund amount. For full refunds, this will be automatically calculated.
+                    </p>
+                </div>
+                
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Resolution Notes *</label>
+                    <textarea name="resolution_notes"
+                              id="disputeResolutionNotes"
+                              rows="3"
+                              required
+                              class="bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-sm rounded-lg block w-full p-2.5 text-gray-900 dark:text-white"
+                              placeholder="Explain your decision..."></textarea>
+                </div>
+                
+                <button type="submit"
+                        class="w-full text-white bg-green-600 hover:bg-green-700 font-medium rounded-lg text-sm px-4 py-2.5 transition">
+                    Submit Resolution
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Dispute Template (Hidden) -->
+<template id="dispute-row-template">
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-3 hover:bg-gray-50 dark:hover:bg-gray-700">
+        <div class="flex justify-between items-start">
+            <div class="flex-1">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Booking</p>
+                        <p class="font-medium text-gray-900 dark:text-white dispute-booking-id">...</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Opened by: <span class="dispute-opened-by">...</span></p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Reason</p>
+                        <p class="font-medium text-gray-900 dark:text-white dispute-reason truncate">...</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Opened: <span class="dispute-created">...</span></p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Status</p>
+                        <span class="status-badge inline-block px-3 py-1 rounded-full text-xs font-medium mt-1"></span>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1" id="dispute-resolved-info">
+                            <!-- Will show resolution details if resolved -->
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="ml-4 flex flex-col space-y-2">
+                <button class="view-dispute-details-btn bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-xs font-medium transition">
+                    Details
+                </button>
+                <button class="resolve-dispute-btn bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded text-xs font-medium transition">
+                    Resolve
+                </button>
+                <button class="close-dispute-btn bg-gray-600 hover:bg-gray-700 text-white px-3 py-1.5 rounded text-xs font-medium transition">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+</template>
+{% endif %}
+
+<!-- Open Dispute Modal (for buyers) -->
+{% if user.role == "buyer" %}
+<div id="openDisputeModal"
+     tabindex="-1"
+     aria-hidden="true"
+     class="hidden overflow-y-auto overflow-x-hidden fixed inset-0 z-50 flex justify-center items-center bg-black/40">
+     
+    <div class="relative p-4 w-full max-w-md">
+        <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+            
+            <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                    Open Dispute
+                </h3>
+                <button type="button"
+                        class="text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-lg text-sm p-1.5"
+                        data-modal-hide="openDisputeModal">
+                    X
+                </button>
+            </div>
+            
+            <form id="open-dispute-form" class="p-6 space-y-4">
+                <input type="hidden" id="disputeBookingId" name="booking_id">
+                
+                <div>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                        Opening a dispute for booking: <span id="disputeBookingInfo" class="font-medium">...</span>
+                    </p>
+                </div>
+                
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Reason *</label>
+                    <textarea name="reason"
+                              id="disputeReason"
+                              rows="4"
+                              required
+                              class="bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-sm rounded-lg block w-full p-2.5 text-gray-900 dark:text-white"
+                              placeholder="Describe the issue with this booking..."></textarea>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        Please be specific about what went wrong. This helps us resolve the issue faster.
+                    </p>
+                </div>
+                
+                <button type="submit"
+                        class="w-full text-white bg-red-600 hover:bg-red-700 font-medium rounded-lg text-sm px-4 py-2.5 transition">
+                    Open Dispute
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <script type="module" src="/static/js/dashboard.js"></script>
 
 {% endblock %}
