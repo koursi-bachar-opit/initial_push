@@ -34,6 +34,10 @@ import {
     apiResolveDispute,
     apiCloseDispute,
     apiGetAllAdminDisputes,
+    apiGetMyProviderProfile,
+    apiGetMyVerifications,
+    apiCreateProviderProfile,
+    apiRequestVerification,
 } from "./api.js";
 
 //body targets
@@ -71,9 +75,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         // This is a buyer/provider dashboard
         await loadUserDashboard();
     }
+    
+    // Setup create listing button handler
+    setupCreateListingButton();
 });
 
-// async function loadUserDashboard() {
 async function loadUserDashboard() {
     // Initialize disputes system for buyers
     const userRole = localStorage.getItem('user_role');
@@ -115,7 +121,7 @@ async function loadUserDashboard() {
         }
     }
 
-    //Load machines first (for providers)
+    // Load machines first (for providers)
     if (machineSelect) {
         await loadMachines();
     }
@@ -126,10 +132,10 @@ async function loadUserDashboard() {
         setupWipeHistory();
     }
 
-    //Load bookings
+    // Load bookings
     await loadBookings();
 
-    //Listing creation handler
+    // Listing creation handler
     if (createListingForm) {
         createListingForm.addEventListener("submit", async (e) => {
             e.preventDefault();
@@ -147,7 +153,7 @@ async function loadUserDashboard() {
                 await apiCreateListing(payload);
                 alert("Listing created!");
 
-                //Close modal
+                // Close modal
                 document
                     .querySelector('[data-modal-hide="createListingModal"]')
                     ?.click();
@@ -218,14 +224,14 @@ async function loadUserDashboard() {
                 await apiCreateMachine(payload);
                 alert("Machine added successfully!");
 
-                //Close modal
+                // Close modal
                 document
                     .querySelector('[data-modal-hide="createMachineModal"]')
                     ?.click();
 
                 createMachineForm.reset();
 
-                //Refresh machines list and repopulate dropdown
+                // Refresh machines list and repopulate dropdown
                 await loadMachines();
             } catch (err) {
                 alert("Error creating machine: " + err.message);
@@ -260,7 +266,6 @@ async function loadUserDashboard() {
     if (addMemberForm) {
         addMemberForm.addEventListener('submit', addMemberToOrganization);
     }
-
     
     // Setup add member modal button
     const openAddMemberBtn = document.getElementById('openAddMemberModal');
@@ -3225,3 +3230,280 @@ async function initDisputesSystem() {
 window.openResolutionModal = openResolutionModal;
 window.updateDisputeStatus = updateDisputeStatus;
 window.closeDispute = closeDispute;
+
+
+// Verification check function
+async function checkProviderVerification() {
+    try {
+        // Step 1: Check if user has a provider profile
+        let profile;
+        try {
+            profile = await apiGetMyProviderProfile();
+        } catch (error) {
+            // 404 means no profile exists
+            if (error.message.includes('404') || error.message.includes('Provider profile not found')) {
+                return {
+                    action_required: 'create_profile',
+                    message: 'You need to create a provider profile first.'
+                };
+            }
+            throw error;
+        }
+        
+        // Step 2: Check verification status
+        const verifications = await apiGetMyVerifications();
+        
+        // Check if there's a verified verification
+        const isVerified = profile.verification_status === 'verified';
+        const hasPendingVerification = verifications.some(v => v.status === 'pending');
+        
+        if (!isVerified) {
+            if (hasPendingVerification) {
+                return {
+                    action_required: 'verification_pending',
+                    message: 'Your verification request is pending review.',
+                    profile: profile
+                };
+            } else {
+                return {
+                    action_required: 'request_verification',
+                    message: 'You need to request verification.',
+                    profile: profile
+                };
+            }
+        }
+        
+        // User is verified
+        return {
+            action_required: null,
+            is_verified: true,
+            profile: profile
+        };
+        
+    } catch (err) {
+        console.error("Failed to check verification status:", err);
+        throw err;
+    }
+}
+
+// Modal functions
+function showProfileCreationModal() {
+    // Create modal HTML if it doesn't exist
+    if (!document.getElementById('profileCreationModal')) {
+        const modalHtml = `
+            <div id="profileCreationModal"
+                 class="hidden overflow-y-auto overflow-x-hidden fixed inset-0 z-50 flex justify-center items-center bg-black/40">
+                <div class="relative p-4 w-full max-w-md">
+                    <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+                        <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                                Create Provider Profile
+                            </h3>
+                            <button type="button"
+                                    class="text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-lg text-sm p-1.5 close-profile-modal">
+                                X
+                            </button>
+                        </div>
+                        <div class="p-6">
+                            <p class="text-gray-600 dark:text-gray-400 mb-4">
+                                You need to create a provider profile before you can create listings.
+                            </p>
+                            <form id="profile-creation-form" class="space-y-4">
+                                <div>
+                                    <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                                        Payout Account Reference (Optional)
+                                    </label>
+                                    <input type="text"
+                                           name="payout_account_ref"
+                                           class="bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-sm rounded-lg block w-full p-2.5 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                                           placeholder="e.g., Stripe account ID, bank account info">
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                        This is where your earnings will be sent. You can update it later.
+                                    </p>
+                                </div>
+                                <button type="submit"
+                                        class="w-full text-white bg-blue-600 hover:bg-blue-700 font-medium rounded-lg text-sm px-4 py-2.5 transition">
+                                    Create Profile & Request Verification
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+    }
+    
+    // Show modal
+    const modal = document.getElementById('profileCreationModal');
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+    
+    // Add close functionality
+    modal.querySelector('.close-profile-modal').onclick = () => {
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
+    };
+    
+    // Add form submission
+    const form = document.getElementById('profile-creation-form');
+    if (form) {
+        // Remove any existing listeners
+        form.onsubmit = null;
+        
+        form.onsubmit = async (e) => {
+            e.preventDefault();
+            const formData = new FormData(form);
+            
+            try {
+                // Create profile
+                const profile = await apiCreateProviderProfile({
+                    payout_account_ref: formData.get('payout_account_ref') || null
+                });
+                
+                // Auto-create verification request
+                await apiRequestVerification({
+                    subject_type: "provider",
+                    subject_id: profile.id,
+                    notes: "Auto-created with profile"
+                });
+                
+                alert('Profile created successfully! A verification request has been submitted.');
+                modal.classList.add('hidden');
+                modal.style.display = 'none';
+                
+                // Refresh page to update UI
+                location.reload();
+                
+            } catch (err) {
+                alert('Error creating profile: ' + err.message);
+            }
+        };
+    }
+}
+
+function showVerificationRequestModal(profileId) {
+    // Create modal HTML if it doesn't exist
+    if (!document.getElementById('verificationRequestModal')) {
+        const modalHtml = `
+            <div id="verificationRequestModal"
+                 class="hidden overflow-y-auto overflow-x-hidden fixed inset-0 z-50 flex justify-center items-center bg-black/40">
+                <div class="relative p-4 w-full max-w-md">
+                    <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+                        <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                                Request Verification
+                            </h3>
+                            <button type="button"
+                                    class="text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-lg text-sm p-1.5 close-verification-modal">
+                                X
+                            </button>
+                        </div>
+                        <div class="p-6">
+                            <p class="text-gray-600 dark:text-gray-400 mb-4">
+                                You need to be verified as a provider before you can create listings.
+                                Please submit a verification request.
+                            </p>
+                            <form id="verification-request-form" class="space-y-4">
+                                <div>
+                                    <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                                        Notes (Optional)
+                                    </label>
+                                    <textarea name="notes"
+                                              rows="3"
+                                              class="bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-sm rounded-lg block w-full p-2.5 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                                              placeholder="Add any notes that might help with verification..."></textarea>
+                                </div>
+                                <button type="submit"
+                                        class="w-full text-white bg-green-600 hover:bg-green-700 font-medium rounded-lg text-sm px-4 py-2.5 transition">
+                                    Submit Verification Request
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+    }
+    
+    // Show modal
+    const modal = document.getElementById('verificationRequestModal');
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+    
+    // Add close functionality
+    modal.querySelector('.close-verification-modal').onclick = () => {
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
+    };
+    
+    // Add form submission
+    const form = document.getElementById('verification-request-form');
+    if (form) {
+        // Remove any existing listeners
+        form.onsubmit = null;
+        
+        form.onsubmit = async (e) => {
+            e.preventDefault();
+            const formData = new FormData(form);
+            
+            try {
+                await apiRequestVerification({
+                    subject_type: "provider",
+                    subject_id: profileId,
+                    notes: formData.get('notes') || null
+                });
+                
+                alert('Verification request submitted successfully! Our team will review it soon.');
+                modal.classList.add('hidden');
+                modal.style.display = 'none';
+                
+                // Refresh page to update UI
+                location.reload();
+                
+            } catch (err) {
+                alert('Error submitting verification request: ' + err.message);
+            }
+        };
+    }
+}
+
+// Add click handler for create listing button
+function setupCreateListingButton() {
+    const openCreateListingBtn = document.getElementById('openCreateListingModal');
+    
+    if (openCreateListingBtn) {
+        // Remove any existing listeners
+        openCreateListingBtn.onclick = null;
+        
+        openCreateListingBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            
+            try {
+                const result = await checkProviderVerification();
+                
+                if (result.action_required === 'create_profile') {
+                    showProfileCreationModal();
+                } else if (result.action_required === 'request_verification') {
+                    showVerificationRequestModal(result.profile.id);
+                } else if (result.action_required === 'verification_pending') {
+                    alert('Your verification request is pending review. You cannot create listings until you are verified. Please check back later.');
+                } else if (result.is_verified) {
+                    // Show the listing creation modal
+                    const modal = document.getElementById('createListingModal');
+                    if (modal) {
+                        modal.classList.remove('hidden');
+                        modal.style.display = 'flex';
+                        modal.setAttribute('aria-hidden', 'false');
+                    }
+                }
+            } catch (err) {
+                console.error('Error checking verification:', err);
+                alert('Error checking verification status: ' + err.message);
+            }
+        });
+    }
+}

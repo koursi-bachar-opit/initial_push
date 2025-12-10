@@ -323,3 +323,26 @@ export function apiCloseDispute(disputeId) {
 export function apiGetAllAdminDisputes() {
     return request("/disputes/admin/all");
 }
+
+// Provider profile and verifications endpoints
+export function apiGetMyProviderProfile() {
+    return request("/providers/me");
+}
+
+export function apiGetMyVerifications() {
+    return request("/providers/me/verifications");
+}
+
+export function apiCreateProviderProfile(payload) {
+    return request("/providers/me", {
+        method: "POST",
+        body: JSON.stringify(payload),
+    });
+}
+
+export function apiRequestVerification(payload) {
+    return request("/providers/me/verification", {
+        method: "POST",
+        body: JSON.stringify(payload),
+    });
+}
