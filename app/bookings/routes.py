@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.auth.auth import get_current_user
 from .permissions import (
@@ -25,6 +25,9 @@ from app.payments.public import PaymentsPublic, get_payments_public
 
 from app.payments.models import PaymentStatus #refactor: different domain model
 from .models import BookingStatus
+
+from app.organizations.public import get_organizations_public, OrganizationsPublic
+from typing import List
 
 
 router = APIRouter()
@@ -211,3 +214,25 @@ def end_booking_session(booking_id: UUID, service: BookingsService = Depends(get
         return service.end_session(booking_id, booking=booking)
     else:
         raise HTTPException(403)
+    
+
+@router.get("/organization/{org_id:uuid}", response_model=List[BookingRead])
+def get_organization_bookings(
+    org_id: UUID,
+    user: User = Depends(get_current_user),
+    service: BookingsService = Depends(get_bookings_service),
+    organizations_public: OrganizationsPublic = Depends(get_organizations_public),  # Use the public interface
+):
+    """
+    Get all bookings for an organization that the user has access to.
+    """
+    # Check if user is member of organization
+    if not organizations_public.is_org_member(user.id, org_id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not a member of this organization",
+        )
+    
+    # Get bookings for organization
+    # You'll need to add this method to BookingsService
+    return service.get_bookings_for_organization(org_id)

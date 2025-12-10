@@ -405,6 +405,14 @@ class BookingsService:
     #update tests
 
 
+    def get_bookings_for_organization(self, org_id: UUID):
+        """
+        Get all bookings for an organization.
+        Uses repository method that doesn't require cross-domain imports.
+        """
+        return self.booking_repo.list_bookings_for_organization(self.db, org_id)
+
+
 def get_bookings_service(
     db: Session = Depends(get_db),
     listings_public: ListingsPublic = Depends(get_listings_public),
