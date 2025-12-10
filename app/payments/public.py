@@ -29,7 +29,7 @@ class PaymentsPublic(Protocol):
 
     def refund_for_booking(
         self,
-        booking,
+        booking_id,
         reason: str | None = None,
     ) -> Payment:
         ...
@@ -76,11 +76,11 @@ class PaymentsPublicImpl(PaymentsPublic):
 
     def refund_for_booking(
         self,
-        booking,
+        booking_id,
         reason: str | None = None,
     ) -> Payment:
         return self.service.refund(
-            booking=booking,
+            booking_id=booking_id,
             reason=reason,
         )
 

@@ -119,9 +119,10 @@ class PaymentsService:
 
     #consider: refund call in disputes
     #self.notifications.refund_issued(booking.buyer, updated)
+    #now takes booking_id instead of booking
     def refund(
         self,
-        booking,
+        booking_id,
         reason: str | None = None,
     ) -> Payment:
         """
@@ -131,7 +132,7 @@ class PaymentsService:
         """
 
         #until: if booking is not completed, raise ValueError("Cannot refund payment: booking not completed.")
-        escrow = self.repo.get_latest_escrow(self.db, booking.id)
+        escrow = self.repo.get_latest_escrow(self.db, booking_id)
         if not escrow:
             raise ValueError("No escrow found to refund.") #TODO: convert to domain error
 
@@ -143,7 +144,7 @@ class PaymentsService:
 
         #Record refund
         refund_payment = Payment(
-            booking_id=booking.id,
+            booking_id=booking_id,
             type=PaymentType.REFUND,
             amount=escrow.amount,
             currency=escrow.currency,
