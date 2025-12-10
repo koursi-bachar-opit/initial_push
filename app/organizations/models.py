@@ -8,13 +8,13 @@ from app.database import Base
 from enum import Enum as PyEnum
 
 
-class OrganizationStatus(PyEnum):
+class OrganizationStatus(str, PyEnum):
     ACTIVE = "active"
     SUSPENDED = "suspended"
     CLOSED = "closed"
 
 
-class OrgRole(PyEnum):
+class OrgRole(str, PyEnum):
     ADMIN = "admin"
     MEMBER = "member"
 
@@ -30,6 +30,8 @@ class Organization(Base):
     updated_at = Column(DateTime, default=datetime.now(timezone.utc))
 
     memberships = relationship("OrganizationMembership", back_populates="organization")
+
+    bookings = relationship("Booking", back_populates="organization")
 
 
 class OrganizationMembership(Base):
