@@ -9,6 +9,8 @@ from app.auth.auth import get_current_user
 from app.invoices.schemas import InvoiceCreate, InvoiceListItem, InvoiceRead
 from app.invoices.service import InvoiceService, get_invoice_service
 
+from app.users.models import User, UserRole
+
 router = APIRouter()
 
 
@@ -172,3 +174,25 @@ def get_invoice_detail(
         )
 
     return invoice
+
+@router.get("/organization/{org_id:uuid}", response_model=List[InvoiceRead])
+def get_organization_invoices(
+    org_id: UUID,
+    user: User = Depends(get_current_user),
+    service: InvoiceService = Depends(get_invoice_service),
+    organizations_public: OrganizationsPublic = Depends(get_organizations_public),
+):
+    """
+    Get all invoices for an organization.
+    """
+    # Check permissions
+    is_site_admin = user.role == "admin"
+    is_org_admin = organizations_public.is_org_admin(user.id, org_id)
+    is_org_member = organizations_public.is_org_member(user.id, org_id)
+    
+    return service.list_org_invoices(
+        org_id=org_id,
+        is_site_admin=is_site_admin,
+        is_org_admin=is_org_admin,
+        is_org_member=is_org_member,
+    )
