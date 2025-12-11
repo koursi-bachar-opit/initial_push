@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Float, DateTime, ForeignKey, Enum as SQLEnum, func
+from sqlalchemy import Column, Float, DateTime, ForeignKey, Enum as SQLEnum, Numeric, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from enum import Enum
@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 
 
 class BookingStatus(str, Enum):
-    PENDING_PAYMENT = "pending_payment" #new status
+    PENDING_PAYMENT = "pending_payment"
     REQUESTED = "requested"
     CONFIRMED = "confirmed"
     ACTIVE = "active"
@@ -50,20 +50,28 @@ class Booking(Base):
     start_time = Column(DateTime(timezone=True), nullable=False)
     end_time = Column(DateTime(timezone=True), nullable=False)
 
-    #Pricing
-    total_price_estimate = Column(Float, nullable=False)
-    actual_price_charged = Column(Float, nullable=True)
-    usage_seconds = Column(Float, nullable=True)
+    #Session window for active state
+    active_session_start = Column(DateTime(timezone=True), nullable=True)
+    active_session_end = Column(DateTime(timezone=True), nullable=True)
 
+    #Pricing
+    total_price_estimate = Column(
+        Numeric(precision=10, scale=2),
+        nullable=False
+    )
+
+    #Final values for usage and price
+    actual_price_charged = Column(Float, nullable=True)
+    usage_seconds = Column(Numeric(precision=10, scale=2), nullable=True)
+
+    currency = Column(String(length=3), nullable=False, default="USD")
+
+    #refactor: default status pending_payment
     status = Column(
         SQLEnum(BookingStatus, name="bookingstatus", native_enum=False),
         nullable=False,
         default=BookingStatus.REQUESTED,
     )
-
-    #Session window for active state
-    active_session_start = Column(DateTime(timezone=True), nullable=True)
-    active_session_end = Column(DateTime(timezone=True), nullable=True)
 
     created_at = Column(
         DateTime(timezone=True),
@@ -74,6 +82,7 @@ class Booking(Base):
     #Relationships
     listing = relationship("Listing", back_populates="bookings")
     buyer = relationship("User", back_populates="bookings")
+    organization = relationship("Organization", back_populates="bookings")
 
     access_credentials = relationship(
         "AccessCredential",
@@ -88,8 +97,19 @@ class Booking(Base):
         cascade="all, delete-orphan"
     )
 
-    organization = relationship("Organization", back_populates="bookings")
+    payments = relationship(
+        "Payment",
+        back_populates="booking",
+        cascade="all, delete-orphan"
+    )
 
+    disputes = relationship(
+        "Dispute",
+        back_populates="booking",
+        cascade="all, delete-orphan"
+    )
+
+    #consider: document or refactor
     """
     Additional temporary computed fields for API responses 
     """

@@ -1,15 +1,16 @@
-import enum
+from enum import Enum
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
-from sqlalchemy import Column, DateTime, Enum, ForeignKey, Numeric, String
+from sqlalchemy import Column, DateTime, ForeignKey, Numeric, String, Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 from app.database import Base
 
 
-class InvoiceStatus(str, enum.Enum):
+class InvoiceStatus(str, Enum):
     PENDING = "pending"
     FINALIZED = "finalized"
     PAID = "paid"
@@ -42,21 +43,18 @@ class Invoice(Base):
         default=0,
     )
 
-    currency = Column(String(length=3), nullable=False, default="usd")
+    currency = Column(String(length=3), nullable=False, default="USD")
 
     status = Column(
-        Enum(InvoiceStatus, name="invoice_status"),
+        SQLEnum(InvoiceStatus, name="invoice_status"),
         nullable=False,
         default=InvoiceStatus.PENDING,
     )
 
     created_at = Column(
         DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
         nullable=False,
-        server_default=func.now(),
     )
 
-    #model check
-    def is_modifiable(self) -> bool:
-        """Invoices are immutable once finalized; only VOID allowed via service rules."""
-        return self.status in {InvoiceStatus.PENDING}
+    organization = relationship("Organization", back_populates="invoices")

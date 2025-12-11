@@ -30,3 +30,10 @@ class User(Base):
     machines = relationship("Machine", back_populates="provider", cascade="all, delete")
     organization_memberships = relationship("OrganizationMembership", back_populates="user")
     bookings = relationship("Booking", back_populates="buyer")
+    disputes = relationship("Dispute", back_populates="opened_by")
+    provider_profile = relationship(
+        "ProviderProfile",
+        back_populates="user",
+        uselist=False,
+        cascade="all, delete-orphan"
+    )

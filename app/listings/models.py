@@ -1,4 +1,5 @@
-from sqlalchemy import Column, String, Float, ForeignKey, DateTime, func
+from datetime import datetime, timezone
+from sqlalchemy import Column, String, Float, ForeignKey, DateTime, Text, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 import uuid
@@ -19,10 +20,34 @@ class Listing(Base):
     )
 
     title = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
+    #refactor:
+    #hourly_price, daily_price, monthly_price
     price = Column(Float, nullable=False)
 
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    currency = Column(String(length=3), nullable=False, default="USD")
 
-    #Listing has cardinal relationships to machine and bookings
+    #refactor:
+    #availability_status
+    #cancellation_policy
+
+    created_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False)
+
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False
+    )
+
+    benchmarks = relationship(
+        "MachineBenchmark", 
+        back_populates="listing",
+        cascade="all, delete-orphan"
+    )
+    
     machine = relationship("Machine", back_populates="listings")
     bookings = relationship("Booking", back_populates="listing", cascade="all, delete")
