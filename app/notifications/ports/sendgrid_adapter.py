@@ -4,7 +4,7 @@ from .email_port import EmailPort
 
 class SendGridEmailAdapter(EmailPort):
     """
-    Production adapter using SendGrid's v3 API.
+    Production adapter using SendGrid's API.
     """
     SENDGRID_API_URL = "https://api.sendgrid.com/v3/mail/send"
 

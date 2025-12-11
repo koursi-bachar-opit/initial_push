@@ -25,7 +25,7 @@ def ingest_metric_sample(
     machine_id: UUID,
     payload: MetricSampleCreate,
     service: MetricsService = Depends(get_metrics_service),
-    user=Depends(get_current_user),   # authentication handled same as bookings
+    user=Depends(get_current_user),
 ):
     """
     Metrics ingestion endpoint.
@@ -40,13 +40,13 @@ def ingest_metric_sample(
             provider_id=provider_id,
         )
     except ValueError as e:
-        #machine not found
+        #consider: machine not found
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e),
         )
     except PermissionError as e:
-        #provider does not own machine
+        #consider: provider does not own machine
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=str(e),

@@ -30,7 +30,6 @@ class ProviderProfile(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
-    #A User may have 0 or 1 provider profile
     user_id = Column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
@@ -70,7 +69,6 @@ class Verification(Base):
         nullable=False,
     )
 
-    #ID of provider_profile.id or machine.id (not FK)
     subject_id = Column(UUID(as_uuid=True), nullable=False)
 
     status = Column(
@@ -79,7 +77,6 @@ class Verification(Base):
         nullable=False,
     )
 
-    #User performing the verification (admin)
     performed_by_admin_id = Column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="SET NULL"),

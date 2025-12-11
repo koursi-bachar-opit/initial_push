@@ -1,15 +1,10 @@
-"""
-ProviderAgentClient port for talking to provider-side agent.
-This file defines the interface and a mock implementation.
-Later, it can be replaced with a real agent client.
-issuer.py will eventually call into this.
-"""
-
 from dataclasses import dataclass
 from uuid import UUID
 from datetime import datetime, timezone
 
 
+
+#consider: can issuer.py eventually call into this? why?
 @dataclass
 class AgentProvisionResult:
     """

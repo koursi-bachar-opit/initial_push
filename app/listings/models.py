@@ -7,16 +7,10 @@ from app.database import Base
 
 
 class Listing(Base):
-    """
-    A listing is something a provider offers for rent.
-    For example, a VM, GPU instance, or small compute server.
-    Buyers can browse listings and book them for a time window.
-    """
     __tablename__ = "listings"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
-    #The listing links to the underlying machine being rented
     machine_id = Column(
         UUID(as_uuid=True),
         ForeignKey("machines.id", ondelete="CASCADE"),

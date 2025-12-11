@@ -46,17 +46,6 @@ class BookingRequest(BaseModel):
             return v.replace(tzinfo=timezone.utc)
         return v
 
-
-# class BookingRequest(BaseModel):
-#     """
-#     Buery booking creation payload.
-#     """
-#     listing_id: UUID
-#     start_time: datetime
-#     end_time: datetime
-#     organization_id: Optional[UUID] = None  #NEW LINE
-
-
 class BookingRead(BaseModel):
     """
     Full booking object.

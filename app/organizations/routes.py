@@ -221,6 +221,7 @@ def admin_add_members_bulk(
     except Exception as e:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(e))
 
+#consider: mock randomized stats
 @router.get("/{org_id:uuid}/stats")
 def get_organization_stats(
     org_id: UUID,
@@ -239,19 +240,19 @@ def get_organization_stats(
     
     members = service.repo.list_members(service.db, org_id)
     
-    # Generate mock org stats
+    #Generate mock org stats
     import random
     random.seed(str(org_id))
     
     total_members = len(members)
     admin_count = sum(1 for m in members if m.org_role == OrgRole.ADMIN)
     
-    # Mock usage stats
+    #Mock usage stats
     total_hours = random.randint(0, 5000)
     total_spending = round(total_hours * random.uniform(0.5, 5.0), 2)
     active_users = random.randint(1, min(total_members, 10))
     
-    # Top users (mock)
+    #Top users (mock)
     top_users = []
     for member in random.sample(members, min(3, len(members))):
         user_hours = random.randint(0, total_hours // 2)

@@ -202,7 +202,7 @@ class InvoiceService:
         is_site_admin: bool,
     ) -> Invoice:
         """
-        Optional helper when integrating with external AR / payment-by-invoice.
+        Optional helper when integrating with external AR/payment-by-invoice.
         """
         if not is_site_admin:
             raise PermissionError("Only site admins may mark invoices as paid.")
@@ -230,7 +230,7 @@ class InvoiceService:
         """
         Aggregate total invoice amount = sum(captured) - sum(refunded)
         for all payments belonging to bookings in the period.
-        Assumes one currency per organization; you can enforce/check here.
+        Assumes one currency per organization.
         """
         if not bookings:
             return Decimal("0.00")

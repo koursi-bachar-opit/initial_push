@@ -25,7 +25,6 @@ class Booking(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
-    #Link buyer_user_id to buyer's account creds
     buyer_user_id = Column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
@@ -40,12 +39,12 @@ class Booking(Base):
         index=True,
     )
 
-    organization_id = Column(  #NEW LINE
-        UUID(as_uuid=True),  #NEW LINE
-        ForeignKey("organizations.id", ondelete="SET NULL"),  #NEW LINE
-        nullable=True,  #NEW LINE
-        index=True,  #NEW LINE
-    )  #NEW LINE
+    organization_id = Column(  
+        UUID(as_uuid=True),  
+        ForeignKey("organizations.id", ondelete="SET NULL"),  
+        nullable=True,  
+        index=True,  
+    )
 
     #Booking window
     start_time = Column(DateTime(timezone=True), nullable=False)
@@ -56,7 +55,6 @@ class Booking(Base):
     actual_price_charged = Column(Float, nullable=True)
     usage_seconds = Column(Float, nullable=True)
 
-    #Enum value stored as VARCHAR data
     status = Column(
         SQLEnum(BookingStatus, name="bookingstatus", native_enum=False),
         nullable=False,

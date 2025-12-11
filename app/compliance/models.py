@@ -23,7 +23,7 @@ class WipeAttestation(Base):
         UUID(as_uuid=True),
         ForeignKey("bookings.id", ondelete="CASCADE"),
         nullable=False,
-        unique=True,  #1 -> 1 Booking→Attestation
+        unique=True,
     )
 
     machine_id = Column(

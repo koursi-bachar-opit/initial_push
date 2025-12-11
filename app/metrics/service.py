@@ -47,18 +47,12 @@ class MetricsService:
     ) -> MetricSampleRead:
         """
         Only provider agents for the machine owner may submit metrics.
-
-        Mirrors MachinesService error style:
-        - raise ValueError(...) for 404
-        - raise PermissionError(...) for 403
         """
 
-        #Machine exists?
         machine = self.machines_public.get_machine(machine_id)
         if not machine:
             raise ValueError("Machine does not exist.")
 
-        #Provider owns machine?
         if not self.machines_public.provider_owns_machine(
             provider_id=provider_id,
             machine_id=machine_id,
@@ -81,7 +75,7 @@ class MetricsService:
         return MetricSampleRead.model_validate(sample)
 
 
-    #test function for mock data
+    #consider: test function for mock data
     def ingest_raw_metrics(self, machine_id: UUID, raw: dict, provider_id: UUID):
         """
         Converts raw agent metrics into MetricSampleCreate and delegates to ingest_metrics.

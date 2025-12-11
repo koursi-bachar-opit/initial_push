@@ -16,7 +16,7 @@ from datetime import datetime, timedelta, timezone
 
 from app.users.public import UsersPublic, get_users_public
 
-
+#refactor: verbose user functions
 class OrganizationService:
     def __init__(
         self,
@@ -122,14 +122,14 @@ class OrganizationService:
         membership = self.repo.get_membership(self.db, org_id, actor_user_id)
         OrgPermission.require_admin(membership)
         
-        # Check if trying to change own role
+        #Check if trying to change own role
         if actor_user_id == user_id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Cannot change your own role",
             )
         
-        # Check if at least one admin remains
+        #Check if at least one admin remains
         if role != OrgRole.ADMIN:
             admin_count = len([
                 m for m in self.repo.list_members(self.db, org_id)
@@ -144,22 +144,23 @@ class OrganizationService:
         updated = self.repo.change_role(self.db, org_id, user_id, role)
         return updated
 
+    #consider: mock stats
     def get_member_usage_stats(self, org_id: UUID, user_id: UUID) -> Dict:
         """
         Generate mock usage statistics for a member.
         In a real system, this would query bookings, compute hours, spending, etc.
         """
-        # Generate deterministic but varied mock data based on user_id
-        random.seed(str(user_id) + str(org_id))  # Make it deterministic per user-org
+        #Generate deterministic but varied mock data based on user_id
+        random.seed(str(user_id) + str(org_id))
         
-        # Mock data generation
+        #Mock data generation
         total_hours = random.randint(0, 500)
         total_spending = round(total_hours * random.uniform(0.5, 5.0), 2)
         active_bookings = random.randint(0, 3)
         completed_bookings = random.randint(0, 20)
         avg_session_hours = round(random.uniform(1.0, 24.0), 1)
         
-        # Generate time-based data
+        #Generate time-based data
         now = datetime.now(timezone.utc)
         last_30_days = []
         for i in range(30):
@@ -205,20 +206,19 @@ class OrganizationService:
                 'user_id': str(member.user_id),
                 'org_role': member.org_role.value,
                 'created_at': member.created_at,
-                # Try to get user email if users_public is available
                 'user_email': None,
             }
             
-            # Add usage stats
+            #Add usage stats
             if self.users_public:
                 try:
                     user = self.users_public.get_user(member.user_id)
                     if user:
                         member_dict['user_email'] = user.email
                 except:
-                    pass  # Silently fail if can't get user info
+                    pass  #Silently fail if can't get user info
             
-            # Add usage statistics
+            #Add usage statistics
             member_dict['usage_stats'] = self.get_member_usage_stats(org_id, member.user_id)
             
             result.append(member_dict)
@@ -234,7 +234,7 @@ class OrganizationService:
         results = []
         for user_id in user_ids:
             try:
-                # Check if already a member
+                #Check if user is already a member
                 existing = self.repo.get_membership(self.db, org_id, user_id)
                 if existing:
                     results.append({
@@ -244,7 +244,7 @@ class OrganizationService:
                     })
                     continue
                 
-                # Add member
+                #Add member
                 record = self.repo.add_member(self.db, org_id, user_id, role)
                 results.append({
                     'user_id': str(user_id),

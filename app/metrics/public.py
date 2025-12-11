@@ -10,7 +10,7 @@ from .schemas import MetricSampleListItem, MetricSampleRead, MetricsQueryParams
 class MetricsPublic(Protocol):
     """
     Public interface for interacting with the Metrics domain.
-    WRITE operations (ingest) are NOT exposed publicly — only ProviderAgentClient
+    Write operations (ingest) are not exposed publicly — only ProviderAgentClient
     uses MetricsService directly via the routes layer.
     """
     def get_latest_metrics(self, machine_id: UUID) -> Optional[MetricSampleRead]:

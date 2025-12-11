@@ -19,20 +19,20 @@ class NotificationService:
     def __init__(self, email_port: EmailPort, template_dir: str):
         self.email_port = email_port
 
-        # FIX: Better path handling
+        #Better path handling
         from pathlib import Path
         
         template_path = Path(template_dir)
         if not template_path.is_absolute():
-            # If relative path, make it absolute relative to current file
+            #If relative path, make it absolute relative to current file
             template_path = Path(__file__).parent / template_dir
         
         print(f"Loading templates from: {template_path}")
         
-        # Ensure directory exists
+        #Ensure directory exists
         template_path.mkdir(parents=True, exist_ok=True)
         
-        # Load Jinja2 environment for email templates
+        #Load Jinja2 environment for email templates
         self.jinja_env = Environment(
             loader=FileSystemLoader(str(template_path)),
             autoescape=True
@@ -183,7 +183,7 @@ class NotificationService:
             context={"organization": organization, "invoice": invoice},
         )
 
-    # Provider/metrics Alerts
+    #Provider/metrics Alerts
     def send_provider_alert(self, provider, message: str):
         self._send(
             to=provider.email,

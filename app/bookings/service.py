@@ -222,38 +222,77 @@ class BookingsService:
         return updated
 
 
+
+    #update tests
     def cancel_booking(self, booking_id: UUID, booking: Booking | None = None):
         """
         Cancel only an existing booking.
         """
         if booking is None:
             booking = self._get_booking_or_raise(booking_id)
-
+        
         if booking.listing is None:
-            raise ValueError("Cannot cancel a booking without an associated listing")  #TODO: convert to domain exception later
+            raise ValueError("Cannot cancel a booking without an associated listing")
         
         now = datetime.now(timezone.utc)
-
-        if now > booking.start_time:
-            raise ValueError("Cannot cancel booking after booking start_time") #TODO: convert to domain exception later
-
-        if booking.status not in {BookingStatus.REQUESTED, BookingStatus.CONFIRMED}:
-            raise ValueError("Booking must be requested or confirmed in order to cancel.")  #TODO: convert to domain exception later
-
-        booking.status = BookingStatus.CANCELLED
-    
-        updated = self.booking_repo.update_booking(self.db, booking)
-
-        self.notifications.booking_cancelled(booking.buyer, booking, reason="user_cancelled")
-
-        if booking.status != BookingStatus.CANCELLED:
-            raise ValueError("Cannot void escrow on a booking that isn't cancelled.")
         
-        self.payments_public.void_escrow_for_booking(
-            booking=booking,
-        )
-
+        if now > booking.start_time:
+            raise ValueError("Cannot cancel booking after booking start_time")
+        
+        if booking.status not in {BookingStatus.PENDING_PAYMENT, BookingStatus.REQUESTED, BookingStatus.CONFIRMED}:
+            raise ValueError("Booking must be pending, requested, or confirmed in order to cancel.")
+        
+        #Update booking status first
+        booking.status = BookingStatus.CANCELLED
+        updated = self.booking_repo.update_booking(self.db, booking)
+        
+        #Notify user
+        self.notifications.booking_cancelled(booking.buyer, booking, reason="user_cancelled")
+        
+        #Void the payment authorization if payment is authorized but not captured
+        if booking.status == BookingStatus.CANCELLED:
+            try:
+                self.payments_public.void_escrow_for_booking(booking=booking)
+            except ValueError as e:
+                # Log but don't fail if payment can't be voided
+                print(f"Warning: Could not void payment for booking {booking_id}: {str(e)}")
+        
         return updated
+    #update tests
+
+
+    # def cancel_booking(self, booking_id: UUID, booking: Booking | None = None):
+    #     """
+    #     Cancel only an existing booking.
+    #     """
+    #     if booking is None:
+    #         booking = self._get_booking_or_raise(booking_id)
+
+    #     if booking.listing is None:
+    #         raise ValueError("Cannot cancel a booking without an associated listing")  #TODO: convert to domain exception later
+        
+    #     now = datetime.now(timezone.utc)
+
+    #     if now > booking.start_time:
+    #         raise ValueError("Cannot cancel booking after booking start_time") #TODO: convert to domain exception later
+
+    #     if booking.status not in {BookingStatus.REQUESTED, BookingStatus.CONFIRMED}:
+    #         raise ValueError("Booking must be requested or confirmed in order to cancel.")  #TODO: convert to domain exception later
+
+    #     booking.status = BookingStatus.CANCELLED
+    
+    #     updated = self.booking_repo.update_booking(self.db, booking)
+
+    #     self.notifications.booking_cancelled(booking.buyer, booking, reason="user_cancelled")
+
+    #     if booking.status != BookingStatus.CANCELLED:
+    #         raise ValueError("Cannot void escrow on a booking that isn't cancelled.")
+        
+    #     self.payments_public.void_escrow_for_booking(
+    #         booking=booking,
+    #     )
+
+    #     return updated
 
 
     def start_session(self, booking_id: UUID, booking: Booking | None = None):
@@ -296,60 +335,112 @@ class BookingsService:
         return updated
 
 
+
+
+    #update tests
     def end_session(self, booking_id: UUID, booking: Booking | None = None):
         """
-        Final billing is based on exact session duration, not the planned window.
-        We compute the per-second cost using the listing's hourly price and round
-        to cents for storage.
+        Final billing is based on exact session duration.
         """
         if booking is None:
             booking = self._get_booking_or_raise(booking_id)
-
+        
         if not booking.listing:
-            raise ValueError("Listing not attached to booking") #TODO: convert to domain exception later
-
+            raise ValueError("Listing not attached to booking")
+        
         if booking.status != BookingStatus.ACTIVE:
-            raise ValueError("Cannot end, current status is not active") #TODO: convert to domain exception later
-
+            raise ValueError("Cannot end, current status is not active")
+        
         if booking.active_session_end is not None:
-            raise ValueError("Session already ended") #TODO: convert to domain exception later
-
+            raise ValueError("Session already ended")
+        
         now = datetime.now(timezone.utc)
         booking.active_session_end = now
-
+        
+        # Calculate actual price based on exact usage
         booking.actual_price_charged = self.calculate_price(
             booking.active_session_start,
             booking.active_session_end,
             booking.listing.price
         )
-
-        #compliance step 1: simulate wipe
-        self.compliance_public.simulate_wipe_for_booking(booking) #NEW LINE
-
-        #compliance step 2: enforce existence
-        self.compliance_public.require_attestation_for_booking(booking) #NEW LINE
-
-        booking.status = BookingStatus.COMPLETED
-
-        updated = self.booking_repo.update_booking(self.db, booking)
-
-        self.notifications.booking_completed(booking.buyer, booking)
-
-        if not (booking.status == BookingStatus.COMPLETED and booking.actual_price_charged is not None):
-            raise ValueError("Cannot capture payment: booking not in completable state.")
         
-        #payout the provider
-        self.payments_public.capture_for_booking(
-            booking=booking,
-        )
-
-        if not (booking.status == BookingStatus.CANCELLED or booking.status == BookingStatus.COMPLETED):
-            raise ValueError("Booking must be cancelled or completed in order to revoke.")
-
-        #revoke credentials
+        #Compliance steps
+        self.compliance_public.simulate_wipe_for_booking(booking)
+        self.compliance_public.require_attestation_for_booking(booking)
+        
+        booking.status = BookingStatus.COMPLETED
+        updated = self.booking_repo.update_booking(self.db, booking)
+        
+        self.notifications.booking_completed(booking.buyer, booking)
+        
+        #Capture the payment
+        try:
+            self.payments_public.capture_for_booking(booking=booking)
+        except ValueError as e:
+            #consider: implement consistently
+            #Log error but still complete booking
+            print(f"ERROR: Failed to capture payment for booking {booking_id}: {str(e)}")
+        
+        #Revoke credentials
         self.credentials_public.revoke_for_booking(booking)
-
+        
         return updated
+    #update tests
+
+    # def end_session(self, booking_id: UUID, booking: Booking | None = None):
+    #     """
+    #     Final billing is based on exact session duration, not the planned window.
+    #     We compute the per-second cost using the listing's hourly price and round
+    #     to cents for storage.
+    #     """
+    #     if booking is None:
+    #         booking = self._get_booking_or_raise(booking_id)
+
+    #     if not booking.listing:
+    #         raise ValueError("Listing not attached to booking") #TODO: convert to domain exception later
+
+    #     if booking.status != BookingStatus.ACTIVE:
+    #         raise ValueError("Cannot end, current status is not active") #TODO: convert to domain exception later
+
+    #     if booking.active_session_end is not None:
+    #         raise ValueError("Session already ended") #TODO: convert to domain exception later
+
+    #     now = datetime.now(timezone.utc)
+    #     booking.active_session_end = now
+
+    #     booking.actual_price_charged = self.calculate_price(
+    #         booking.active_session_start,
+    #         booking.active_session_end,
+    #         booking.listing.price
+    #     )
+
+    #     #compliance step 1: simulate wipe
+    #     self.compliance_public.simulate_wipe_for_booking(booking) #NEW LINE
+
+    #     #compliance step 2: enforce existence
+    #     self.compliance_public.require_attestation_for_booking(booking) #NEW LINE
+
+    #     booking.status = BookingStatus.COMPLETED
+
+    #     updated = self.booking_repo.update_booking(self.db, booking)
+
+    #     self.notifications.booking_completed(booking.buyer, booking)
+
+    #     if not (booking.status == BookingStatus.COMPLETED and booking.actual_price_charged is not None):
+    #         raise ValueError("Cannot capture payment: booking not in completable state.")
+        
+    #     #payout the provider
+    #     self.payments_public.capture_for_booking(
+    #         booking=booking,
+    #     )
+
+    #     if not (booking.status == BookingStatus.CANCELLED or booking.status == BookingStatus.COMPLETED):
+    #         raise ValueError("Booking must be cancelled or completed in order to revoke.")
+
+    #     #revoke credentials
+    #     self.credentials_public.revoke_for_booking(booking)
+
+    #     return updated
     
 
     def get_org_bookings_in_period(self, org_id, period_start, period_end):
@@ -374,7 +465,7 @@ class BookingsService:
         Create a booking in "pending_payment" status for Stripe Checkout flow.
         Does NOT create escrow - payment happens separately.
         """
-        # Copy all validation from request_booking
+        #Copy all validation from request_booking
         start_utc, end_utc = self.normalize_times(payload.start_time, payload.end_time)
         
         if buyer_user_id is None:
@@ -390,16 +481,13 @@ class BookingsService:
             if not is_admin:
                 raise ValueError("User is not an admin of the specified organization")
 
-        # Create booking with "pending_payment" status
+        #Create booking with "pending_payment" status
         booking = self.build_booking_model(payload, buyer_user_id, start_utc, end_utc, total_price)
         
-        # OVERRIDE: Set status to pending_payment
+        #OVERRIDE: Set status to pending_payment
         booking.status = BookingStatus.PENDING_PAYMENT
         
         created = self.booking_repo.create_booking(self.db, booking)
-        
-        # DO NOT create escrow here - payment happens via Stripe Checkout
-        # self.payments_public.escrow_for_booking(...)  # REMOVED
         
         return created
     #update tests

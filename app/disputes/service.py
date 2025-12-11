@@ -28,11 +28,6 @@ class DisputeService:
     - Resolve dispute (admin)
     - Trigger refunds via PaymentsPublic
     - Validate booking ownership via BookingsPublic
-    This service enforces all domain rules and is the only place where:
-    -Booking ownership validation
-    -State transition validation
-    -Refund rules
-    are applied.
     """
     def __init__(
         self,
@@ -69,7 +64,6 @@ class DisputeService:
         if booking.buyer_user_id == user_id:
             return True
 
-        #machine = getattr(booking.listing, "machine", None)
         machine = booking.listing.machine
         if machine and machine.provider_id == user_id:
             return True
@@ -110,8 +104,6 @@ class DisputeService:
     def list_disputes_for_user(self, user_id: uuid.UUID):
         """
         User should see all disputes they opened.
-        This method does not return disputes on their owned machines;
-        that filtering is performed at the service level in routes if needed.
         """
         return self.repo.list_for_user(self.db, user_id)
 
