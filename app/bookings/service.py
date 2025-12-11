@@ -147,11 +147,16 @@ class BookingsService:
         
         listing = self.fetch_listing_or_raise(payload.listing_id)
         
-        total_price = self.calculate_price(start_utc, end_utc, listing.price)
+        total_price = self.calculate_price(start_utc, end_utc, listing.hourly_price)
 
-        booking = self.build_booking_model(payload, payload.buyer_user_id, start_utc, end_utc, total_price,
-                                           organization_id=payload.organization_id,  #NEW LINE
-                                           )
+        booking = self.build_booking_model(
+            payload, 
+            payload.buyer_user_id,
+            start_utc,
+            end_utc,
+            total_price,
+            organization_id=payload.organization_id,
+        )
         
         return self.booking_repo.create_booking(self.db, booking)
 
@@ -169,7 +174,7 @@ class BookingsService:
         
         listing = self.fetch_listing_or_raise(payload.listing_id)
 
-        total_price = self.calculate_price(start_utc, end_utc, listing.price)
+        total_price = self.calculate_price(start_utc, end_utc, listing.hourly_price)
 
         if payload.organization_id is not None:  #NEW LINE
             is_admin = self.organizations_public.is_org_admin(buyer_user_id, payload.organization_id)  #NEW LINE
@@ -361,7 +366,7 @@ class BookingsService:
         booking.actual_price_charged = self.calculate_price(
             booking.active_session_start,
             booking.active_session_end,
-            booking.listing.price
+            booking.listing.hourly_price
         )
         
         #Compliance steps
@@ -411,7 +416,7 @@ class BookingsService:
     #     booking.actual_price_charged = self.calculate_price(
     #         booking.active_session_start,
     #         booking.active_session_end,
-    #         booking.listing.price
+    #         booking.listing.hourly_price,
     #     )
 
     #     #compliance step 1: simulate wipe
@@ -474,7 +479,7 @@ class BookingsService:
         self.validate_booking_window(start_utc, end_utc)
         
         listing = self.fetch_listing_or_raise(payload.listing_id)
-        total_price = self.calculate_price(start_utc, end_utc, listing.price)
+        total_price = self.calculate_price(start_utc, end_utc, listing.hourly_price)
 
         if payload.organization_id is not None:
             is_admin = self.organizations_public.is_org_admin(buyer_user_id, payload.organization_id)

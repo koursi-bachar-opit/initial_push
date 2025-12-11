@@ -263,7 +263,7 @@ function listingCardHTML(item) {
                 <p class="text-gray-600 dark:text-gray-300 text-sm line-clamp-2 mb-3">
                     ${description}
                 </p>
-                <p class="text-blue-600 dark:text-blue-400 font-semibold mb-2">$${listing.price}/hr</p>
+                <p class="text-blue-600 dark:text-blue-400 font-semibold mb-2">$${listing.hourly_price}/hr</p>
                 
                 ${listing.machine ? `
                 <div class="text-xs text-gray-500 dark:text-gray-400 mb-3 space-y-1">
@@ -313,7 +313,7 @@ async function openDetailsModal(id) {
     if (!item) return;
     
     selectedListing = item.listing || item;
-    currentListingPrice = selectedListing.price || 0;
+    currentListingPrice = selectedListing.hourly_price || 0;
     
     modalTitle.textContent = selectedListing.title;
     
@@ -322,7 +322,7 @@ async function openDetailsModal(id) {
                        "No description provided.";
     modalDescription.textContent = description;
     
-    modalPrice.textContent = `$${selectedListing.price}/hr`;
+    modalPrice.textContent = `$${selectedListing.hourly_price}/hr`;
     
     // Build machine details
     let metaHTML = `

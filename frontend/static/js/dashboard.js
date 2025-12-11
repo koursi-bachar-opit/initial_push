@@ -144,7 +144,7 @@ async function loadUserDashboard() {
             const payload = {
                 machine_id: fd.get("machine_id"),
                 title: fd.get("title"),
-                price: Number(fd.get("price")),
+                hourly_price: Number(fd.get("price")),
             };
 
             console.log("Creating listing with payload:", payload); //debug logging

@@ -1,10 +1,18 @@
 from datetime import datetime, timezone
-from sqlalchemy import Column, String, Float, ForeignKey, DateTime, Text, func
+from enum import Enum
+from sqlalchemy import Column, String, Float, ForeignKey, DateTime, Text, func, Numeric, Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 import uuid
 
 from app.database import Base
+
+
+class ListingStatus(str, Enum):
+    DRAFT = "draft"
+    ACTIVE = "active"
+    INACTIVE = "inactive"
+    ARCHIVED = "archived"
 
 
 class Listing(Base):
@@ -21,15 +29,38 @@ class Listing(Base):
 
     title = Column(String, nullable=False)
     description = Column(Text, nullable=True)
-    #refactor:
-    #hourly_price, daily_price, monthly_price
-    price = Column(Float, nullable=False)
+
+    hourly_price = Column(
+        Numeric(precision=10, scale=2),
+        nullable=False,
+        doc="Price per hour (required)"
+    )
+
+    daily_price = Column(
+        Numeric(precision=10, scale=2),
+        nullable=True,
+        doc="Price per day (24 hours) - optional"
+    )
+    
+    monthly_price = Column(
+        Numeric(precision=10, scale=2),
+        nullable=True,
+        doc="Price per month (30 days) - optional"
+    )
 
     currency = Column(String(length=3), nullable=False, default="USD")
 
-    #refactor:
-    #availability_status
-    #cancellation_policy
+    availability_status = Column(
+        SQLEnum(ListingStatus, name="listing_status"),
+        nullable=False,
+        default=ListingStatus.ACTIVE,
+    )
+
+    cancellation_policy = Column(
+        String(50),
+        nullable=True,
+        doc="Cancellation policy: flexible, moderate, strict, custom"
+    )
 
     created_at = Column(
         DateTime(timezone=True),
