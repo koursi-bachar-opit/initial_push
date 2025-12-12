@@ -471,7 +471,7 @@ class TestDisputeService:
         self, dispute_service, mock_repository, mock_bookings_public, mock_payments_public, sample_dispute
     ):
         """Test error when dispute is not in valid status for resolution"""
-        sample_dispute.status = DisputeStatus.OPEN  # Invalid status for resolution
+        sample_dispute.status = DisputeStatus.CLOSED  # Invalid status for resolution
         
         payload = DisputeResolution(
             decision="refund",
@@ -560,3 +560,27 @@ class TestDisputeService:
             dispute_service.close_dispute(sample_dispute.id)
         
         mock_repository.update_status.assert_not_called()
+
+    def test_list_all_for_admin_delegates_to_repository(
+        self, dispute_service, mock_db, mock_repository
+    ):
+        """Test listing all disputes for admin delegates to repository"""
+        mock_disputes = [Mock(spec=Dispute), Mock(spec=Dispute), Mock(spec=Dispute)]
+        
+        mock_repository.list_all_for_admin.return_value = mock_disputes
+        
+        result = dispute_service.list_all_for_admin()
+        
+        assert result == mock_disputes
+        mock_repository.list_all_for_admin.assert_called_once_with(mock_db)
+
+    def test_list_all_for_admin_returns_empty_list_when_none_exist(
+        self, dispute_service, mock_db, mock_repository
+    ):
+        """Test listing all disputes for admin returns empty list when none exist"""
+        mock_repository.list_all_for_admin.return_value = []
+        
+        result = dispute_service.list_all_for_admin()
+        
+        assert result == []
+        mock_repository.list_all_for_admin.assert_called_once_with(mock_db)

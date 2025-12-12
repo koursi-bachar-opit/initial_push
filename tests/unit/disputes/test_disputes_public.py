@@ -19,6 +19,7 @@ def test_disputes_public_implements_protocol():
     assert hasattr(public_impl, 'set_status')
     assert hasattr(public_impl, 'resolve_dispute')
     assert hasattr(public_impl, 'close_dispute')
+    assert hasattr(public_impl, 'list_all_for_admin')
     
     assert callable(public_impl.open_dispute)
     assert callable(public_impl.list_disputes_for_user)
@@ -27,6 +28,7 @@ def test_disputes_public_implements_protocol():
     assert callable(public_impl.set_status)
     assert callable(public_impl.resolve_dispute)
     assert callable(public_impl.close_dispute)
+    assert callable(public_impl.list_all_for_admin)
 
 
 def test_disputes_public_delegates_to_service():
@@ -94,3 +96,10 @@ def test_disputes_public_delegates_to_service():
     result = public_impl.close_dispute(dispute_id)
     assert result == mock_dispute
     mock_service.close_dispute.assert_called_once_with(dispute_id)
+
+    mock_service.reset_mock()
+
+    mock_service.list_all_for_admin.return_value = mock_disputes_list
+    result = public_impl.list_all_for_admin()
+    assert result == mock_disputes_list
+    mock_service.list_all_for_admin.assert_called_once_with()

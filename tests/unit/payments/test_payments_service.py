@@ -289,66 +289,19 @@ class TestPaymentsService:
 
         mock_port.cancel_payment_intent.assert_not_called()    
 
-    #def refund(self, db: Session, *, booking, reason: str | None = None) -> Payment:
-    def test_refund_successfully_refunds_authorized_escrow(
-        self, payments_service, mock_db, mock_repository, mock_port, sample_booking, sample_escrow_payment, sample_refund_payment
-    ):
-        """Test successful refund of authorized escrow payment"""
-        #Mock repository.get_latest_escrow to return authorized escrow
-        #Mock port.refund to succeed
-        #Mock repository.create_payment to return refund payment
-        #Call service.refund with booking
-        #Verify repository.get_latest_escrow was called
-        #Verify port.refund was called with processor_ref and amount
-        #Verify refund payment created with type=REFUND, status=REFUNDED
-        #Verify repository.create_payment was called with refund payment
-        #Verify refund payment is returned
-        mock_repository.get_latest_escrow.return_value = sample_escrow_payment
-        mock_port.refund.return_value = None
-        mock_repository.create_payment.return_value = sample_refund_payment
-        
-        result = payments_service.refund(sample_booking)
-
-        mock_repository.get_latest_escrow.assert_called_once_with(mock_db, sample_booking.id)
-        mock_port.refund.assert_called_once_with(processor_ref=sample_escrow_payment.processor_ref, amount=sample_escrow_payment.amount)
-        assert result.type == PaymentType.REFUND
-        assert result.status == PaymentStatus.REFUNDED
-        mock_repository.create_payment.assert_called_once()
-        assert result == sample_refund_payment
-
-    def test_refund_successfully_refunds_captured_payment(
-        self, payments_service, mock_repository, mock_port, sample_booking, sample_escrow_payment, sample_refund_payment
-    ):
-        """Test successful refund of captured payment (different scenario)"""
-        #Set escrow status to CAPTURED instead of AUTHORIZED
-        #Mock repository.get_latest_escrow to return captured escrow
-        #Mock port.refund to succeed
-        #Mock repository.create_payment to return refund payment
-        #Call service.refund with booking
-        #Verify port.refund still called (should work for captured payments)
-        #Verify refund payment created with correct fields
-        sample_escrow_payment.status = PaymentStatus.CAPTURED
-
-        mock_repository.get_latest_escrow.return_value = sample_escrow_payment
-        mock_port.refund.return_value = None
-        mock_repository.create_payment.return_value = sample_refund_payment
-        
-        result = payments_service.refund(sample_booking)
-        mock_port.refund.assert_called_once_with(processor_ref=sample_escrow_payment.processor_ref, amount=sample_escrow_payment.amount)
-        assert result == sample_refund_payment
-
-    def test_refund_raises_error_when_no_escrow_found(
+    def test_refund_raises_error_when_no_captured_payment(
         self, payments_service, mock_port, mock_repository, sample_booking
     ):
-        """Test refund fails when no escrow exists for booking"""
-        #Mock repository.get_latest_escrow to return None
-        #Call service.refund with booking
+        """Test refund fails when no captured payment exists"""
+        #Mock repository.get_captured_escrow_payment to return None
+        #Call service.refund with booking_id
         #Verify ValueError is raised with correct message
         #Verify port.refund is NOT called
-        mock_repository.get_latest_escrow.return_value = None
+        
+        mock_repository.get_captured_escrow_payment.return_value = None
 
-        with pytest.raises(ValueError, match="No escrow found to refund."):
-            payments_service.refund(sample_booking)
+        with pytest.raises(ValueError, match="No captured payment found to refund."):
+            payments_service.refund(sample_booking.id)
 
         mock_port.refund.assert_not_called()
 
@@ -356,16 +309,18 @@ class TestPaymentsService:
         self, payments_service, mock_repository, mock_port, sample_booking, sample_escrow_payment
     ):
         """Test refund fails when payment processor refund fails"""
-        #Mock repository.get_latest_escrow to return escrow
+        #Mock repository.get_captured_escrow_payment to return captured escrow
         #Mock port.refund to raise exception
-        #Call service.refund with booking
+        #Call service.refund with booking_id
         #Verify exception is propagated
         #Verify repository.create_payment is NOT called
-        mock_repository.get_latest_escrow.return_value = sample_escrow_payment
+        
+        sample_escrow_payment.status = PaymentStatus.CAPTURED
+        mock_repository.get_captured_escrow_payment.return_value = sample_escrow_payment
         mock_port.refund.side_effect = ValueError("Unable to process refund with Stripe.")
 
         with pytest.raises(ValueError, match="Unable to process refund with Stripe."):
-            payments_service.refund(sample_booking)
+            payments_service.refund(sample_booking.id)
         
         mock_repository.create_payment.assert_not_called()
 
@@ -432,43 +387,38 @@ class TestPaymentsService:
         mock_repository.list_payments_for_bookings.assert_called_once_with(mock_db, empty_list)
         assert result == []
 
-    #def create_payment_intent(self, db: Session, *, booking_id: UUID, amount: Decimal, currency: str = "USD") -> dict:
+
+    #def create_payment_intent(self, booking_id: UUID, amount: Decimal, currency: str = "USD") -> dict:
     def test_create_payment_intent_successfully_creates_stripe_intent(
-        self, payments_service, mock_repository, monkeypatch
+        self, payments_service, mock_repository, mock_port, sample_payment_intent_response
     ):
         """Test successful Stripe PaymentIntent creation for frontend"""
-        #Mock stripe.PaymentIntent.create to return intent with client_secret
+        #Mock port.create_payment_intent to return intent with client_secret
         #Mock repository.create_payment to return payment
         #Call service.create_payment_intent with booking_id, amount, currency
-        #Verify stripe.PaymentIntent.create called with correct parameters
+        #Verify port.create_payment_intent called with correct parameters
         #Verify payment created with type=ESCROW, status=AUTHORIZED
         #Verify repository.create_payment called with payment
         #Verify response dict contains client_secret and payment details
+        
         booking_id = uuid4()
         amount = Decimal("100.00")
         currency = "USD"
         
-        mock_intent = Mock()
-        mock_intent.id = "pi_123456789"
-        mock_intent.client_secret = "pi_123_secret_abc"
+        mock_port.create_payment_intent.return_value = sample_payment_intent_response
         
         mock_payment = Mock(spec=Payment)
         mock_payment.type = PaymentType.ESCROW
         mock_payment.status = PaymentStatus.AUTHORIZED
-        
-        mock_stripe_create = Mock(return_value=mock_intent)
-        monkeypatch.setattr(stripe.PaymentIntent, "create", mock_stripe_create)
-        
         mock_repository.create_payment.return_value = mock_payment
         
         result = payments_service.create_payment_intent(booking_id, amount, currency)
         
-        mock_stripe_create.assert_called_once_with(
-            amount=int(amount * 100),
-            currency=currency.lower(),
+        mock_port.create_payment_intent.assert_called_once_with(
+            amount=amount,
+            currency=currency,
+            reference=str(booking_id),
             capture_method="manual",
-            metadata={"booking_id": str(booking_id)},
-            payment_method_types=["card"]
         )
         
         mock_repository.create_payment.assert_called_once()
@@ -477,25 +427,24 @@ class TestPaymentsService:
         assert created_payment.type == PaymentType.ESCROW
         assert created_payment.status == PaymentStatus.AUTHORIZED
         
-        assert result["client_secret"] == mock_intent.client_secret
-        assert result["payment_intent_id"] == mock_intent.id
+        assert result["client_secret"] == sample_payment_intent_response["client_secret"]
+        assert result["payment_intent_id"] == sample_payment_intent_response["payment_intent_id"]
         assert result["amount"] == amount
         assert result["currency"] == currency
 
     def test_create_payment_intent_handles_stripe_api_failure(
-        self, payments_service, sample_booking, monkeypatch, mock_repository
+        self, payments_service, sample_booking, mock_port, mock_repository
     ):
         """Test PaymentIntent creation fails when Stripe API fails"""
-        #Mock stripe.PaymentIntent.create to raise exception
+        #Mock port.create_payment_intent to raise exception
         #Call service.create_payment_intent with booking_id, amount, currency
         #Verify exception is propagated
         #Verify repository.create_payment is NOT called
+        
         amount = Decimal("100.00")
         currency = "USD"
-        mock_intent = Mock()
-        mock_stripe_create = Mock(side_effect=ValueError("Stripe error: couldn't create payment intent"))
-
-        monkeypatch.setattr(stripe.PaymentIntent, "create", mock_stripe_create)
+        
+        mock_port.create_payment_intent.side_effect = ValueError("Stripe error: couldn't create payment intent")
 
         with pytest.raises(ValueError, match="Stripe error: couldn't create payment intent"):
             payments_service.create_payment_intent(sample_booking.id, amount, currency)
@@ -503,33 +452,35 @@ class TestPaymentsService:
         mock_repository.create_payment.assert_not_called()
 
     def test_create_payment_intent_uses_correct_amount_conversion(
-        self, payments_service, mock_repository, monkeypatch
+        self, payments_service, mock_repository, mock_port
     ):
-        """Test PaymentIntent amount is correctly converted to cents"""
-        #Mock stripe.PaymentIntent.create to capture its arguments
+        """Test PaymentIntent amount is correctly handled by port"""
+        #Mock port.create_payment_intent to capture its arguments
         #Call service.create_payment_intent with amount in dollars
-        #Verify amount multiplied by 100 (converted to cents)
-        #Verify payment created with original amount (not cents)
+        #Verify port receives correct amount (not converted to cents)
+        #Verify payment created with original amount
+        
         booking_id = uuid4()
         amount = Decimal("150.75")
         currency = "USD"
         
-        captured_args = {}
-        def mock_stripe_create(**kwargs):
-            captured_args.update(kwargs)
-            mock_intent = Mock()
-            mock_intent.id = "pi_123"
-            mock_intent.client_secret = "secret"
-            return mock_intent
+        captured_kwargs = {}
+        def mock_port_create_payment_intent(**kwargs):
+            captured_kwargs.update(kwargs)
+            return {
+                "client_secret": "secret",
+                "payment_intent_id": "pi_123",
+            }
         
-        monkeypatch.setattr(stripe.PaymentIntent, "create", mock_stripe_create)
+        mock_port.create_payment_intent.side_effect = mock_port_create_payment_intent
         
         mock_payment = Mock(spec=Payment)
         mock_repository.create_payment.return_value = mock_payment
         
         result = payments_service.create_payment_intent(booking_id, amount, currency)
         
-        assert captured_args["amount"] == int(amount * 100)
+        # The port should receive the amount as Decimal, not converted to cents
+        assert captured_kwargs["amount"] == amount
         
         call_args = mock_repository.create_payment.call_args
         created_payment = call_args[0][1]

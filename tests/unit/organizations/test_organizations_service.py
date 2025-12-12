@@ -9,6 +9,7 @@ from app.organizations.models import Organization, OrganizationMembership, Organ
 from app.organizations.schemas import OrganizationCreate, OrganizationUpdate, MembershipCreate, MembershipUpdateRole
 from app.organizations.permissions import OrgPermission
 
+from app.users.public import UsersPublic
 
 @pytest.fixture
 def mock_db():
@@ -23,11 +24,17 @@ def mock_repository():
 
 
 @pytest.fixture
-def organization_service(mock_db, mock_repository):
+def mock_users_public():
+    return Mock(spec=UsersPublic)
+
+
+@pytest.fixture
+def organization_service(mock_db, mock_repository, mock_users_public):
     """OrganizationService fixture with all dependencies"""
     return OrganizationService(
         db=mock_db,
-        repo=mock_repository
+        repo=mock_repository,
+        users_public=mock_users_public,
     )
 
 
