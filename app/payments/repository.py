@@ -84,3 +84,15 @@ class PaymentsRepository:
             .order_by(Payment.created_at.asc())
             .all()
         )
+
+    def get_captured_escrow_payment(self, db: Session, booking_id: UUID) -> Optional[Payment]:
+        """Get captured escrow payment for a booking."""
+        return (
+            db.query(Payment)
+            .filter(
+                Payment.booking_id == booking_id,
+                Payment.type == PaymentType.ESCROW,
+                Payment.status == PaymentStatus.CAPTURED
+            )
+            .first()
+        )

@@ -161,15 +161,7 @@ class PaymentsService:
     def refund(self, booking_id, reason: str | None = None) -> Payment:
         """Refund a captured payment."""
         # Get the captured payment (not just any escrow)
-        captured_payment = (
-            self.db.query(Payment)
-            .filter(
-                Payment.booking_id == booking_id,
-                Payment.type == PaymentType.ESCROW,
-                Payment.status == PaymentStatus.CAPTURED
-            )
-            .first()
-        )
+        captured_payment = self.repo.get_captured_escrow_payment(self.db, booking_id)
         
         if not captured_payment:
             raise ValueError("No captured payment found to refund.")
