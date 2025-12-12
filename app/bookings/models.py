@@ -61,7 +61,10 @@ class Booking(Base):
     )
 
     #Final values for usage and price
-    actual_price_charged = Column(Float, nullable=True)
+    actual_price_charged = Column(
+        Numeric(precision=10, scale=2), 
+        nullable=True
+        )
     usage_seconds = Column(Numeric(precision=10, scale=2), nullable=True)
 
     currency = Column(String(length=3), nullable=False, default="USD")

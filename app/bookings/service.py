@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from decimal import Decimal, ROUND_HALF_UP
 from sqlalchemy.orm import Session
 
 from .models import Booking
@@ -90,11 +91,16 @@ class BookingsService:
         
 
     def calculate_price(self, start_time, end_time, hourly_price):
-        if hourly_price <= 0:   #business rule, a server can't be free to use
+        if not isinstance(hourly_price, Decimal):
+            hourly_decimal = Decimal(str(hourly_price))
+        else:
+            hourly_decimal = hourly_price
+        if hourly_decimal <= 0:   #business rule, a server can't be free to use
             raise ValueError("Hourly price must be greater than 0.")  #TODO: convert to domain exception later
         delta = end_time - start_time
-        total_seconds = delta.total_seconds()
-        return total_seconds * (hourly_price / 3600)
+        total_seconds = Decimal(str(delta.total_seconds()))
+        total_price = (total_seconds * hourly_decimal) / Decimal('3600')
+        return total_price.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
 
     #def build_booking_model(self, payload, buyer_user_id, start_utc, end_utc, total_price):
@@ -379,12 +385,12 @@ class BookingsService:
         self.notifications.booking_completed(booking.buyer, booking)
         
         #Capture the payment
-        try:
-            self.payments_public.capture_for_booking(booking=booking)
-        except ValueError as e:
-            #consider: implement consistently
-            #Log error but still complete booking
-            print(f"ERROR: Failed to capture payment for booking {booking_id}: {str(e)}")
+        # try:
+        self.payments_public.capture_for_booking(booking=booking)
+        # except ValueError as e:
+        #     #consider: implement consistently
+        #     #Log error but still complete booking
+        #     print(f"ERROR: Failed to capture payment for booking {booking_id}: {str(e)}")
         
         #Revoke credentials
         self.credentials_public.revoke_for_booking(booking)
