@@ -74,9 +74,9 @@ class ListingsRepository:
         
         # Price filtering
         if filters.min_price is not None:
-            query = query.filter(Listing.price >= filters.min_price)
+            query = query.filter(Listing.hourly_price >= filters.min_price)
         if filters.max_price is not None:
-            query = query.filter(Listing.price <= filters.max_price)
+            query = query.filter(Listing.hourly_price <= filters.max_price)
         
         # Apply machine filters - we need to join and reference Machine model
         query = query.join(Machine, Listing.machine_id == Machine.id)
@@ -110,7 +110,7 @@ class ListingsRepository:
         if filters.sort_by == "title":
             sort_field = Listing.title
         elif filters.sort_by == "price":
-            sort_field = Listing.price
+            sort_field = Listing.hourly_price
         elif filters.sort_by == "cpu_cores":
             sort_field = Machine.cpu_cores
         elif filters.sort_by == "ram_gb":

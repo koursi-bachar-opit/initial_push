@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.auth.auth import get_current_user
 from .permissions import (
@@ -20,6 +20,15 @@ from .service import (
 from app.users.models import User, UserRole  #until users domain migration
 
 from uuid import UUID
+
+from app.payments.public import PaymentsPublic, get_payments_public
+
+from app.payments.models import PaymentStatus #refactor: different domain model
+from .models import BookingStatus
+
+from app.organizations.public import get_organizations_public, OrganizationsPublic
+from typing import List
+
 
 router = APIRouter()
 
@@ -77,7 +86,7 @@ def list_bookings(
     else:   #Add route for org admins (should see all bookings in their ORGANIZATION only)
         raise HTTPException(403)
 
-
+#consider: legacy request
 @router.post("/request", response_model=BookingRead)
 def request_booking(
     booking: BookingRequest,
@@ -92,6 +101,60 @@ def request_booking(
         return service.request_booking(user.id, payload=booking)
     except ValueError as e: #NotFound -> 404 ValidationError ||| InvalidStateTransition → 400 / 409
         raise HTTPException(status_code=404, detail=str(e))
+#consider: legacy request
+
+@router.post("/request-with-payment", response_model=BookingRead)
+def request_booking_with_payment(
+    booking: BookingRequest,
+    user: User = Depends(get_current_user),
+    service: BookingsService = Depends(get_bookings_service),
+):
+    """
+    Create booking in "pending_payment" status and return booking ID.
+    Frontend will then call payments/checkout with this booking ID.
+    """
+    try:
+        # Create booking draft (pending_payment, no escrow)
+        booking_obj = service.create_booking_draft(user.id, payload=booking)
+        
+        # Return booking - frontend will handle payment
+        return booking_obj
+        
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    
+
+@router.post("/{booking_id}/confirm-payment", response_model=BookingRead)
+def confirm_booking_payment(
+    booking_id: UUID,
+    service: BookingsService = Depends(get_bookings_service),
+    payments_public: PaymentsPublic = Depends(get_payments_public),
+    user=Depends(get_current_user),
+):
+    """
+    Check if payment exists and update booking from "pending_payment" to "requested".
+    Called by frontend after payment success page loads.
+    """
+    try:
+        # 1. Get booking
+        booking = service.get_booking_readonly(booking_id)
+        
+        # 2. Check payment exists and is authorized
+        payments = payments_public.list_for_booking(booking_id)
+        if not payments or payments[0].status != PaymentStatus.AUTHORIZED:
+            raise ValueError("No authorized payment found for this booking")
+        
+        # 3. Update booking status to "requested"
+        booking.status = BookingStatus.REQUESTED
+        service.booking_repo.update_booking(service.db, booking)
+        
+        # 4. Create escrow (optional - you already have payment)
+        # payments_public.escrow_for_booking(...)
+        
+        return booking
+        
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 """
@@ -151,3 +214,25 @@ def end_booking_session(booking_id: UUID, service: BookingsService = Depends(get
         return service.end_session(booking_id, booking=booking)
     else:
         raise HTTPException(403)
+    
+
+@router.get("/organization/{org_id:uuid}", response_model=List[BookingRead])
+def get_organization_bookings(
+    org_id: UUID,
+    user: User = Depends(get_current_user),
+    service: BookingsService = Depends(get_bookings_service),
+    organizations_public: OrganizationsPublic = Depends(get_organizations_public),  # Use the public interface
+):
+    """
+    Get all bookings for an organization that the user has access to.
+    """
+    # Check if user is member of organization
+    if not organizations_public.is_org_member(user.id, org_id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not a member of this organization",
+        )
+    
+    # Get bookings for organization
+    # You'll need to add this method to BookingsService
+    return service.get_bookings_for_organization(org_id)

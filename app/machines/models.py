@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
@@ -39,13 +40,32 @@ class Machine(Base):
     network_mbps = Column(Integer, nullable=False)
     notes = Column(String, nullable=True)
 
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+    created_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False
+    )
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False
+    )
 
     provider = relationship("User", back_populates="machines")
     listings = relationship("Listing", back_populates="machine", cascade="all, delete")
+    benchmarks = relationship(
+        "MachineBenchmark", 
+        back_populates="machine",
+        cascade="all, delete-orphan"
+    )
     wipe_attestations = relationship(
         "WipeAttestation", 
+        back_populates="machine",
+        cascade="all, delete-orphan"
+    )
+    metric_samples = relationship(
+        "MetricSample",
         back_populates="machine",
         cascade="all, delete-orphan"
     )

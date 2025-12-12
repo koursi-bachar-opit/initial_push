@@ -1,3 +1,4 @@
+from datetime import datetime
 from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional
 from uuid import UUID
@@ -9,12 +10,20 @@ class ListingCreate(BaseModel):
     """Payload sent when creating a new listing."""
     machine_id: UUID
     title: str = Field(min_length=1)
-    price: float = Field(ge=0)
+    description: Optional[str] = Field(None, description="Listing description")
+    hourly_price: float = Field(gt=0, description="Price per hour (required)")
+    daily_price: Optional[float] = Field(None, gt=0, description="Price per day (optional)")
+    monthly_price: Optional[float] = Field(None, gt=0, description="Price per month (optional)")
+    currency: Optional[str] = Field("USD", min_length=3, max_length=3)
+    cancellation_policy: Optional[str] = Field(None, description="flexible, moderate, strict, custom")
+    availability_status: Optional[str] = Field("active", description="draft, active, inactive, sold_out, archived")
 
 
 class ListingRead(ListingCreate):
     id: UUID
     machine: Optional[MachineRead] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
 

@@ -1,7 +1,9 @@
+from datetime import datetime, timezone
 from uuid import uuid4
 
 from sqlalchemy import Column, DateTime, Float, ForeignKey, Index
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 from app.database import Base
@@ -30,8 +32,8 @@ class MetricSample(Base):
     #When the metric snapshot was recorded on the machine/agent side
     recorded_at = Column(
         DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
         nullable=False,
-        server_default=func.now(),
         index=True,
     )
 
@@ -41,13 +43,4 @@ class MetricSample(Base):
     net_rx_mb = Column(Float, nullable=True)     #received MB during window
     net_tx_mb = Column(Float, nullable=True)     #transmitted MB during window
 
-    __table_args__ = (
-        #fast time-series queries: "metrics for machine X between t1 and t2"
-        Index("ix_metric_samples_machine_time", "machine_id", "recorded_at"),
-    )
-
-    def __repr__(self) -> str:  #debugging helper
-        return (
-            f"<MetricSample id={self.id} machine_id={self.machine_id} "
-            f"recorded_at={self.recorded_at}>"
-        )
+    machine = relationship("Machine", back_populates="metric_samples")

@@ -48,7 +48,7 @@ class WipeAttestationPublic(BaseModel):
     notes: str | None
     attested_at: datetime
     status: WipeReviewStatus
-    # Relationships (optional - include only when needed)
+    #Relationships (optional)
     #booking: dict | None = None  # Will hold basic booking info
     #machine: dict | None = None  # Will hold basic machine info
     

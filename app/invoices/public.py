@@ -9,7 +9,7 @@ from app.invoices.models import Invoice
 from app.invoices.repository import InvoicesRepository
 from app.invoices.service import InvoiceService, get_invoice_service
 
-
+#consider: invoices not being used
 class InvoicesPublic(Protocol):
     """
     Read-only public interface for other domains.

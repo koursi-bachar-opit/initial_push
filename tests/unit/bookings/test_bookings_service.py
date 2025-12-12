@@ -94,7 +94,7 @@ def sample_booking():
     booking.status = "requested"
     booking.total_price_estimate = 100.0
     booking.listing = Mock(spec=Listing)
-    booking.listing.price = 50.0
+    booking.listing.hourly_price = 50.0
     booking.buyer = Mock()
     return booking
 
@@ -435,7 +435,7 @@ class TestBookingsService:
                 sample_booking_admin_create.end_time
             )
             mock_fetch.assert_called_once_with(sample_booking_admin_create.listing_id)
-            mock_calc.assert_called_once_with(start_utc, end_utc, mock_listing.price)
+            mock_calc.assert_called_once_with(start_utc, end_utc, mock_listing.hourly_price)
             mock_build.assert_called_once_with(
                 sample_booking_admin_create,
                 sample_booking_admin_create.buyer_user_id,
@@ -463,7 +463,7 @@ class TestBookingsService:
         start_utc = datetime(2026, 1, 15, 10, 0, 0, tzinfo=timezone.utc)
         end_utc = datetime(2026, 1, 15, 15, 0, 0, tzinfo=timezone.utc)
         mock_listing = Mock(spec=Listing)
-        mock_listing.price = 30.0
+        mock_listing.hourly_price = 30.0
         mock_listing.currency = "USD"
         
         mock_booking = Mock(spec=Booking)
@@ -509,7 +509,7 @@ class TestBookingsService:
         payload.organization_id = organization_id
         
         mock_listing = Mock(spec=Listing)
-        mock_listing.price = 30.0
+        mock_listing.hourly_price = 30.0
         mock_listing.currency = "USD"
 
         mock_booking = Mock(spec=Booking)
@@ -723,7 +723,7 @@ class TestBookingsService:
         
         for state in invalid_states:
             mock_booking.status = state
-            with pytest.raises(ValueError, match="Booking must be requested or confirmed in order to cancel."):
+            with pytest.raises(ValueError, match="Booking must be pending, requested, or confirmed in order to cancel."):
                 bookings_service.cancel_booking(mock_booking.id, mock_booking)
 
     #def start_session(self, booking_id: UUID, booking: Booking | None = None):

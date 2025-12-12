@@ -1,7 +1,7 @@
 import os
 import uuid
 from decimal import Decimal
-from typing import Optional
+from typing import Optional, Dict, Any
 import stripe
 
 from .payment_port import PaymentPort
@@ -40,7 +40,7 @@ class RealStripeAdapter(PaymentPort):
         currency: str,
         reference: str,
         capture_method: str = "manual",
-    ) -> dict:
+    ) -> Dict[str, Any]:
         """Create PaymentIntent for frontend Stripe Elements"""
         try:
             intent = stripe.PaymentIntent.create(
@@ -64,12 +64,10 @@ class RealStripeAdapter(PaymentPort):
         self,
         *,
         payment_intent_id: str,
-    ) -> dict:
+    ) -> Dict[str, Any]:
         """Confirm PaymentIntent after frontend collection"""
         try:
             intent = stripe.PaymentIntent.retrieve(payment_intent_id)
-            #If you need to confirm server-side
-            #intent = stripe.PaymentIntent.confirm(payment_intent_id)
             return {
                 "status": intent.status,
                 "payment_intent_id": intent.id
@@ -81,7 +79,7 @@ class RealStripeAdapter(PaymentPort):
         self,
         *,
         payment_intent_id: str,
-    ) -> Optional[dict]:
+    ) -> Optional[Dict[str, Any]]:
         """Retrieve PaymentIntent status"""
         try:
             intent = stripe.PaymentIntent.retrieve(payment_intent_id)
@@ -133,6 +131,90 @@ class RealStripeAdapter(PaymentPort):
         except stripe.error.StripeError as e:
             raise ValueError(f"Stripe refund error: {str(e)}")
 
+    def create_checkout_session(
+        self,
+        booking_id: str,
+        user_id: str,
+        amount: Decimal,
+        currency: str,
+        success_url: str,
+        cancel_url: str,
+        customer_email: str = None,
+    ) -> dict:
+        """
+        Create Stripe Checkout Session with MANUAL capture.
+        This authorizes funds but doesn't capture them yet.
+        """
+        try:
+            #Create PaymentIntent first with manual capture
+            payment_intent = stripe.PaymentIntent.create(
+                amount=int(amount * 100),
+                currency=currency.lower(),
+                capture_method="manual",  #Authorize now, capture later
+                metadata={
+                    "booking_id": booking_id,
+                    "user_id": user_id,
+                },
+                payment_method_types=["card"],
+            )
+            
+            #Create Checkout Session linked to this PaymentIntent
+            session = stripe.checkout.Session.create(
+                payment_method_types=["card"],
+                line_items=[{
+                    "price_data": {
+                        "currency": currency.lower(),
+                        "product_data": {
+                            "name": f"Booking {booking_id}",
+                            "description": "Server rental booking",
+                        },
+                        "unit_amount": int(amount * 100),
+                    },
+                    "quantity": 1,
+                }],
+                mode="payment",
+                payment_intent_data={
+                    "capture_method": "manual",  #Ensure manual capture
+                },
+                metadata={
+                    "booking_id": booking_id,
+                    "user_id": user_id,  #Store in session metadata too
+                },
+                success_url=success_url,
+                cancel_url=cancel_url,
+                customer_email=customer_email,
+            )
+            
+            return {
+                "session_id": session.id,
+                "payment_intent_id": payment_intent.id,
+                "url": session.url,
+                "amount": amount,
+                "currency": currency,
+            }
+        except Exception as e:
+            raise ValueError(f"Stripe Checkout error: {str(e)}")
+
+    def retrieve_checkout_session(
+        self,
+        *,
+        session_id: str,
+    ) -> Dict[str, Any]:
+        """Retrieve Checkout Session details"""
+        try:
+            session = stripe.checkout.Session.retrieve(session_id)
+            return {
+                'id': session.id,
+                'payment_status': session.payment_status,
+                'payment_intent': session.payment_intent,
+                'customer_email': session.customer_email,
+                'amount_total': Decimal(session.amount_total) / 100 if session.amount_total else None,
+                'currency': session.currency,
+                'metadata': session.metadata,
+            }
+        except stripe.error.StripeError as e:
+            raise ValueError(f"Stripe retrieval error: {str(e)}")
+
 
 class MockStripeAdapter(PaymentPort):
     """
@@ -141,7 +223,7 @@ class MockStripeAdapter(PaymentPort):
     def create_hold(self, *, amount, currency, reference) -> str:
         return f"pi_mock_{uuid.uuid4().hex}"
 
-    def create_payment_intent(self, *, amount, currency, reference, capture_method="manual") -> dict:
+    def create_payment_intent(self, *, amount, currency, reference, capture_method="manual") -> Dict[str, Any]:
         payment_intent_id = f"pi_mock_{uuid.uuid4().hex}"
         return {
             "payment_intent_id": payment_intent_id,
@@ -151,10 +233,10 @@ class MockStripeAdapter(PaymentPort):
             "currency": currency
         }
 
-    def confirm_payment_intent(self, *, payment_intent_id) -> dict:
+    def confirm_payment_intent(self, *, payment_intent_id) -> Dict[str, Any]:
         return {"status": "succeeded", "payment_intent_id": payment_intent_id}
 
-    def get_payment_intent(self, *, payment_intent_id) -> Optional[dict]:
+    def get_payment_intent(self, *, payment_intent_id) -> Optional[Dict[str, Any]]:
         return {
             "id": payment_intent_id,
             "status": "succeeded",
@@ -167,11 +249,49 @@ class MockStripeAdapter(PaymentPort):
     def capture(self, *, processor_ref) -> None:
         return None
 
-    def refund(self, *, processor_ref, amount) -> None:
+    def refund(self, *, processor_ref, amount) -> str:
         return None
     
     def cancel_payment_intent(self, *, processor_ref) -> None:
         return None
+
+    #Mock Checkout Session method. added user_id parameter
+    def create_checkout_session(
+        self,
+        *,
+        booking_id: str,
+        user_id: str,
+        amount: Decimal,
+        currency: str,
+        success_url: str,
+        cancel_url: str,
+        customer_email: str = None,
+    ) -> Dict[str, Any]:
+        """Mock Checkout Session creation"""
+        mock_session_id = f"cs_mock_{uuid.uuid4().hex}"
+        mock_url = f"https://checkout.stripe.com/pay/{mock_session_id}"
+        
+        return {
+            'session_id': mock_session_id,
+            'url': mock_url,
+            'payment_intent_id': f"pi_mock_{uuid.uuid4().hex}",
+        }
+
+    def retrieve_checkout_session(
+        self,
+        *,
+        session_id: str,
+    ) -> Dict[str, Any]:
+        """Mock Checkout Session retrieval"""
+        return {
+            'id': session_id,
+            'payment_status': 'paid',
+            'payment_intent': f"pi_mock_{uuid.uuid4().hex}",
+            'customer_email': 'test@example.com',
+            'amount_total': Decimal("100.00"),
+            'currency': 'usd',
+            'metadata': {'booking_id': 'mock_booking_id', 'user_id': 'mock_user_id'},
+        }
 
 
 def get_payment_adapter() -> PaymentPort:
@@ -180,78 +300,3 @@ def get_payment_adapter() -> PaymentPort:
         return RealStripeAdapter()
     else:
         return MockStripeAdapter()
-
-
-# import uuid
-# from decimal import Decimal
-
-# from .payment_port import PaymentPort
-
-
-# class StripeAdapter(PaymentPort):
-#     """
-#     Mock Stripe adapter.
-#     - This adapter generates deterministic mock processor references.
-#     - Stripe implementation: Stripe SDK calls
-#     This implementation allows your PaymentService to function end-to-end
-#     without needing Stripe credentials during development.
-#     """
-
-#     def create_hold(
-#         self,
-#         *,
-#         amount: Decimal,
-#         currency: str,
-#         reference: str,
-#     ) -> str:
-#         """
-#         Create a mock authorization/hold and return a fake PaymentIntent ID.
-#         Stripe implementation:
-#         stripe.PaymentIntent.create(
-#             amount=int(amount * 100),
-#             currency=currency,
-#             capture_method="manual",
-#             metadata={"booking_id": reference},
-#         )
-#         """
-#         #Mock: generate a deterministic fake "pi_" ID
-#         return f"pi_{uuid.uuid4().hex}"
-
-
-#     def capture(
-#         self,
-#         *,
-#         processor_ref: str,
-#     ) -> None:
-#         """
-#         Capture the previously authorized amount.
-#         Stripe implementation:
-#         stripe.PaymentIntent.capture(processor_ref)
-#         """
-#         #Mock
-#         return None
-
-
-#     def refund(
-#         self,
-#         *,
-#         processor_ref: str,
-#         amount: Decimal,
-#     ) -> None:
-#         """
-#         Refund a previously authorized/captured payment.
-#         Stripe implementation:
-#         stripe.Refund.create(
-#             payment_intent=processor_ref,
-#             amount=int(amount * 100),
-#         )
-#         """
-#         #Mock
-#         return None
-    
-
-# def get_stripe_adapter() -> StripeAdapter:
-#     return StripeAdapter()
-
-# # def get_payment_port() -> PaymentPort:
-# #     return StripeAdapter()

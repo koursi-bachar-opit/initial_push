@@ -181,3 +181,168 @@ export function apiGetProviderBookingAttestation(bookingId) {
 export function apiGetAdminBookingAttestation(bookingId) {
     return request(`/compliance/admin/booking/${bookingId}/wipe-attestation`);
 }
+
+export function apiRequestBookingWithPayment(payload) {
+    return request("/bookings/request-with-payment", {
+        method: "POST",
+        body: JSON.stringify(payload),
+    });
+}
+
+// Organizations API
+export function apiGetOrganizations() {
+    return request("/organizations/mine");
+}
+
+export function apiCreateOrganization(payload) {
+    return request("/organizations", {
+        method: "POST",
+        body: JSON.stringify(payload),
+    });
+}
+
+export function apiChangeMemberRole(orgId, userId, role) {
+    return request(`/organizations/${orgId}/members/${userId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ role }),
+    });
+}
+
+export function apiRemoveMember(orgId, userId) {
+    return request(`/organizations/${orgId}/members/${userId}`, {
+        method: "DELETE",
+    });
+}
+
+// Organization-specific endpoints from other domains
+export function apiGetOrgBookings(orgId) {
+    return request(`/bookings/organization/${orgId}`);
+}
+
+export function apiGetOrgInvoices(orgId) {
+    return request(`/invoices/organization/${orgId}`);
+}
+
+export function apiGetOrgMembersDetails(orgId) {
+    return request(`/organizations/${orgId}/members/details`);
+}
+
+export function apiGetMemberUsage(orgId, userId) {
+    return request(`/organizations/${orgId}/members/${userId}/usage`);
+}
+
+export async function apiGetOrgStats(orgId) {
+    try {
+        // Try to get from the new stats endpoint first
+        return await request(`/organizations/${orgId}/stats`);
+    } catch (error) {
+        console.warn('New stats endpoint not available, falling back to aggregation:', error.message);
+        
+        // Fall back to aggregating data from multiple endpoints
+        const [members, bookings] = await Promise.allSettled([
+            apiGetOrgMembers(orgId),
+            apiGetOrgBookings(orgId)
+        ]);
+        
+        let memberCount = 0;
+        let bookingCount = 0;
+        let totalSpending = 0;
+        
+        if (members.status === 'fulfilled' && members.value) {
+            memberCount = members.value.length;
+        }
+        
+        if (bookings.status === 'fulfilled' && bookings.value) {
+            bookingCount = bookings.value.length;
+            totalSpending = bookings.value.reduce((sum, booking) => {
+                return sum + (parseFloat(booking.actual_price_charged) || parseFloat(booking.total_price_estimate) || 0);
+            }, 0);
+        }
+        
+        return {
+            member_count: memberCount,
+            booking_count: bookingCount,
+            total_spending: totalSpending
+        };
+    }
+}
+
+// api.js - Add Member function using the request helper
+export async function apiAddMember(orgId, payload) {
+    return request(`/organizations/${orgId}/members`, {
+        method: 'POST',
+        body: JSON.stringify(payload)
+    });
+}
+
+// Disputes API
+export function apiOpenDispute(payload) {
+    return request("/disputes/", {
+        method: "POST",
+        body: JSON.stringify(payload),
+    });
+}
+
+export function apiGetMyDisputes() {
+    return request("/disputes/me");
+}
+
+
+export function apiGetAdminDisputes() {
+    return request("/disputes/admin");
+}
+
+export function apiGetBookingDisputes(bookingId) {
+    return request(`/disputes/booking/${bookingId}`);
+}
+
+export function apiUpdateDisputeStatus(disputeId, newStatus, resolutionNotes = null) {
+    const payload = { new_status: newStatus };
+    if (resolutionNotes) {
+        payload.resolution_notes = resolutionNotes;
+    }
+    return request(`/disputes/${disputeId}/status`, {
+        method: "PUT",
+        body: JSON.stringify(payload),
+    });
+}
+
+export function apiResolveDispute(disputeId, payload) {
+    return request(`/disputes/${disputeId}/resolve`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+    });
+}
+
+export function apiCloseDispute(disputeId) {
+    return request(`/disputes/${disputeId}/close`, {
+        method: "POST",
+    });
+}
+
+export function apiGetAllAdminDisputes() {
+    return request("/disputes/admin/all");
+}
+
+// Provider profile and verifications endpoints
+export function apiGetMyProviderProfile() {
+    return request("/providers/me");
+}
+
+export function apiGetMyVerifications() {
+    return request("/providers/me/verifications");
+}
+
+export function apiCreateProviderProfile(payload) {
+    return request("/providers/me", {
+        method: "POST",
+        body: JSON.stringify(payload),
+    });
+}
+
+export function apiRequestVerification(payload) {
+    return request("/providers/me/verification", {
+        method: "POST",
+        body: JSON.stringify(payload),
+    });
+}

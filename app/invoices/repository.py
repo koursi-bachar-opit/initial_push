@@ -46,8 +46,8 @@ class InvoicesRepository:
         period_end: datetime,
     ) -> Optional[Invoice]:
         """
-        Simple 'exact match' check. If you want overlapping guarding,
-        you can extend this to check any overlap with [period_start, period_end].
+        Simple 'exact match' check. Can be extended to check 
+        any overlap with [period_start, period_end].
         """
         return (
             db.query(Invoice)

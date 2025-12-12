@@ -92,6 +92,7 @@ class ListingsService:
     
 
     #consider: metrics collection in listings
+    #refactor: move to provider agent client and call when listing is found
     def search_listings_by_name(self, name: str):
         """Search listings by name with real-time metrics - for customer search."""
         if not name.strip():
@@ -101,10 +102,10 @@ class ListingsService:
         
         results = []
         for listing in listings:
-            # Collect metrics for each listing in search results
+            #Collect metrics for each listing in search results
             metrics_data = self._collect_listing_metrics(listing)
             
-            # Convert to Pydantic model - this should now work with machine loaded
+            #Convert to Pydantic model - this should now work with machine loaded
             listing_read = ListingRead.model_validate(listing)
             
             results.append({
@@ -119,7 +120,7 @@ class ListingsService:
         """Search listings with advanced filtering by machine specifications."""
         result = self.listing_repo.search_listings_with_filters(self.db, filters)
         
-        # Add metrics to each listing
+        #Add metrics to each listing
         enhanced_items = []
         for listing in result["items"]:
             metrics_data = self._collect_listing_metrics(listing)

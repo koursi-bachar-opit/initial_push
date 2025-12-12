@@ -10,14 +10,7 @@ from app.disputes.models import Dispute, DisputeStatus
 
 class DisputesRepository:
     """
-    Repository handling all persistence operations for the Dispute domain.
-    Responsibilities:
-    -Create disputes
-    -Fetch by ID
-    -List disputes for user
-    -List disputes for booking
-    -List open disputes for admin review
-    -Update dispute status and resolution fields
+    Handles all persistence operations for the disputes domain.
     """
     
     def create_dispute(
@@ -47,12 +40,7 @@ class DisputesRepository:
     #List queries
     def list_for_user(self, db: Session, user_id: uuid.UUID) -> List[Dispute]:
         """
-        Returns all disputes:
-        - opened by the user
-        - OR on bookings owned by the user as a provider
-        NOTE: provider-ownership filtering is done at service layer
-        using BookingsPublic -> Listing -> Machine.
-        At repo level we only filter by opened_by_user_id.
+        Returns all disputes opened by the user
         """
         stmt = (
             select(Dispute)
@@ -110,3 +98,11 @@ class DisputesRepository:
         db.commit()
 
         return self.get_by_id(db, dispute_id)
+    
+    def list_all_for_admin(self, db: Session) -> List[Dispute]:
+        """Return all disputes for admin dashboard"""
+        stmt = (
+            select(Dispute)
+            .order_by(Dispute.created_at.desc())
+        )
+        return list(db.scalars(stmt))

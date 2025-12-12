@@ -9,8 +9,6 @@ from .service import MachinesService, get_machines_service
 class MachinesPublic(Protocol):
     """
     Public interface for interacting with the Machines domain.
-    Other domains should call this instead of reaching directly
-    into machine_repository or MachinesService internals.
     """
     def provider_owns_machine(self, provider_id: UUID, machine_id: UUID) -> bool:
         ...

@@ -11,7 +11,7 @@ def test_create_listing_as_provider(client, db_session):
     listing = create_listing(client, db_session, provider_role="provider")
     
     assert listing["title"] == TestConfig.DEFAULT_LISTING_TITLE
-    assert listing["price"] == TestConfig.DEFAULT_LISTING_PRICE
+    assert listing["hourly_price"] == TestConfig.DEFAULT_LISTING_PRICE
 
 
 def test_list_listings_public(client, db_session):

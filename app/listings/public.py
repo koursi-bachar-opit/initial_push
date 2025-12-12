@@ -16,6 +16,9 @@ class ListingsPublic(Protocol):
     def get_listing_by_id(self, listing_id):
         ...
 
+    def search_listings_by_name(self, name: str):
+        ...
+
     def list_listings(self):
         ...    
 

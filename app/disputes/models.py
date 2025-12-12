@@ -1,15 +1,15 @@
-import enum
+from enum import Enum
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import Column, DateTime, Enum, ForeignKey, String, Text
+from sqlalchemy import Column, DateTime, ForeignKey, String, Text, Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm import relationship
 
 from app.database import Base
 
 
-class DisputeStatus(str, enum.Enum):
+class DisputeStatus(str, Enum):
     OPEN = "open"
     IN_REVIEW = "in_review"
     NEEDS_INFO = "needs_info"
@@ -19,6 +19,9 @@ class DisputeStatus(str, enum.Enum):
 
 
 class Dispute(Base):
+    """
+    Dispute management for buyer-provider conflicts.
+    """
     __tablename__ = "disputes"
 
     id = Column(
@@ -43,7 +46,7 @@ class Dispute(Base):
     reason = Column(Text, nullable=False)
 
     status = Column(
-        Enum(DisputeStatus, name="dispute_status"),
+        SQLEnum(DisputeStatus, name="dispute_status"),
         nullable=False,
         default=DisputeStatus.OPEN,
     )
@@ -52,8 +55,8 @@ class Dispute(Base):
 
     created_at = Column(
         DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
         nullable=False,
-        default=datetime.now(timezone.utc),
     )
 
     resolved_at = Column(
@@ -61,9 +64,5 @@ class Dispute(Base):
         nullable=True,
     )
 
-    #repr/debug helpers
-    def __repr__(self) -> str:
-        return (
-            f"<Dispute id={self.id} booking_id={self.booking_id} "
-            f"status={self.status}>"
-        )
+    booking = relationship("Booking", back_populates="disputes")
+    opened_by = relationship("User", back_populates="disputes")

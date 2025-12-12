@@ -9,7 +9,7 @@ from app.database import get_db
 
 from uuid import UUID
 
-from app.providers.public import ProvidersPublic, get_providers_public  #NEW LINE
+from app.providers.public import ProvidersPublic, get_providers_public
 
 #until: Domain exceptions
 # class MachineNotFoundError(Exception):
@@ -54,11 +54,14 @@ class MachinesService:
 
 def get_machines_service(
     db: Session = Depends(get_db),
-    providers_public: ProvidersPublic = Depends(get_providers_public),  #NEW LINE
+    providers_public: ProvidersPublic = Depends(get_providers_public),
 ) -> MachinesService:
     """
     FastAPI DI: builds a service with a fresh repository instance.
     """
     repo = MachinesRepository()
-    return MachinesService(db=db, machine_repo=repo,
-                           providers_public=providers_public)  #NEW LINE
+    return MachinesService(
+        db=db,
+        machine_repo=repo,
+        providers_public=providers_public
+    )

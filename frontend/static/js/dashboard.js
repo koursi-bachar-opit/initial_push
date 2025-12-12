@@ -16,6 +16,28 @@ import {
     apiReviewAttestation,
     apiGetProviderBookingAttestation,
     apiGetAdminBookingAttestation,
+    apiGetOrganizations,
+    apiGetOrgStats,
+    apiCreateOrganization,
+    apiChangeMemberRole,
+    apiRemoveMember,
+    apiGetOrgBookings,
+    apiGetOrgInvoices,
+    apiGetOrgMembersDetails,
+    apiGetMemberUsage,
+    apiAddMember,
+    apiOpenDispute,
+    apiGetMyDisputes,
+    apiGetAdminDisputes,
+    apiGetBookingDisputes,
+    apiUpdateDisputeStatus,
+    apiResolveDispute,
+    apiCloseDispute,
+    apiGetAllAdminDisputes,
+    apiGetMyProviderProfile,
+    apiGetMyVerifications,
+    apiCreateProviderProfile,
+    apiRequestVerification,
 } from "./api.js";
 
 //body targets
@@ -53,10 +75,29 @@ document.addEventListener("DOMContentLoaded", async () => {
         // This is a buyer/provider dashboard
         await loadUserDashboard();
     }
+    
+    // Setup create listing button handler
+    setupCreateListingButton();
 });
 
 async function loadUserDashboard() {
-    //Load machines first (for providers)
+    // Initialize disputes system for buyers
+    const userRole = localStorage.getItem('user_role');
+    if (userRole === 'buyer') {
+        try {
+            window.myDisputes = await apiGetMyDisputes();
+            setupBuyerDisputeModal();
+        } catch (err) {
+            console.error('Failed to load user disputes:', err);
+            window.myDisputes = [];
+        }
+    }
+    
+    // Initialize disputes system for admins
+    if (userRole === 'admin') {
+        await initDisputes();
+    }
+    // Load machines first (for providers)
     if (machineSelect) {
         await loadMachines();
     }
@@ -67,10 +108,34 @@ async function loadUserDashboard() {
         setupWipeHistory();
     }
 
-    //Load bookings
+    // Load bookings
+    await loadBookings();
+    
+    // Load user disputes if buyer
+    if (userRole === 'buyer') {
+        try {
+            window.myDisputes = await apiGetMyDisputes();
+        } catch (err) {
+            console.error('Failed to load user disputes:', err);
+            window.myDisputes = [];
+        }
+    }
+
+    // Load machines first (for providers)
+    if (machineSelect) {
+        await loadMachines();
+    }
+
+    setupBenchmarkForm();
+
+    if (document.getElementById('wipeHistoryMachineSelect')) {
+        setupWipeHistory();
+    }
+
+    // Load bookings
     await loadBookings();
 
-    //Listing creation handler
+    // Listing creation handler
     if (createListingForm) {
         createListingForm.addEventListener("submit", async (e) => {
             e.preventDefault();
@@ -79,7 +144,7 @@ async function loadUserDashboard() {
             const payload = {
                 machine_id: fd.get("machine_id"),
                 title: fd.get("title"),
-                price: Number(fd.get("price")),
+                hourly_price: Number(fd.get("price")),
             };
 
             console.log("Creating listing with payload:", payload); //debug logging
@@ -88,7 +153,7 @@ async function loadUserDashboard() {
                 await apiCreateListing(payload);
                 alert("Listing created!");
 
-                //Close modal
+                // Close modal
                 document
                     .querySelector('[data-modal-hide="createListingModal"]')
                     ?.click();
@@ -159,18 +224,54 @@ async function loadUserDashboard() {
                 await apiCreateMachine(payload);
                 alert("Machine added successfully!");
 
-                //Close modal
+                // Close modal
                 document
                     .querySelector('[data-modal-hide="createMachineModal"]')
                     ?.click();
 
                 createMachineForm.reset();
 
-                //Refresh machines list and repopulate dropdown
+                // Refresh machines list and repopulate dropdown
                 await loadMachines();
             } catch (err) {
                 alert("Error creating machine: " + err.message);
             }
+        });
+    }
+
+    // Load organizations
+    await loadOrganizations();
+    
+    // Setup create org form
+    if (document.getElementById('create-org-form')) {
+        document.getElementById('create-org-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const fd = new FormData(e.target);
+            const payload = {
+                name: fd.get('name'),
+                billing_email: fd.get('billing_email'),
+            };
+            
+            try {
+                await apiCreateOrganization(payload);
+                alert('Organization created successfully!');
+                location.reload();
+            } catch (err) {
+                alert('Error creating organization: ' + err.message);
+            }
+        });
+    }
+
+    const addMemberForm = document.getElementById('add-member-form');
+    if (addMemberForm) {
+        addMemberForm.addEventListener('submit', addMemberToOrganization);
+    }
+    
+    // Setup add member modal button
+    const openAddMemberBtn = document.getElementById('openAddMemberModal');
+    if (openAddMemberBtn) {
+        openAddMemberBtn.addEventListener('click', () => {
+            openAddMemberModal();
         });
     }
 }
@@ -179,6 +280,7 @@ async function loadAdminDashboard() {
     await loadProviders();
     await loadStats();
     await loadWipeAttestations();
+    await initDisputes();
 }
 
 //Load machines and update UI state
@@ -932,6 +1034,37 @@ function rowHTML(b) {
                     Wipe Verify
                 </button>
             `;
+            
+            // ADD DISPUTE BUTTON FOR BUYERS ON COMPLETED BOOKINGS
+            // Check if dispute already exists
+            const hasDispute = window.myDisputes && window.myDisputes.some(d => d.booking_id === b.id);
+            
+            if (!hasDispute) {
+                actionButtons += `
+                    <button class="open-dispute-btn inline-flex items-center gap-1 text-white bg-red-600 hover:bg-red-700 font-medium rounded-lg text-xs px-3 py-1.5 transition ml-2"
+                            data-booking-id="${b.id}"
+                            data-booking-title="${b.listing_title || 'Booking'}"
+                            type="button"
+                            title="Open a dispute for this booking">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.73-.833-2.464 0L4.196 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                        </svg>
+                        Dispute
+                    </button>
+                `;
+            } else {
+                // Show dispute indicator if dispute already exists
+                actionButtons += `
+                    <span class="inline-flex items-center gap-1 bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300 font-medium rounded-lg text-xs px-2 py-1 ml-2"
+                          title="Dispute already filed for this booking">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.73-.833-2.464 0L4.196 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                        </svg>
+                        Dispute Filed
+                    </span>
+                `;
+            }
+            
         } else if (userRole === 'provider') {
             // Provider sees attestation details
             actionButtons += `
@@ -1423,7 +1556,6 @@ async function loadProviderAttestation(bookingId) {
 }
 
 // Show provider attestation details for a booking
-// Show provider attestation details for a booking
 function showProviderAttestationModal(bookingId) {
     console.log("Fetching provider attestation for booking:", bookingId);
     
@@ -1673,3 +1805,1705 @@ function showProviderAttestationModal(bookingId) {
 }
 
 window.reviewAttestation = reviewAttestation;
+
+// Organizations functionality
+let currentOrganizations = [];
+let selectedOrgId = null;
+let currentOrgMembers = [];
+let currentOrgBookings = [];
+let currentOrgInvoices = [];
+
+function renderOrganizations() {
+    const container = document.getElementById('organizationsContainer');
+    if (!container) return;
+    
+    if (currentOrganizations.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-8">
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full mb-4">
+                    <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Organizations Yet</h3>
+                <p class="text-gray-600 dark:text-gray-400 mb-4">Create your first organization to manage team access and billing.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = currentOrganizations.map(org => `
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer organization-card"
+             data-org-id="${org.id}">
+            <div class="flex justify-between items-start">
+                <div class="flex-1">
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="inline-flex items-center justify-center w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-full">
+                            <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">${org.name}</h3>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">${org.billing_email}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 mb-3">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${org.status === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300'}">
+                            ${org.status}
+                        </span>
+                        <span class="text-xs text-gray-500 dark:text-gray-400">
+                            Created: ${new Date(org.created_at).toLocaleDateString()}
+                        </span>
+                    </div>
+                </div>
+                <div class="ml-4">
+                    <button class="manage-org-btn bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-xs font-medium transition"
+                            data-org-id="${org.id}"
+                            onclick="selectOrganization('${org.id}')">
+                        Manage
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Quick Stats -->
+            <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 grid grid-cols-3 gap-4">
+                <div class="text-center">
+                    <div class="text-sm text-gray-500 dark:text-gray-400">Members</div>
+                    <div class="text-lg font-semibold text-gray-900 dark:text-white org-member-count">...</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-sm text-gray-500 dark:text-gray-400">Bookings</div>
+                    <div class="text-lg font-semibold text-gray-900 dark:text-white org-booking-count">...</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-sm text-gray-500 dark:text-gray-400">Spending</div>
+                    <div class="text-lg font-semibold text-gray-900 dark:text-white org-spending">...</div>
+                </div>
+            </div>
+        </div>
+    `).join('');
+    
+    // Load stats for each org
+    currentOrganizations.forEach(org => {
+        loadOrgStats(org.id);
+    });
+}
+
+
+
+async function selectOrganization(orgId) {
+    selectedOrgId = orgId;
+    const org = currentOrganizations.find(o => o.id === orgId);
+    
+    if (!org) return;
+    
+    // Show management section
+    const managementSection = document.getElementById('orgManagementSection');
+    if (managementSection) {
+        managementSection.classList.remove('hidden');
+        
+        // Scroll to management section
+        managementSection.scrollIntoView({ behavior: 'smooth' });
+    }
+    
+    // Update selected org info
+    const infoContainer = document.getElementById('selectedOrgInfo');
+    if (infoContainer) {
+        infoContainer.innerHTML = `
+            <div class="flex items-start justify-between">
+                <div>
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white">${org.name}</h3>
+                    <p class="text-gray-600 dark:text-gray-400">${org.billing_email}</p>
+                    <div class="mt-2 flex items-center gap-2">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${org.status === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300'}">
+                            ${org.status}
+                        </span>
+                        <span class="text-sm text-gray-500 dark:text-gray-400">
+                            ID: ${org.id.substring(0, 8)}...
+                        </span>
+                    </div>
+                </div>
+                <div>
+                    <button class="text-sm text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 font-medium"
+                            onclick="leaveOrganization('${orgId}')">
+                        Leave Organization
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+    
+    // Load initial tab (members)
+    await loadOrgMembers(orgId);
+    setupOrgManagementTabs();
+}
+
+function setupOrgManagementTabs() {
+    const tabs = document.querySelectorAll('.org-management-tab');
+    const contents = document.querySelectorAll('.org-tab-content');
+    
+    tabs.forEach(tab => {
+        tab.addEventListener('click', async () => {
+            const tabName = tab.getAttribute('data-tab');
+            
+            // Update active tab
+            tabs.forEach(t => {
+                t.setAttribute('aria-selected', 'false');
+                t.classList.remove('border-blue-600', 'text-blue-600', 'dark:text-blue-500', 'dark:border-blue-500');
+                t.classList.add('border-transparent');
+            });
+            
+            tab.setAttribute('aria-selected', 'true');
+            tab.classList.add('border-blue-600', 'text-blue-600', 'dark:text-blue-500', 'dark:border-blue-500');
+            tab.classList.remove('border-transparent');
+            
+            // Show active content
+            contents.forEach(content => {
+                content.classList.add('hidden');
+            });
+            
+            document.getElementById(`org${capitalizeFirst(tabName)}Tab`).classList.remove('hidden');
+            
+            // Load data for this tab
+            if (tabName === 'members') {
+                await loadOrgMembers(selectedOrgId);
+            } else if (tabName === 'bookings') {
+                await loadOrgBookings(selectedOrgId);
+            } else if (tabName === 'invoices') {
+                await loadOrgInvoices(selectedOrgId);
+            }
+        });
+    });
+}
+
+
+// dashboard.js - Complete renderOrgMembers function
+function renderOrgMembers() {
+    const container = document.getElementById('orgMembersContainer');
+    if (!container) return;
+    
+    const userRole = localStorage.getItem('user_role');
+    const userId = localStorage.getItem('user_id');
+
+    const addMemberBtn = document.getElementById('openAddMemberModal');
+    if (addMemberBtn) {
+        addMemberBtn.style.display = 'inline-flex'; // Always show
+    }
+    
+    if (currentOrgMembers.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-8">
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full mb-4">
+                    <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13 0A9 9 0 008.5 3M15 5a9 9 0 00-8.5 11"></path>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Members Yet</h3>
+                <p class="text-gray-600 dark:text-gray-400 mb-4">
+                    ${isCurrentUserAdmin 
+                        ? 'Add members to your organization to collaborate on bookings.' 
+                        : 'No other members in this organization yet.'}
+                </p>
+                <button id="addFirstMemberBtn"
+                        class="inline-flex items-center gap-2 text-white bg-green-600 hover:bg-green-700 font-medium rounded-lg text-sm px-4 py-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                    </svg>
+                    Add Your First Member
+                </button>
+            </div>
+        `;
+        
+        // Add click handler for "Add Your First Member" button
+        const addFirstMemberBtn = document.getElementById('addFirstMemberBtn');
+        if (addFirstMemberBtn) {
+            addFirstMemberBtn.addEventListener('click', openAddMemberModal);
+        }
+        
+        return;
+    }
+    
+    container.innerHTML = currentOrgMembers.map(member => {
+        const isCurrentUser = member.user_id === userId;
+        const isAdmin = member.org_role === 'admin';
+        
+        return `
+            <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-4">
+                <div class="flex justify-between items-start">
+                    <div class="flex items-center gap-3">
+                        <div class="inline-flex items-center justify-center w-12 h-12 ${isAdmin ? 'bg-purple-100 dark:bg-purple-900' : 'bg-gray-100 dark:bg-gray-700'} rounded-full">
+                            <svg class="w-6 h-6 ${isAdmin ? 'text-purple-600 dark:text-purple-400' : 'text-gray-600 dark:text-gray-400'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-900 dark:text-white">
+                                ${member.user_email || 'User #' + member.user_id.substring(0, 8)}
+                                ${isCurrentUser ? ' <span class="text-blue-600 dark:text-blue-400">(You)</span>' : ''}
+                            </p>
+                            <div class="flex items-center gap-2 mt-1">
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${isAdmin ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300' : 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300'}">
+                                    ${member.org_role}
+                                </span>
+                                <span class="text-xs text-gray-500 dark:text-gray-400">
+                                    ${member.usage_stats?.usage_tier || 'Medium'} Usage
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex flex-col items-end gap-2">
+                        <div class="flex gap-2">
+                            <button class="change-role-btn text-xs ${isAdmin ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' : 'bg-blue-100 text-blue-800 hover:bg-blue-200'} dark:bg-gray-700 dark:text-white px-2 py-1 rounded transition"
+                                    data-member-id="${member.id}"
+                                    data-user-id="${member.user_id}"
+                                    data-current-role="${member.org_role}">
+                                ${isAdmin ? 'Demote to Member' : 'Promote to Admin'}
+                            </button>
+                            <button class="remove-member-btn text-xs bg-red-100 text-red-800 hover:bg-red-200 dark:bg-red-900 dark:text-red-300 px-2 py-1 rounded transition"
+                                    data-member-id="${member.id}"
+                                    data-user-id="${member.user_id}">
+                                Remove
+                            </button>
+                        </div>
+                        <button class="view-usage-btn text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
+                                data-user-id="${member.user_id}">
+                            View Usage
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Quick stats row -->
+                <div class="mt-4 grid grid-cols-4 gap-4 text-center">
+                    <div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">Hours</div>
+                        <div class="text-lg font-semibold text-gray-900 dark:text-white">
+                            ${member.usage_stats?.total_hours || 0}
+                        </div>
+                    </div>
+                    <div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">Spending</div>
+                        <div class="text-lg font-semibold text-gray-900 dark:text-white">
+                            $${(member.usage_stats?.total_spending || 0).toFixed(2)}
+                        </div>
+                    </div>
+                    <div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">Bookings</div>
+                        <div class="text-lg font-semibold text-gray-900 dark:text-white">
+                            ${(member.usage_stats?.active_bookings || 0) + (member.usage_stats?.completed_bookings || 0)}
+                        </div>
+                    </div>
+                    <div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">Avg Session</div>
+                        <div class="text-lg font-semibold text-gray-900 dark:text-white">
+                            ${member.usage_stats?.avg_session_hours || 0}h
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-3 text-sm text-gray-500 dark:text-gray-400">
+                    Joined: ${new Date(member.created_at).toLocaleDateString()}
+                    • Last active: ${member.usage_stats?.last_active ? new Date(member.usage_stats.last_active).toLocaleDateString() : 'Recently'}
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    // Add event listeners
+    setupMemberActionHandlers();
+}
+
+async function loadOrgStats(orgId) {
+    try {
+        const stats = await apiGetOrgStats(orgId);
+        
+        // Update card stats
+        const card = document.querySelector(`.organization-card[data-org-id="${orgId}"]`);
+        if (card) {
+            card.querySelector('.org-member-count').textContent = stats.member_count || 0;
+            card.querySelector('.org-booking-count').textContent = stats.booking_count || 0;
+            card.querySelector('.org-spending').textContent = stats.total_spending ? 
+                `$${parseFloat(stats.total_spending).toFixed(2)}` : '$0.00';
+        }
+    } catch (err) {
+        console.error('Failed to load org stats:', err);
+    }
+}
+
+// Organizations functionality - clean implementation
+async function loadOrganizations() {
+    const container = document.getElementById('organizationsContainer');
+    if (!container) return;
+    
+    try {
+        currentOrganizations = await apiGetOrganizations();
+        renderOrganizations();
+        
+        // Set up click handlers for manage buttons
+        setTimeout(() => {
+            setupOrganizationManagement();
+        }, 100);
+    } catch (err) {
+        console.error('Failed to load organizations:', err);
+        container.innerHTML = `
+            <div class="text-center py-8 text-red-600 dark:text-red-400">
+                Failed to load organizations: ${err.message}
+            </div>
+        `;
+    }
+}
+
+
+async function loadOrgMembers(orgId) {
+    const container = document.getElementById('orgMembersContainer');
+    if (!container) return;
+    
+    try {
+        // Use the new detailed endpoint
+        currentOrgMembers = await apiGetOrgMembersDetails(orgId);
+        renderOrgMembers();
+    } catch (err) {
+        console.error('Failed to load org members:', err);
+        container.innerHTML = `
+            <div class="text-red-600 dark:text-red-400">
+                Failed to load members: ${err.message}
+            </div>
+        `;
+    }
+}
+
+
+async function loadOrgBookings(orgId) {
+    const container = document.getElementById('orgBookingsContainer');
+    if (!container) return;
+    
+    try {
+        currentOrgBookings = await apiGetOrgBookings(orgId);
+        renderOrgBookings();
+    } catch (err) {
+        console.error('Failed to load org bookings:', err);
+        container.innerHTML = `
+            <div class="text-red-600 dark:text-red-400">
+                Failed to load bookings: ${err.message}
+            </div>
+        `;
+    }
+}
+
+async function loadOrgInvoices(orgId) {
+    const container = document.getElementById('orgInvoicesContainer');
+    if (!container) return;
+    
+    try {
+        currentOrgInvoices = await apiGetOrgInvoices(orgId);
+        renderOrgInvoices();
+    } catch (err) {
+        console.error('Failed to load org invoices:', err);
+        container.innerHTML = `
+            <div class="text-red-600 dark:text-red-400">
+                Failed to load invoices: ${err.message}
+            </div>
+        `;
+    }
+}
+
+function renderOrgBookings() {
+    const container = document.getElementById('orgBookingsContainer');
+    if (!container) return;
+    
+    if (currentOrgBookings.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+                No bookings for this organization yet.
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = currentOrgBookings.map(booking => `
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h4 class="font-medium text-gray-900 dark:text-white">${booking.listing_title || 'Booking'}</h4>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        ${formatDate(booking.start_time)} - ${formatDate(booking.end_time)}
+                    </p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">
+                        Buyer: ${booking.buyer_email || 'N/A'}
+                    </p>
+                </div>
+                <div>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(booking.status)}">
+                        ${booking.status}
+                    </span>
+                    <p class="text-sm font-semibold text-gray-900 dark:text-white mt-1">
+                        $${parseFloat(booking.actual_price_charged || booking.total_price_estimate || 0).toFixed(2)}
+                    </p>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function renderOrgInvoices() {
+    const container = document.getElementById('orgInvoicesContainer');
+    if (!container) return;
+    
+    if (currentOrgInvoices.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+                No invoices for this organization yet.
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = currentOrgInvoices.map(invoice => `
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h4 class="font-medium text-gray-900 dark:text-white">Invoice #${invoice.id.substring(0, 8)}</h4>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        Period: ${formatDate(invoice.period_start)} - ${formatDate(invoice.period_end)}
+                    </p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">
+                        Due: ${formatDate(invoice.due_date || invoice.created_at)}
+                    </p>
+                </div>
+                <div class="text-right">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getInvoiceStatusColor(invoice.status)}">
+                        ${invoice.status}
+                    </span>
+                    <p class="text-lg font-semibold text-gray-900 dark:text-white mt-1">
+                        $${parseFloat(invoice.total_amount).toFixed(2)}
+                    </p>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+// Helper functions
+function getStatusColor(status) {
+    const colors = {
+        'pending_payment': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
+        'requested': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
+        'confirmed': 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
+        'active': 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
+        'completed': 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300',
+        'cancelled': 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
+    };
+    return colors[status] || 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300';
+}
+
+function getInvoiceStatusColor(status) {
+    const colors = {
+        'pending': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
+        'finalized': 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
+        'paid': 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
+        'void': 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
+    };
+    return colors[status] || 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300';
+}
+
+function setupOrganizationManagement() {
+    // Handle manage button clicks
+    document.querySelectorAll('.manage-org-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const orgId = btn.getAttribute('data-org-id');
+            await selectOrganization(orgId);
+        });
+    });
+}
+
+function setupMemberActionHandlers() {
+    // Role change buttons
+    document.querySelectorAll('.change-role-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const memberId = btn.getAttribute('data-member-id');
+            const userId = btn.getAttribute('data-user-id');
+            const currentRole = btn.getAttribute('data-current-role');
+            const newRole = currentRole === 'admin' ? 'member' : 'admin';
+            
+            if (confirm(`Are you sure you want to change this user's role to ${newRole}?`)) {
+                await changeMemberRole(selectedOrgId, userId, newRole);
+            }
+        });
+    });
+    
+    // Remove member buttons
+    document.querySelectorAll('.remove-member-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const memberId = btn.getAttribute('data-member-id');
+            const userId = btn.getAttribute('data-user-id');
+            
+            if (confirm('Are you sure you want to remove this member from the organization?')) {
+                await removeMember(selectedOrgId, userId);
+            }
+        });
+    });
+    
+    // View usage buttons
+    document.querySelectorAll('.view-usage-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const userId = btn.getAttribute('data-user-id');
+            await showMemberUsageModal(userId);
+        });
+    });
+}
+
+async function showMemberUsageModal(userId) {
+    try {
+        const usage = await apiGetMemberUsage(selectedOrgId, userId);
+        
+        // Create and show modal
+        const modal = document.createElement('div');
+        modal.id = 'memberUsageModal';
+        modal.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black/50';
+        modal.innerHTML = `
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl mx-4">
+                <div class="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white">Usage Statistics</h3>
+                    <button onclick="closeMemberUsageModal()" class="text-gray-400 hover:text-gray-900 dark:hover:text-white text-2xl">
+                        x
+                    </button>
+                </div>
+                <div class="p-6">
+                    <div class="grid grid-cols-2 gap-6 mb-6">
+                        <div class="space-y-4">
+                            <div>
+                                <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Usage</h4>
+                                <p class="text-2xl font-bold text-gray-900 dark:text-white">${usage.total_hours} hours</p>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Spending</h4>
+                                <p class="text-2xl font-bold text-green-600 dark:text-green-400">$${usage.total_spending.toFixed(2)}</p>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400">Usage Tier</h4>
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getUsageTierColor(usage.usage_tier)}">
+                                    ${usage.usage_tier}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="space-y-4">
+                            <div>
+                                <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400">Bookings</h4>
+                                <div class="flex gap-4 mt-2">
+                                    <div class="text-center">
+                                        <div class="text-lg font-semibold text-blue-600 dark:text-blue-400">${usage.active_bookings}</div>
+                                        <div class="text-xs text-gray-500 dark:text-gray-400">Active</div>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="text-lg font-semibold text-gray-900 dark:text-white">${usage.completed_bookings}</div>
+                                        <div class="text-xs text-gray-500 dark:text-gray-400">Completed</div>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="text-lg font-semibold text-gray-900 dark:text-white">${usage.avg_session_hours}h</div>
+                                        <div class="text-xs text-gray-500 dark:text-gray-400">Avg Session</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400">Preferred Resources</h4>
+                                <div class="flex flex-wrap gap-2 mt-2">
+                                    ${usage.preferred_resources.map(resource => `
+                                        <span class="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 text-xs rounded">
+                                            ${resource}
+                                        </span>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">Last 30 Days Activity</h4>
+                        <div class="space-y-2 max-h-64 overflow-y-auto">
+                            ${usage.last_30_days.map(day => `
+                                <div class="flex justify-between items-center bg-gray-50 dark:bg-gray-900 p-3 rounded">
+                                    <span class="text-sm text-gray-900 dark:text-white">${day.date}</span>
+                                    <div class="flex gap-4">
+                                        <span class="text-sm text-gray-600 dark:text-gray-400">${day.hours}h</span>
+                                        <span class="text-sm font-medium text-green-600 dark:text-green-400">$${day.spending.toFixed(2)}</span>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Add to window object for close function
+        window.closeMemberUsageModal = function() {
+            document.getElementById('memberUsageModal')?.remove();
+        };
+        
+    } catch (err) {
+        console.error('Failed to load usage stats:', err);
+        alert('Failed to load usage statistics: ' + err.message);
+    }
+}
+
+function getUsageTierColor(tier) {
+    const colors = {
+        'Low': 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
+        'Medium': 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
+        'High': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
+        'Very High': 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
+    };
+    return colors[tier] || 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300';
+}
+
+// Add these helper functions at the top or bottom of dashboard.js
+
+function capitalizeFirst(string) {
+    return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
+async function leaveOrganization(orgId) {
+    if (!confirm('Are you sure you want to leave this organization?')) {
+        return;
+    }
+    
+    try {
+        const userId = localStorage.getItem('user_id');
+        await apiRemoveMember(orgId, userId);
+        alert('You have left the organization.');
+        location.reload(); // Reload to update the UI
+    } catch (err) {
+        alert('Error leaving organization: ' + err.message);
+    }
+}
+
+async function changeMemberRole(orgId, userId, role) {
+    try {
+        await apiChangeMemberRole(orgId, userId, role);
+        alert(`Member role updated to ${role}.`);
+        await loadOrgMembers(orgId); // Reload members list
+    } catch (err) {
+        alert('Error changing role: ' + err.message);
+    }
+}
+
+async function removeMember(orgId, userId) {
+    try {
+        await apiRemoveMember(orgId, userId);
+        alert('Member removed from organization.');
+        await loadOrgMembers(orgId); // Reload members list
+    } catch (err) {
+        alert('Error removing member: ' + err.message);
+    }
+}
+
+// Function to open add member modal
+function openAddMemberModal() {
+    if (!selectedOrgId) {
+        alert('Please select an organization first.');
+        return;
+    }
+    
+    // Set the org ID in the hidden field
+    document.getElementById('addMemberOrgId').value = selectedOrgId;
+    
+    // Reset form
+    document.getElementById('addMemberUserId').value = '';
+    document.getElementById('addMemberRole').value = 'member';
+    
+    // Show modal manually (since Flowbite might not work)
+    const modal = document.getElementById('addMemberModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+        modal.setAttribute('aria-hidden', 'false');
+        
+        // Add close functionality
+        const closeBtn = modal.querySelector('[data-modal-hide="addMemberModal"]');
+        if (closeBtn) {
+            closeBtn.onclick = () => {
+                modal.classList.add('hidden');
+                modal.style.display = 'none';
+                modal.setAttribute('aria-hidden', 'true');
+            };
+        }
+        
+        // Close when clicking outside
+        modal.onclick = (e) => {
+            if (e.target === modal) {
+                modal.classList.add('hidden');
+                modal.style.display = 'none';
+                modal.setAttribute('aria-hidden', 'true');
+            }
+        };
+        
+        // Close with Escape key
+        const escapeHandler = (e) => {
+            if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+                modal.classList.add('hidden');
+                modal.style.display = 'none';
+                modal.setAttribute('aria-hidden', 'true');
+                document.removeEventListener('keydown', escapeHandler);
+            }
+        };
+        document.addEventListener('keydown', escapeHandler);
+    }
+}
+
+// Function to add member
+async function addMemberToOrganization(e) {
+    // If called from form submit, prevent default behavior
+    if (e) {
+        e.preventDefault();
+    }
+    
+    // Get values from form
+    const orgId = document.getElementById('addMemberOrgId').value;
+    const userId = document.getElementById('addMemberUserId').value;
+    const role = document.getElementById('addMemberRole').value;
+    
+    // Validate UUID
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(userId)) {
+        alert('Please enter a valid UUID (e.g., 123e4567-e89b-12d3-a456-426614174000)');
+        return;
+    }
+    
+    if (!orgId) {
+        alert('Organization ID is missing.');
+        return;
+    }
+    
+    try {
+        const payload = {
+            user_id: userId,
+            role: role
+        };
+        
+        await apiAddMember(orgId, payload);
+        
+        // Close modal
+        const modal = document.getElementById('addMemberModal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.style.display = 'none';
+            modal.setAttribute('aria-hidden', 'true');
+        }
+        
+        // Clear the form
+        document.getElementById('addMemberUserId').value = '';
+        document.getElementById('addMemberRole').value = 'member';
+        
+        alert('Member added successfully!');
+        
+        // Reload members list
+        await loadOrgMembers(orgId);
+        
+    } catch (err) {
+        alert('Error adding member: ' + err.message);
+    }
+}
+
+// Global variables for disputes
+let currentDisputes = [];
+let currentBookingDisputes = {};
+
+
+// Initialize disputes system based on user role
+async function initDisputes() {
+    const userRole = localStorage.getItem('user_role');
+    
+    if (userRole === 'admin') {
+        await loadAdminDisputes();
+        setupDisputesModals();
+    }
+    
+    // For all users, check for booking disputes and update UI
+    await checkBookingDisputes();
+}
+
+
+async function loadAdminDisputes() {
+    const container = document.getElementById('disputes-container');
+    if (!container) return;
+    
+    try {
+        console.log('Fetching ALL admin disputes...');
+        currentDisputes = await apiGetAllAdminDisputes();  // Changed to new endpoint
+        console.log('All disputes API response:', currentDisputes);
+        
+        renderDisputes();
+        updateDisputeStats();
+    } catch (err) {
+        console.error('Failed to load disputes:', err);
+        // Fallback to original endpoint if new one doesn't exist yet
+        try {
+            console.log('Trying fallback to original endpoint...');
+            currentDisputes = await apiGetAdminDisputes();
+            renderDisputes();
+            updateDisputeStats();
+        } catch (fallbackErr) {
+            container.innerHTML = `
+                <div class="text-center py-8 text-red-600 dark:text-red-400">
+                    Failed to load disputes: ${fallbackErr.message}
+                </div>
+            `;
+        }
+    }
+}
+
+function renderDisputes() {
+    const container = document.getElementById('disputes-container');
+    if (!container) return;
+    
+    if (currentDisputes.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+                No disputes found.
+            </div>
+        `;
+        return;
+    }
+    
+    const template = document.getElementById('dispute-row-template');
+    container.innerHTML = '';
+    
+    currentDisputes.forEach(dispute => {
+        const clone = template.content.cloneNode(true);
+        const row = clone.firstElementChild;
+        
+        // Fill dispute data - SAFELY handle undefined/null
+        row.querySelector('.dispute-booking-id').textContent = `#${dispute.booking_id ? dispute.booking_id.substring(0, 8) + '...' : 'N/A'}`;
+        
+        // Handle opened_by_user safely
+        const openedByText = dispute.opened_by_user_email || 
+                           (dispute.opened_by_user_id ? 'User #' + dispute.opened_by_user_id.substring(0, 8) : 'Unknown User');
+        row.querySelector('.dispute-opened-by').textContent = `Opened by: ${openedByText}`;
+        
+        // Handle reason safely
+        const reasonText = dispute.reason || 'No reason provided';
+        row.querySelector('.dispute-reason').textContent = reasonText.length > 50 ? reasonText.substring(0, 50) + '...' : reasonText;
+        
+        // Handle date safely
+        const createdDate = dispute.created_at ? new Date(dispute.created_at).toLocaleString() : 'Unknown date';
+        row.querySelector('.dispute-created').textContent = `Opened: ${createdDate}`;
+        
+        // Status badge
+        const statusBadge = row.querySelector('.status-badge');
+        const statusText = dispute.status ? dispute.status.replace('_', ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase()) : 'Unknown';
+        statusBadge.textContent = statusText;
+        
+        // Status badge color
+        if (dispute.status) {
+            switch(dispute.status.toLowerCase()) {
+                case 'open':
+                    statusBadge.classList.add('bg-red-100', 'text-red-800', 'dark:bg-red-900', 'dark:text-red-300');
+                    break;
+                case 'in_review':
+                    statusBadge.classList.add('bg-yellow-100', 'text-yellow-800', 'dark:bg-yellow-900', 'dark:text-yellow-300');
+                    break;
+                case 'needs_info':
+                    statusBadge.classList.add('bg-orange-100', 'text-orange-800', 'dark:bg-orange-900', 'dark:text-orange-300');
+                    break;
+                case 'resolved_refunded':
+                    statusBadge.classList.add('bg-green-100', 'text-green-800', 'dark:bg-green-900', 'dark:text-green-300');
+                    break;
+                case 'resolved_denied':
+                    statusBadge.classList.add('bg-gray-100', 'text-gray-800', 'dark:bg-gray-900', 'dark:text-gray-300');
+                    break;
+                case 'closed':
+                    statusBadge.classList.add('bg-gray-100', 'text-gray-800', 'dark:bg-gray-900', 'dark:text-gray-300');
+                    break;
+                default:
+                    statusBadge.classList.add('bg-gray-100', 'text-gray-800', 'dark:bg-gray-900', 'dark:text-gray-300');
+            }
+        } else {
+            statusBadge.classList.add('bg-gray-100', 'text-gray-800', 'dark:bg-gray-900', 'dark:text-gray-300');
+        }
+        
+        // Resolution info if resolved
+        const resolvedInfo = row.querySelector('#dispute-resolved-info');
+        if (dispute.resolved_at) {
+            const resolvedDate = new Date(dispute.resolved_at).toLocaleDateString();
+            const notesPreview = dispute.resolution_notes ? 'Notes: ' + dispute.resolution_notes.substring(0, 30) + '...' : '';
+            resolvedInfo.innerHTML = `
+                Resolved: ${resolvedDate}<br>
+                ${notesPreview}
+            `;
+        } else {
+            resolvedInfo.innerHTML = '';
+        }
+        
+        // Buttons
+        const detailsBtn = row.querySelector('.view-dispute-details-btn');
+        const resolveBtn = row.querySelector('.resolve-dispute-btn');
+        const closeBtn = row.querySelector('.close-dispute-btn');
+        
+        // Show/hide buttons based on status
+        if (dispute.status === 'closed') {
+            resolveBtn.style.display = 'none';
+            closeBtn.style.display = 'none';
+        } else if (dispute.status === 'resolved_refunded' || dispute.status === 'resolved_denied') {
+            resolveBtn.style.display = 'none';
+        }
+        
+        // Add event listeners - check if dispute.id exists
+        if (dispute.id) {
+            detailsBtn.addEventListener('click', () => showDisputeDetails(dispute.id));
+            resolveBtn.addEventListener('click', () => openResolutionModal(dispute.id));
+            closeBtn.addEventListener('click', () => closeDispute(dispute.id));
+        } else {
+            // Disable buttons if no ID
+            detailsBtn.disabled = true;
+            resolveBtn.disabled = true;
+            closeBtn.disabled = true;
+        }
+        
+        container.appendChild(row);
+    });
+}
+
+
+// Update dispute statistics
+function updateDisputeStats() {
+    console.log('Updating dispute stats...');   //
+    console.log('All disputes:', currentDisputes);  //
+
+    const stats = {
+        open: 0,
+        in_review: 0,
+        needs_info: 0,
+        resolved: 0,
+        closed: 0
+    };
+    
+    currentDisputes.forEach(dispute => {
+        console.log(`Dispute ${dispute.id}: status = ${dispute.status}`);   //
+
+        if (!dispute.status) return;
+        
+        const status = dispute.status.toLowerCase();
+        
+        if (status === 'open') stats.open++;
+        else if (status === 'in_review') stats.in_review++;
+        else if (status === 'needs_info') stats.needs_info++;
+        else if (status === 'resolved_refunded' || status === 'resolved_denied') stats.resolved++;
+        else if (status === 'closed') stats.closed++;
+    });
+    
+    // Update UI
+    const openEl = document.getElementById('stat-open-disputes');
+    const reviewEl = document.getElementById('stat-review-disputes');
+    const needsInfoEl = document.getElementById('stat-needs-info-disputes');
+    const resolvedEl = document.getElementById('stat-resolved-disputes');
+    const closedEl = document.getElementById('stat-closed-disputes'); // Add this if you have it
+    
+    if (openEl) openEl.textContent = stats.open;
+    if (reviewEl) reviewEl.textContent = stats.in_review;
+    if (needsInfoEl) needsInfoEl.textContent = stats.needs_info;
+    if (resolvedEl) resolvedEl.textContent = stats.resolved;
+    if (closedEl) closedEl.textContent = stats.closed;
+}
+
+// Check for disputes on bookings and update UI
+async function checkBookingDisputes() {
+    // This function updates the bookings table with dispute indicators
+    // We'll modify the rowHTML function instead
+    
+    // For now, we'll just load disputes for the current user
+    const userRole = localStorage.getItem('user_role');
+    if (userRole === 'buyer') {
+        try {
+            const myDisputes = await apiGetMyDisputes();
+            // Store for later reference
+            window.myDisputes = myDisputes;
+        } catch (err) {
+            console.error('Failed to load user disputes:', err);
+        }
+    }
+}
+
+// Show dispute details
+async function showDisputeDetails(disputeId) {
+    const modal = document.getElementById('disputeDetailsModal');
+    const content = document.getElementById('disputeDetailsContent');
+    
+    // Find dispute in current list
+    const dispute = currentDisputes.find(d => d.id === disputeId);
+    if (!dispute) {
+        content.innerHTML = `
+            <div class="text-center text-red-600 dark:text-red-400">
+                Dispute not found.
+            </div>
+        `;
+        return;
+    }
+    
+    content.innerHTML = `
+        <div class="space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-4">
+                    <div>
+                        <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-2">Booking Information</h4>
+                        <div class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                            <div class="space-y-2">
+                                <div class="flex justify-between">
+                                    <span class="text-sm text-gray-500 dark:text-gray-400">Booking ID:</span>
+                                    <span class="font-mono text-sm">${dispute.booking_id}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-sm text-gray-500 dark:text-gray-400">Opened By:</span>
+                                    <span class="text-sm">${dispute.opened_by_user_email || 'User #' + dispute.opened_by_user_id.substring(0, 8)}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-2">Dispute Details</h4>
+                        <div class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                            <div class="space-y-3">
+                                <div>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Status</p>
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getDisputeStatusColor(dispute.status)}">
+                                        ${dispute.status.replace('_', ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
+                                    </span>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Created At</p>
+                                    <p class="font-medium">${new Date(dispute.created_at).toLocaleString()}</p>
+                                </div>
+                                ${dispute.resolved_at ? `
+                                    <div>
+                                        <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Resolved At</p>
+                                        <p class="font-medium">${new Date(dispute.resolved_at).toLocaleString()}</p>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="space-y-4">
+                    <div>
+                        <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-2">Reason</h4>
+                        <div class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                            <p class="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">${dispute.reason}</p>
+                        </div>
+                    </div>
+                    
+                    ${dispute.resolution_notes ? `
+                        <div>
+                            <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-2">Resolution Notes</h4>
+                            <div class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                                <p class="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">${dispute.resolution_notes}</p>
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+            
+            ${dispute.status === 'open' || dispute.status === 'in_review' || dispute.status === 'needs_info' ? `
+                <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-3">Admin Actions</h4>
+                    <div class="flex space-x-3">
+                        <button onclick="openResolutionModal('${dispute.id}')"
+                                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+                            Resolve Dispute
+                        </button>
+                        ${dispute.status === 'open' ? `
+                            <button onclick="updateDisputeStatus('${dispute.id}', 'in_review')"
+                                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+                                Mark as In Review
+                            </button>
+                        ` : ''}
+                        ${dispute.status === 'in_review' ? `
+                            <button onclick="updateDisputeStatus('${dispute.id}', 'needs_info')"
+                                    class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+                                Request More Info
+                            </button>
+                        ` : ''}
+                        ${dispute.status === 'needs_info' ? `
+                            <button onclick="updateDisputeStatus('${dispute.id}', 'in_review')"
+                                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+                                Return to Review
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            ` : ''}
+        </div>
+    `;
+    
+    // Show modal
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+    modal.setAttribute('aria-hidden', 'false');
+    
+    // Add close functionality
+    const closeBtn = modal.querySelector('[data-modal-hide="disputeDetailsModal"]');
+    if (closeBtn) {
+        closeBtn.onclick = () => {
+            modal.classList.add('hidden');
+            modal.style.display = 'none';
+            modal.setAttribute('aria-hidden', 'true');
+        };
+    }
+    
+    // Close when clicking outside
+    modal.onclick = (e) => {
+        if (e.target === modal) {
+            modal.classList.add('hidden');
+            modal.style.display = 'none';
+            modal.setAttribute('aria-hidden', 'true');
+        }
+    };
+}
+
+// Open resolution modal
+async function openResolutionModal(disputeId) {
+    const modal = document.getElementById('disputeResolutionModal');
+    const dispute = currentDisputes.find(d => d.id === disputeId);
+    
+    if (!dispute) return;
+    
+    // Set dispute ID
+    document.getElementById('disputeResolutionId').value = disputeId;
+    
+    // Reset form
+    document.getElementById('disputeDecision').value = '';
+    document.getElementById('disputeRefundAmount').value = '';
+    document.getElementById('disputeResolutionNotes').value = '';
+    
+    // Show modal
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+    modal.setAttribute('aria-hidden', 'false');
+}
+
+// Update dispute status
+async function updateDisputeStatus(disputeId, newStatus) {
+    if (!confirm(`Are you sure you want to change this dispute status to "${newStatus.replace('_', ' ')}"?`)) {
+        return;
+    }
+    
+    const notes = prompt('Enter notes (optional):') || '';
+    
+    try {
+        await apiUpdateDisputeStatus(disputeId, newStatus, notes);
+        alert('Dispute status updated successfully!');
+        await loadAdminDisputes(); // Reload disputes
+    } catch (err) {
+        alert('Error updating dispute: ' + err.message);
+    }
+}
+
+// Close dispute
+async function closeDispute(disputeId) {
+    if (!confirm('Are you sure you want to close this dispute? This action cannot be undone.')) {
+        return;
+    }
+    
+    try {
+        await apiCloseDispute(disputeId);
+        alert('Dispute closed successfully!');
+        await loadAdminDisputes(); // Reload disputes
+    } catch (err) {
+        alert('Error closing dispute: ' + err.message);
+    }
+}
+
+// Setup disputes modals
+function setupDisputesModals() {
+    // Resolution form submission
+    const resolutionForm = document.getElementById('dispute-resolution-form');
+    if (resolutionForm) {
+        resolutionForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const disputeId = document.getElementById('disputeResolutionId').value;
+            const decision = document.getElementById('disputeDecision').value;
+            const resolutionNotes = document.getElementById('disputeResolutionNotes').value;
+            
+            if (!disputeId || !decision || !resolutionNotes) {
+                alert('Please fill in all required fields.');
+                return;
+            }
+            
+            const payload = {
+                decision: decision,
+                resolution_notes: resolutionNotes
+            };
+            
+            // Add refund amount if refund decision
+            if (decision === 'refund') {
+                const refundAmount = document.getElementById('disputeRefundAmount').value;
+                if (refundAmount) {
+                    payload.refund_amount = parseFloat(refundAmount);
+                }
+            }
+            
+            try {
+                await apiResolveDispute(disputeId, payload);
+                alert('Dispute resolved successfully!');
+                
+                // Close modal
+                const modal = document.getElementById('disputeResolutionModal');
+                modal.classList.add('hidden');
+                modal.style.display = 'none';
+                modal.setAttribute('aria-hidden', 'true');
+                
+                // Reload disputes
+                await loadAdminDisputes();
+            } catch (err) {
+                alert('Error resolving dispute: ' + err.message);
+            }
+        });
+    }
+    
+    // Decision change handler for refund amount field
+    const decisionSelect = document.getElementById('disputeDecision');
+    const refundContainer = document.getElementById('refundAmountContainer');
+    
+    if (decisionSelect && refundContainer) {
+        decisionSelect.addEventListener('change', function() {
+            if (this.value === 'refund') {
+                refundContainer.classList.remove('hidden');
+            } else {
+                refundContainer.classList.add('hidden');
+            }
+        });
+    }
+}
+
+// Helper function for dispute status color
+function getDisputeStatusColor(status) {
+    switch(status) {
+        case 'open':
+            return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
+        case 'in_review':
+            return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
+        case 'needs_info':
+            return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300';
+        case 'resolved_refunded':
+            return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
+        case 'resolved_denied':
+            return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300';
+        case 'closed':
+            return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300';
+        default:
+            return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300';
+    }
+}
+
+// ========================================
+// MODIFICATIONS TO EXISTING FUNCTIONS
+// ========================================
+
+// Modify rowHTML function to add dispute buttons for buyers
+// We'll wrap the existing rowHTML function
+const originalRowHTML = window.rowHTML || rowHTML;
+
+function enhancedRowHTML(b) {
+    const userRole = localStorage.getItem('user_role');
+    let actionButtons = '';
+    
+    // Get base HTML from original function
+    let baseHTML = originalRowHTML(b);
+    
+    // If this is a buyer and booking is completed, add dispute button
+    if (userRole === 'buyer' && b.status === 'completed') {
+        // Check if dispute already exists for this booking
+        const hasDispute = window.myDisputes && window.myDisputes.some(d => d.booking_id === b.id);
+        
+        if (!hasDispute) {
+            // Add dispute button
+            const disputeButton = `
+                <button class="open-dispute-btn inline-flex items-center gap-1 text-white bg-red-600 hover:bg-red-700 font-medium rounded-lg text-xs px-3 py-1.5 transition ml-2"
+                        data-booking-id="${b.id}"
+                        data-booking-title="${b.listing_title || 'Booking'}"
+                        type="button"
+                        title="Open a dispute for this booking">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.73-.833-2.464 0L4.196 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                    </svg>
+                    Dispute
+                </button>
+            `;
+            
+            // Insert the dispute button into the base HTML
+            // We'll need to modify this carefully
+            baseHTML = baseHTML.replace('</div>\n            </td>', `${disputeButton}\n                </div>\n            </td>`);
+        } else {
+            // Show dispute indicator
+            const disputeIndicator = `
+                <span class="inline-flex items-center gap-1 bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300 font-medium rounded-lg text-xs px-2 py-1 ml-2">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.73-.833-2.464 0L4.196 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                    </svg>
+                    Dispute Filed
+                </span>
+            `;
+            
+            baseHTML = baseHTML.replace('</div>\n            </td>', `${disputeIndicator}\n                </div>\n            </td>`);
+        }
+    }
+    
+    return baseHTML;
+}
+
+
+// Setup open dispute modal for buyers
+function setupBuyerDisputeModal() {
+    const openDisputeForm = document.getElementById('open-dispute-form');
+    if (openDisputeForm) {
+        openDisputeForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const bookingId = document.getElementById('disputeBookingId').value;
+            const reason = document.getElementById('disputeReason').value;
+            
+            if (!bookingId || !reason.trim()) {
+                alert('Please provide a reason for the dispute.');
+                return;
+            }
+            
+            const payload = {
+                booking_id: bookingId,
+                reason: reason.trim()
+            };
+            
+            try {
+                await apiOpenDispute(payload);
+                alert('Dispute opened successfully! Our team will review it soon.');
+                
+                // Close modal
+                const modal = document.getElementById('openDisputeModal');
+                modal.classList.add('hidden');
+                modal.style.display = 'none';
+                modal.setAttribute('aria-hidden', 'true');
+                
+                // Reset form
+                document.getElementById('disputeReason').value = '';
+                
+                // Reload bookings to update UI
+                await loadBookings();
+                
+                // Reload user disputes
+                window.myDisputes = await apiGetMyDisputes();
+                
+            } catch (err) {
+                alert('Error opening dispute: ' + err.message);
+            }
+        });
+    }
+    
+    // Add click handlers for open dispute buttons (added dynamically)
+    document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('open-dispute-btn') || e.target.closest('.open-dispute-btn')) {
+            const button = e.target.classList.contains('open-dispute-btn') ? e.target : e.target.closest('.open-dispute-btn');
+            const bookingId = button.getAttribute('data-booking-id');
+            const bookingTitle = button.getAttribute('data-booking-title');
+            
+            // Set booking info in modal
+            document.getElementById('disputeBookingId').value = bookingId;
+            document.getElementById('disputeBookingInfo').textContent = bookingTitle;
+            
+            // Show modal
+            const modal = document.getElementById('openDisputeModal');
+            modal.classList.remove('hidden');
+            modal.style.display = 'flex';
+            modal.setAttribute('aria-hidden', 'false');
+        }
+    });
+}
+
+async function initDisputesSystem() {
+    await initDisputes();
+    setupBuyerDisputeModal();
+}
+
+// Add these functions to window for modal button access
+window.openResolutionModal = openResolutionModal;
+window.updateDisputeStatus = updateDisputeStatus;
+window.closeDispute = closeDispute;
+
+
+// Verification check function
+async function checkProviderVerification() {
+    try {
+        // Step 1: Check if user has a provider profile
+        let profile;
+        try {
+            profile = await apiGetMyProviderProfile();
+        } catch (error) {
+            // 404 means no profile exists
+            if (error.message.includes('404') || error.message.includes('Provider profile not found')) {
+                return {
+                    action_required: 'create_profile',
+                    message: 'You need to create a provider profile first.'
+                };
+            }
+            throw error;
+        }
+        
+        // Step 2: Check verification status
+        const verifications = await apiGetMyVerifications();
+        
+        // Check if there's a verified verification
+        const isVerified = profile.verification_status === 'verified';
+        const hasPendingVerification = verifications.some(v => v.status === 'pending');
+        
+        if (!isVerified) {
+            if (hasPendingVerification) {
+                return {
+                    action_required: 'verification_pending',
+                    message: 'Your verification request is pending review.',
+                    profile: profile
+                };
+            } else {
+                return {
+                    action_required: 'request_verification',
+                    message: 'You need to request verification.',
+                    profile: profile
+                };
+            }
+        }
+        
+        // User is verified
+        return {
+            action_required: null,
+            is_verified: true,
+            profile: profile
+        };
+        
+    } catch (err) {
+        console.error("Failed to check verification status:", err);
+        throw err;
+    }
+}
+
+// Modal functions
+function showProfileCreationModal() {
+    // Create modal HTML if it doesn't exist
+    if (!document.getElementById('profileCreationModal')) {
+        const modalHtml = `
+            <div id="profileCreationModal"
+                 class="hidden overflow-y-auto overflow-x-hidden fixed inset-0 z-50 flex justify-center items-center bg-black/40">
+                <div class="relative p-4 w-full max-w-md">
+                    <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+                        <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                                Create Provider Profile
+                            </h3>
+                            <button type="button"
+                                    class="text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-lg text-sm p-1.5 close-profile-modal">
+                                X
+                            </button>
+                        </div>
+                        <div class="p-6">
+                            <p class="text-gray-600 dark:text-gray-400 mb-4">
+                                You need to create a provider profile before you can create listings.
+                            </p>
+                            <form id="profile-creation-form" class="space-y-4">
+                                <div>
+                                    <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                                        Payout Account Reference (Optional)
+                                    </label>
+                                    <input type="text"
+                                           name="payout_account_ref"
+                                           class="bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-sm rounded-lg block w-full p-2.5 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                                           placeholder="e.g., Stripe account ID, bank account info">
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                        This is where your earnings will be sent. You can update it later.
+                                    </p>
+                                </div>
+                                <button type="submit"
+                                        class="w-full text-white bg-blue-600 hover:bg-blue-700 font-medium rounded-lg text-sm px-4 py-2.5 transition">
+                                    Create Profile & Request Verification
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+    }
+    
+    // Show modal
+    const modal = document.getElementById('profileCreationModal');
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+    
+    // Add close functionality
+    modal.querySelector('.close-profile-modal').onclick = () => {
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
+    };
+    
+    // Add form submission
+    const form = document.getElementById('profile-creation-form');
+    if (form) {
+        // Remove any existing listeners
+        form.onsubmit = null;
+        
+        form.onsubmit = async (e) => {
+            e.preventDefault();
+            const formData = new FormData(form);
+            
+            try {
+                // Create profile
+                const profile = await apiCreateProviderProfile({
+                    payout_account_ref: formData.get('payout_account_ref') || null
+                });
+                
+                // Auto-create verification request
+                await apiRequestVerification({
+                    subject_type: "provider",
+                    subject_id: profile.id,
+                    notes: "Auto-created with profile"
+                });
+                
+                alert('Profile created successfully! A verification request has been submitted.');
+                modal.classList.add('hidden');
+                modal.style.display = 'none';
+                
+                // Refresh page to update UI
+                location.reload();
+                
+            } catch (err) {
+                alert('Error creating profile: ' + err.message);
+            }
+        };
+    }
+}
+
+function showVerificationRequestModal(profileId) {
+    // Create modal HTML if it doesn't exist
+    if (!document.getElementById('verificationRequestModal')) {
+        const modalHtml = `
+            <div id="verificationRequestModal"
+                 class="hidden overflow-y-auto overflow-x-hidden fixed inset-0 z-50 flex justify-center items-center bg-black/40">
+                <div class="relative p-4 w-full max-w-md">
+                    <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+                        <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                                Request Verification
+                            </h3>
+                            <button type="button"
+                                    class="text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-lg text-sm p-1.5 close-verification-modal">
+                                X
+                            </button>
+                        </div>
+                        <div class="p-6">
+                            <p class="text-gray-600 dark:text-gray-400 mb-4">
+                                You need to be verified as a provider before you can create listings.
+                                Please submit a verification request.
+                            </p>
+                            <form id="verification-request-form" class="space-y-4">
+                                <div>
+                                    <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                                        Notes (Optional)
+                                    </label>
+                                    <textarea name="notes"
+                                              rows="3"
+                                              class="bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-sm rounded-lg block w-full p-2.5 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                                              placeholder="Add any notes that might help with verification..."></textarea>
+                                </div>
+                                <button type="submit"
+                                        class="w-full text-white bg-green-600 hover:bg-green-700 font-medium rounded-lg text-sm px-4 py-2.5 transition">
+                                    Submit Verification Request
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+    }
+    
+    // Show modal
+    const modal = document.getElementById('verificationRequestModal');
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+    
+    // Add close functionality
+    modal.querySelector('.close-verification-modal').onclick = () => {
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
+    };
+    
+    // Add form submission
+    const form = document.getElementById('verification-request-form');
+    if (form) {
+        // Remove any existing listeners
+        form.onsubmit = null;
+        
+        form.onsubmit = async (e) => {
+            e.preventDefault();
+            const formData = new FormData(form);
+            
+            try {
+                await apiRequestVerification({
+                    subject_type: "provider",
+                    subject_id: profileId,
+                    notes: formData.get('notes') || null
+                });
+                
+                alert('Verification request submitted successfully! Our team will review it soon.');
+                modal.classList.add('hidden');
+                modal.style.display = 'none';
+                
+                // Refresh page to update UI
+                location.reload();
+                
+            } catch (err) {
+                alert('Error submitting verification request: ' + err.message);
+            }
+        };
+    }
+}
+
+// Add click handler for create listing button
+function setupCreateListingButton() {
+    const openCreateListingBtn = document.getElementById('openCreateListingModal');
+    
+    if (openCreateListingBtn) {
+        // Remove any existing listeners
+        openCreateListingBtn.onclick = null;
+        
+        openCreateListingBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            
+            try {
+                const result = await checkProviderVerification();
+                
+                if (result.action_required === 'create_profile') {
+                    showProfileCreationModal();
+                } else if (result.action_required === 'request_verification') {
+                    showVerificationRequestModal(result.profile.id);
+                } else if (result.action_required === 'verification_pending') {
+                    alert('Your verification request is pending review. You cannot create listings until you are verified. Please check back later.');
+                } else if (result.is_verified) {
+                    // Show the listing creation modal
+                    const modal = document.getElementById('createListingModal');
+                    if (modal) {
+                        modal.classList.remove('hidden');
+                        modal.style.display = 'flex';
+                        modal.setAttribute('aria-hidden', 'false');
+                    }
+                }
+            } catch (err) {
+                console.error('Error checking verification:', err);
+                alert('Error checking verification status: ' + err.message);
+            }
+        });
+    }
+}

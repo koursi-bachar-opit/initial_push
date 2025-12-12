@@ -51,10 +51,10 @@ def delete_machine(
 ):
     try:
         service.delete_machine(machine_id, provider_id=user.id)
-    #except MachineNotFoundError:
+    #consider: except MachineNotFoundError:
     except ValueError as e:
         raise HTTPException(404, "Machine not found")
-    #except NotProviderMachineError:
+    #consider: except NotProviderMachineError:
     except ValueError as e:
         raise HTTPException(403, "Not allowed")
 

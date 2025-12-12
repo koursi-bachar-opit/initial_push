@@ -13,8 +13,8 @@ router = APIRouter()
 #Provider upload
 router = APIRouter()
 
-@router.post("/machines/{machine_id}", response_model=BenchmarkRead)
-def upload_machine_benchmark(
+@router.post("/machines/{machine_id}", response_model=BenchmarkRead, status_code=201)
+def create_machine_benchmark(
     machine_id: UUID,
     benchmark: BenchmarkCreate,  # Change to accept BenchmarkCreate schema
     user: User = Depends(get_current_user),

@@ -87,3 +87,14 @@ class BookingsRepository:
             .order_by(Booking.start_time.asc())
             .all()
         )
+    
+    def list_bookings_for_organization(self, db: Session, org_id: UUID):
+        """
+        List all bookings for a specific organization.
+        """
+        return (
+            db.query(Booking)
+            .filter(Booking.organization_id == org_id)
+            .order_by(Booking.created_at.desc())
+            .all()
+        )

@@ -1,8 +1,8 @@
 """New domain models
 
-Revision ID: 1d9b2341166f
+Revision ID: a674ecd8b079
 Revises: 
-Create Date: 2025-12-06 07:59:20.669454
+Create Date: 2025-12-11 09:00:27.362343
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '1d9b2341166f'
+revision: str = 'a674ecd8b079'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -26,8 +26,8 @@ def upgrade() -> None:
     sa.Column('name', sa.String(), nullable=False),
     sa.Column('billing_email', sa.String(), nullable=False),
     sa.Column('status', sa.Enum('ACTIVE', 'SUSPENDED', 'CLOSED', name='organizationstatus'), nullable=True),
-    sa.Column('created_at', sa.DateTime(), nullable=True),
-    sa.Column('updated_at', sa.DateTime(), nullable=True),
+    sa.Column('created_at', sa.DateTime(timezone=True), nullable=True),
+    sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('users',
@@ -48,7 +48,7 @@ def upgrade() -> None:
     sa.Column('total_amount', sa.Numeric(precision=18, scale=2), nullable=False),
     sa.Column('currency', sa.String(length=3), nullable=False),
     sa.Column('status', sa.Enum('PENDING', 'FINALIZED', 'PAID', 'VOID', name='invoice_status'), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
     sa.ForeignKeyConstraint(['organization_id'], ['organizations.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
@@ -69,29 +69,31 @@ def upgrade() -> None:
     sa.Column('storage_gb', sa.Integer(), nullable=False),
     sa.Column('network_mbps', sa.Integer(), nullable=False),
     sa.Column('notes', sa.String(), nullable=True),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
     sa.ForeignKeyConstraint(['provider_id'], ['users.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_machines_provider_id'), 'machines', ['provider_id'], unique=False)
     op.create_table('organization_memberships',
     sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('organization_id', sa.UUID(), nullable=True),
+    sa.Column('organization_id', sa.UUID(), nullable=False),
     sa.Column('user_id', sa.UUID(), nullable=False),
     sa.Column('org_role', sa.Enum('ADMIN', 'MEMBER', name='orgrole'), nullable=True),
-    sa.Column('created_at', sa.DateTime(), nullable=True),
-    sa.ForeignKeyConstraint(['organization_id'], ['organizations.id'], ),
-    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+    sa.Column('created_at', sa.DateTime(timezone=True), nullable=True),
+    sa.ForeignKeyConstraint(['organization_id'], ['organizations.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
+    op.create_index(op.f('ix_organization_memberships_organization_id'), 'organization_memberships', ['organization_id'], unique=False)
+    op.create_index(op.f('ix_organization_memberships_user_id'), 'organization_memberships', ['user_id'], unique=False)
     op.create_table('provider_profiles',
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('user_id', sa.UUID(), nullable=False),
     sa.Column('verification_status', sa.Enum('PENDING', 'VERIFIED', 'REJECTED', name='provider_verification_status'), nullable=False),
     sa.Column('payout_account_ref', sa.String(), nullable=True),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('user_id')
@@ -102,8 +104,8 @@ def upgrade() -> None:
     sa.Column('subject_id', sa.UUID(), nullable=False),
     sa.Column('status', sa.Enum('PENDING', 'VERIFIED', 'REJECTED', name='verification_status'), nullable=False),
     sa.Column('performed_by_admin_id', sa.UUID(), nullable=True),
-    sa.Column('notes', sa.String(), nullable=True),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('notes', sa.Text(), nullable=True),
+    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
     sa.ForeignKeyConstraint(['performed_by_admin_id'], ['users.id'], ondelete='SET NULL'),
     sa.PrimaryKeyConstraint('id')
     )
@@ -111,8 +113,15 @@ def upgrade() -> None:
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('machine_id', sa.UUID(), nullable=False),
     sa.Column('title', sa.String(), nullable=False),
-    sa.Column('price', sa.Float(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('description', sa.Text(), nullable=True),
+    sa.Column('hourly_price', sa.Numeric(precision=10, scale=2), nullable=False),
+    sa.Column('daily_price', sa.Numeric(precision=10, scale=2), nullable=True),
+    sa.Column('monthly_price', sa.Numeric(precision=10, scale=2), nullable=True),
+    sa.Column('currency', sa.String(length=3), nullable=False),
+    sa.Column('availability_status', sa.Enum('DRAFT', 'ACTIVE', 'INACTIVE', 'ARCHIVED', name='listing_status'), nullable=False),
+    sa.Column('cancellation_policy', sa.String(length=50), nullable=True),
+    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
     sa.ForeignKeyConstraint(['machine_id'], ['machines.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
@@ -120,7 +129,7 @@ def upgrade() -> None:
     op.create_table('metric_samples',
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('machine_id', sa.UUID(), nullable=False),
-    sa.Column('recorded_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('recorded_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('gpu_util', sa.Float(), nullable=True),
     sa.Column('cpu_util', sa.Float(), nullable=True),
     sa.Column('mem_used_gb', sa.Float(), nullable=True),
@@ -130,7 +139,6 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_metric_samples_machine_id'), 'metric_samples', ['machine_id'], unique=False)
-    op.create_index('ix_metric_samples_machine_time', 'metric_samples', ['machine_id', 'recorded_at'], unique=False)
     op.create_index(op.f('ix_metric_samples_recorded_at'), 'metric_samples', ['recorded_at'], unique=False)
     op.create_table('bookings',
     sa.Column('id', sa.UUID(), nullable=False),
@@ -139,12 +147,14 @@ def upgrade() -> None:
     sa.Column('organization_id', sa.UUID(), nullable=True),
     sa.Column('start_time', sa.DateTime(timezone=True), nullable=False),
     sa.Column('end_time', sa.DateTime(timezone=True), nullable=False),
-    sa.Column('total_price_estimate', sa.Float(), nullable=False),
-    sa.Column('actual_price_charged', sa.Float(), nullable=True),
-    sa.Column('usage_seconds', sa.Float(), nullable=True),
-    sa.Column('status', sa.Enum('REQUESTED', 'CONFIRMED', 'ACTIVE', 'COMPLETED', 'CANCELLED', name='bookingstatus', native_enum=False), nullable=False),
     sa.Column('active_session_start', sa.DateTime(timezone=True), nullable=True),
     sa.Column('active_session_end', sa.DateTime(timezone=True), nullable=True),
+    sa.Column('total_price_estimate', sa.Numeric(precision=10, scale=2), nullable=False),
+    sa.Column('actual_price_charged', sa.Numeric(precision=10, scale=2), nullable=True),
+    sa.Column('usage_seconds', sa.Numeric(precision=10, scale=2), nullable=True),
+    sa.Column('currency', sa.String(length=3), nullable=False),
+    sa.Column('status', sa.Enum('PENDING_PAYMENT', 'REQUESTED', 'CONFIRMED', 'ACTIVE', 'COMPLETED', 'CANCELLED', name='bookingstatus', native_enum=False), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
     sa.ForeignKeyConstraint(['buyer_user_id'], ['users.id'], ondelete='CASCADE'),
     sa.ForeignKeyConstraint(['listing_id'], ['listings.id'], ondelete='CASCADE'),
     sa.ForeignKeyConstraint(['organization_id'], ['organizations.id'], ondelete='SET NULL'),
@@ -161,17 +171,17 @@ def upgrade() -> None:
     sa.Column('score', sa.String(), nullable=False),
     sa.Column('methodology_uri', sa.String(), nullable=True),
     sa.Column('artifact_uri', sa.String(), nullable=True),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
-    sa.ForeignKeyConstraint(['listing_id'], ['listings.id'], ),
-    sa.ForeignKeyConstraint(['machine_id'], ['machines.id'], ),
+    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.ForeignKeyConstraint(['listing_id'], ['listings.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['machine_id'], ['machines.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('access_credentials',
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('booking_id', sa.UUID(), nullable=False),
-    sa.Column('vpn_config_uri', sa.String(), nullable=True),
-    sa.Column('ssh_public_key_fingerprint', sa.String(), nullable=True),
-    sa.Column('issued_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('vpn_config_uri', sa.String(), nullable=False),
+    sa.Column('ssh_public_key_fingerprint', sa.String(), nullable=False),
+    sa.Column('issued_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('revoked_at', sa.DateTime(timezone=True), nullable=True),
     sa.ForeignKeyConstraint(['booking_id'], ['bookings.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
@@ -196,9 +206,9 @@ def upgrade() -> None:
     sa.Column('type', sa.Enum('ESCROW', 'CAPTURE', 'REFUND', name='payment_type_enum'), nullable=False),
     sa.Column('processor_ref', sa.String(), nullable=False),
     sa.Column('amount', sa.Numeric(precision=10, scale=2), nullable=False),
-    sa.Column('currency', sa.String(), nullable=False),
+    sa.Column('currency', sa.String(length=3), nullable=False),
     sa.Column('status', sa.Enum('AUTHORIZED', 'CAPTURED', 'REFUNDED', 'FAILED', 'CANCELLED', name='payment_status_enum'), nullable=False),
-    sa.Column('created_at', sa.DateTime(), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
     sa.ForeignKeyConstraint(['booking_id'], ['bookings.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
@@ -210,7 +220,7 @@ def upgrade() -> None:
     sa.Column('method', sa.String(), nullable=False),
     sa.Column('evidence_uri', sa.String(), nullable=True),
     sa.Column('notes', sa.String(), nullable=True),
-    sa.Column('attested_at', sa.DateTime(), nullable=True),
+    sa.Column('attested_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('status', sa.Enum('PENDING', 'VERIFIED', 'REJECTED', name='wipereviewstatus'), nullable=False),
     sa.ForeignKeyConstraint(['booking_id'], ['bookings.id'], ondelete='CASCADE'),
     sa.ForeignKeyConstraint(['machine_id'], ['machines.id'], ondelete='CASCADE'),
@@ -235,13 +245,14 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_bookings_buyer_user_id'), table_name='bookings')
     op.drop_table('bookings')
     op.drop_index(op.f('ix_metric_samples_recorded_at'), table_name='metric_samples')
-    op.drop_index('ix_metric_samples_machine_time', table_name='metric_samples')
     op.drop_index(op.f('ix_metric_samples_machine_id'), table_name='metric_samples')
     op.drop_table('metric_samples')
     op.drop_index(op.f('ix_listings_machine_id'), table_name='listings')
     op.drop_table('listings')
     op.drop_table('verifications')
     op.drop_table('provider_profiles')
+    op.drop_index(op.f('ix_organization_memberships_user_id'), table_name='organization_memberships')
+    op.drop_index(op.f('ix_organization_memberships_organization_id'), table_name='organization_memberships')
     op.drop_table('organization_memberships')
     op.drop_index(op.f('ix_machines_provider_id'), table_name='machines')
     op.drop_table('machines')

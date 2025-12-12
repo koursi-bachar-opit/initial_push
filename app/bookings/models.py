@@ -1,13 +1,15 @@
-from sqlalchemy import Column, Float, DateTime, ForeignKey, Enum as SQLEnum, func
+from sqlalchemy import Column, Float, DateTime, ForeignKey, Enum as SQLEnum, Numeric, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from enum import Enum
 import uuid
 
 from app.database import Base
+from datetime import datetime, timezone
 
 
 class BookingStatus(str, Enum):
+    PENDING_PAYMENT = "pending_payment"
     REQUESTED = "requested"
     CONFIRMED = "confirmed"
     ACTIVE = "active"
@@ -23,7 +25,6 @@ class Booking(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
-    #Link buyer_user_id to buyer's account creds
     buyer_user_id = Column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
@@ -38,36 +39,53 @@ class Booking(Base):
         index=True,
     )
 
-    organization_id = Column(  #NEW LINE
-        UUID(as_uuid=True),  #NEW LINE
-        ForeignKey("organizations.id", ondelete="SET NULL"),  #NEW LINE
-        nullable=True,  #NEW LINE
-        index=True,  #NEW LINE
-    )  #NEW LINE
+    organization_id = Column(  
+        UUID(as_uuid=True),  
+        ForeignKey("organizations.id", ondelete="SET NULL"),  
+        nullable=True,  
+        index=True,  
+    )
 
     #Booking window
     start_time = Column(DateTime(timezone=True), nullable=False)
     end_time = Column(DateTime(timezone=True), nullable=False)
 
-    #Pricing
-    total_price_estimate = Column(Float, nullable=False)
-    actual_price_charged = Column(Float, nullable=True)
-    usage_seconds = Column(Float, nullable=True)
+    #Session window for active state
+    active_session_start = Column(DateTime(timezone=True), nullable=True)
+    active_session_end = Column(DateTime(timezone=True), nullable=True)
 
-    #Enum value stored as VARCHAR data
+    #Pricing
+    total_price_estimate = Column(
+        Numeric(precision=10, scale=2),
+        nullable=False
+    )
+
+    #Final values for usage and price
+    actual_price_charged = Column(
+        Numeric(precision=10, scale=2), 
+        nullable=True
+        )
+    usage_seconds = Column(Numeric(precision=10, scale=2), nullable=True)
+
+    currency = Column(String(length=3), nullable=False, default="USD")
+
+    #refactor: default status pending_payment
     status = Column(
         SQLEnum(BookingStatus, name="bookingstatus", native_enum=False),
         nullable=False,
         default=BookingStatus.REQUESTED,
     )
 
-    #Session window for active state
-    active_session_start = Column(DateTime(timezone=True), nullable=True)
-    active_session_end = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False
+    )
 
     #Relationships
     listing = relationship("Listing", back_populates="bookings")
-    buyer = relationship("User")
+    buyer = relationship("User", back_populates="bookings")
+    organization = relationship("Organization", back_populates="bookings")
 
     access_credentials = relationship(
         "AccessCredential",
@@ -82,7 +100,19 @@ class Booking(Base):
         cascade="all, delete-orphan"
     )
 
+    payments = relationship(
+        "Payment",
+        back_populates="booking",
+        cascade="all, delete-orphan"
+    )
 
+    disputes = relationship(
+        "Dispute",
+        back_populates="booking",
+        cascade="all, delete-orphan"
+    )
+
+    #consider: document or refactor
     """
     Additional temporary computed fields for API responses 
     """

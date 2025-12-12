@@ -58,19 +58,19 @@ def test_payments_public_delegates_to_service():
 
     reason = "Customer requested refund"
     mock_service.refund.return_value = mock_payment
-    result = public_impl.refund_for_booking(mock_booking, reason)
+    result = public_impl.refund_for_booking(mock_booking.id, reason)
     assert result == mock_payment
-    mock_service.refund.assert_called_once_with(booking=mock_booking, reason=reason)
+    mock_service.refund.assert_called_once_with(booking_id=mock_booking.id, reason=reason)
     
     mock_service.reset_mock()
+    mock_booking.id = uuid4()
     
     mock_service.refund.return_value = mock_payment
-    result = public_impl.refund_for_booking(mock_booking)
+    result = public_impl.refund_for_booking(mock_booking.id)
     assert result == mock_payment
-    mock_service.refund.assert_called_once_with(booking=mock_booking, reason=None)
+    mock_service.refund.assert_called_once_with(booking_id=mock_booking.id, reason=None)
     
     mock_service.reset_mock()
-    
     booking_id = uuid4()
     mock_payments = [Mock(spec=Payment), Mock(spec=Payment)]
     
