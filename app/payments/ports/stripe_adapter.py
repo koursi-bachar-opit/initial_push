@@ -249,7 +249,7 @@ class MockStripeAdapter(PaymentPort):
     def capture(self, *, processor_ref) -> None:
         return None
 
-    def refund(self, *, processor_ref, amount) -> None:
+    def refund(self, *, processor_ref, amount) -> str:
         return None
     
     def cancel_payment_intent(self, *, processor_ref) -> None:
