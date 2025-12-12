@@ -58,8 +58,15 @@ def create_checkout(
     try:
         base_url = str(request.base_url) if request else "http://localhost:8000"
         
+        # success_url = (
+        #     f"{base_url}payments/success"
+        #     f"?session_id={{CHECKOUT_SESSION_ID}}"
+        #     f"&booking_id={checkout_data.booking_id}"
+        #     f"&amount={checkout_data.amount}"
+        #     f"&currency={checkout_data.currency}"
+        # )
         success_url = (
-            f"{base_url}payments/success"
+            f"{base_url}api/v1/payments/success"
             f"?session_id={{CHECKOUT_SESSION_ID}}"
             f"&booking_id={checkout_data.booking_id}"
             f"&amount={checkout_data.amount}"
@@ -67,7 +74,8 @@ def create_checkout(
         )
 
         #consider: old text: success_url = f"{base_url}payments/success?session_id={{CHECKOUT_SESSION_ID}}&booking_id={checkout_data.booking_id}"
-        cancel_url = f"{base_url}payments/cancel?booking_id={checkout_data.booking_id}"
+        #cancel_url = f"{base_url}payments/cancel?booking_id={checkout_data.booking_id}"
+        cancel_url = f"{base_url}api/v1/payments/cancel?booking_id={checkout_data.booking_id}"
         
         result = payments_service.create_checkout_session(
             booking_id=str(checkout_data.booking_id),
