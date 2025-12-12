@@ -6,7 +6,7 @@ def listing_payload(machine_id, **overrides):
     base = {
         "title": TestConfig.DEFAULT_LISTING_TITLE,
         "description": "Default Description", 
-        "price": TestConfig.DEFAULT_LISTING_PRICE,
+        "hourly_price": TestConfig.DEFAULT_LISTING_PRICE,
         "machine_id": machine_id,
     }
     base.update(overrides)
