@@ -40,29 +40,29 @@ import {
     apiRequestVerification,
 } from "./api.js";
 
-//body targets
+// body targets
 const pendingBody = document.getElementById("pendingBody");
 const pastBody = document.getElementById("pastBody");
 
-//dashboard stats
+// dashboard stats
 const statTotal = document.getElementById("stat-total");
 const statPending = document.getElementById("stat-pending");
 const statActive = document.getElementById("stat-active");
 const statPast = document.getElementById("stat-past");
 
-//listing form (provider access only)
+// listing form (provider access only)
 const createListingForm = document.getElementById("create-listing-form");
 const machineSelect = document.getElementById("machineSelect");
 const openCreateListingBtn = document.getElementById("openCreateListingModal");
 const noMachinesWarning = document.getElementById("no-machines-warning");
 
-//machine form
+// machine form
 const createMachineForm = document.getElementById("create-machine-form");
 
-//admin elements
+// admin elements
 const providersContainer = document.getElementById("providers-container");
 
-//internal machine cache
+// internal machine cache
 let machines = [];
 let allProviders = [];
 
@@ -147,7 +147,7 @@ async function loadUserDashboard() {
                 hourly_price: Number(fd.get("price")),
             };
 
-            console.log("Creating listing with payload:", payload); //debug logging
+            console.log("Creating listing with payload:", payload); // debug logging
 
             try {
                 await apiCreateListing(payload);
@@ -159,7 +159,7 @@ async function loadUserDashboard() {
                     ?.click();
 
                 createListingForm.reset();
-                location.reload(); //reload to update tables
+                location.reload(); // reload to update tables
             } catch (err) {
                 alert("Error: " + err.message);
             }
@@ -462,7 +462,7 @@ function setupBenchmarkForm() {
     });
 }
 
-//Load bookings
+// Load bookings
 async function loadBookings() {
     let bookings = [];
 
@@ -614,7 +614,7 @@ function showCredentialsModal(bookingId) {
                     });
             };
             
-            // MANUALLY SHOW THE MODAL (since Flowbite auto-init isn't working)
+            // Manually show the Modal (Flowbite auto-init not functional)
             const modal = document.getElementById('credentialsModal');
             modal.classList.remove('hidden');
             modal.style.display = 'flex';
@@ -684,7 +684,7 @@ function showWipeVerificationModal(bookingId) {
         </div>
     `;
     
-    // Show modal immediately - MANUALLY
+    // Show modal immediately - manually
     modal.classList.remove('hidden');
     modal.style.display = 'flex';
     modal.setAttribute('aria-hidden', 'false');
@@ -1035,7 +1035,7 @@ function rowHTML(b) {
                 </button>
             `;
             
-            // ADD DISPUTE BUTTON FOR BUYERS ON COMPLETED BOOKINGS
+            // Add dispute button for buyers on completed bookings
             // Check if dispute already exists
             const hasDispute = window.myDisputes && window.myDisputes.some(d => d.booking_id === b.id);
             
@@ -1197,10 +1197,7 @@ function renderWipeAttestations(attestations) {
         } else {
             evidenceLink.parentElement.style.display = 'none';
         }
-        
-        // Notes
-        const notesContent = row.querySelector('.notes-content');
-        notesContent.textContent = attestation.notes || 'No notes provided';
+    
         
         // Buttons
         const verifyBtn = row.querySelector('.verify-attestation-btn');
@@ -1352,13 +1349,6 @@ async function showAttestationDetails(attestationId, isAdmin = false) {
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </div>
-                
-                <div>
-                    <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-2">Notes</h4>
-                    <div class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                        <p class="text-gray-700 dark:text-gray-300">${attestation.notes || 'No notes provided.'}</p>
                     </div>
                 </div>
                 
@@ -1533,10 +1523,6 @@ function renderWipeHistory(attestations) {
             evidenceLink.textContent = 'View Evidence';
         }
         
-        // Notes
-        const notesContent = row.querySelector('.notes-content');
-        notesContent.textContent = attestation.notes || 'No notes provided';
-        
         // Details button - store attestation ID, not booking ID
         const detailsBtn = row.querySelector('.view-attestation-details-btn');
         detailsBtn.setAttribute('data-attestation-id', attestation.id);
@@ -1584,7 +1570,7 @@ function showProviderAttestationModal(bookingId) {
         modalTitle.textContent = 'Wipe Attestation Details';
     }
     
-    // Show modal immediately - MANUALLY since Flowbite might not be initialized
+    // Show modal immediately - Manually since Flowbite might not be initialized
     modal.classList.remove('hidden');
     modal.style.display = 'flex';
     modal.setAttribute('aria-hidden', 'false');
@@ -1687,7 +1673,7 @@ function showProviderAttestationModal(bookingId) {
                                                         ? 'Your wipe attestation is being reviewed by our compliance team.' 
                                                         : data.status === 'verified'
                                                         ? 'Your wipe attestation has been verified and approved.'
-                                                        : 'Your wipe attestation was rejected. Please check the notes and resubmit if needed.'
+                                                        : 'Your wipe attestation was rejected. Please resubmit if needed.'
                                                 }
                                             </p>
                                         </div>
@@ -1696,14 +1682,7 @@ function showProviderAttestationModal(bookingId) {
                             </div>
                         </div>
                     </div>
-                    
-                    <div>
-                        <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-2">Notes & Additional Information</h4>
-                        <div class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                            <p class="text-gray-700 dark:text-gray-300">${data.notes || 'No additional notes provided.'}</p>
-                        </div>
-                    </div>
-                    
+
                     <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
                         <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-2">Compliance Information</h4>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1978,7 +1957,7 @@ function setupOrgManagementTabs() {
 }
 
 
-// dashboard.js - Complete renderOrgMembers function
+// Complete renderOrgMembers function
 function renderOrgMembers() {
     const container = document.getElementById('orgMembersContainer');
     if (!container) return;
@@ -2459,7 +2438,6 @@ function getUsageTierColor(tier) {
     return colors[tier] || 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300';
 }
 
-// Add these helper functions at the top or bottom of dashboard.js
 
 function capitalizeFirst(string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
@@ -2514,7 +2492,7 @@ function openAddMemberModal() {
     document.getElementById('addMemberUserId').value = '';
     document.getElementById('addMemberRole').value = 'member';
     
-    // Show modal manually (since Flowbite might not work)
+    // Show modal manually (Flowbite not functional)
     const modal = document.getElementById('addMemberModal');
     if (modal) {
         modal.classList.remove('hidden');
@@ -2675,7 +2653,7 @@ function renderDisputes() {
         const clone = template.content.cloneNode(true);
         const row = clone.firstElementChild;
         
-        // Fill dispute data - SAFELY handle undefined/null
+        // Fill dispute data - safely handle undefined/null
         row.querySelector('.dispute-booking-id').textContent = `#${dispute.booking_id ? dispute.booking_id.substring(0, 8) + '...' : 'N/A'}`;
         
         // Handle opened_by_user safely
@@ -2769,8 +2747,6 @@ function renderDisputes() {
 
 // Update dispute statistics
 function updateDisputeStats() {
-    console.log('Updating dispute stats...');   //
-    console.log('All disputes:', currentDisputes);  //
 
     const stats = {
         open: 0,
@@ -2781,8 +2757,6 @@ function updateDisputeStats() {
     };
     
     currentDisputes.forEach(dispute => {
-        console.log(`Dispute ${dispute.id}: status = ${dispute.status}`);   //
-
         if (!dispute.status) return;
         
         const status = dispute.status.toLowerCase();
@@ -2810,10 +2784,7 @@ function updateDisputeStats() {
 
 // Check for disputes on bookings and update UI
 async function checkBookingDisputes() {
-    // This function updates the bookings table with dispute indicators
-    // We'll modify the rowHTML function instead
-    
-    // For now, we'll just load disputes for the current user
+    // Updates the bookings table with dispute indicators
     const userRole = localStorage.getItem('user_role');
     if (userRole === 'buyer') {
         try {
@@ -3099,10 +3070,7 @@ function getDisputeStatusColor(status) {
     }
 }
 
-// ========================================
-// MODIFICATIONS TO EXISTING FUNCTIONS
-// ========================================
-
+// consider: legacy
 // Modify rowHTML function to add dispute buttons for buyers
 // We'll wrap the existing rowHTML function
 const originalRowHTML = window.rowHTML || rowHTML;
@@ -3135,7 +3103,6 @@ function enhancedRowHTML(b) {
             `;
             
             // Insert the dispute button into the base HTML
-            // We'll need to modify this carefully
             baseHTML = baseHTML.replace('</div>\n            </td>', `${disputeButton}\n                </div>\n            </td>`);
         } else {
             // Show dispute indicator
@@ -3226,7 +3193,6 @@ async function initDisputesSystem() {
     setupBuyerDisputeModal();
 }
 
-// Add these functions to window for modal button access
 window.openResolutionModal = openResolutionModal;
 window.updateDisputeStatus = updateDisputeStatus;
 window.closeDispute = closeDispute;

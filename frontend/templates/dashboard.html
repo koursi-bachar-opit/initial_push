@@ -44,10 +44,6 @@
 {% endif %}
 
 
-
-
-<!--  -->
-
 {% if user.role == "admin" %}
 
 <!--Admin Provider Management Section-->
@@ -129,10 +125,6 @@
                         <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Evidence: <a href="#" target="_blank" class="evidence-link text-blue-600 dark:text-blue-400 hover:underline">View</a></p>
                     </div>
                 </div>
-                <div class="mt-3 notes-section">
-                    <p class="text-sm text-gray-500 dark:text-gray-400">Notes</p>
-                    <p class="text-sm text-gray-700 dark:text-gray-300 notes-content">...</p>
-                </div>
             </div>
             <div class="ml-4 flex flex-col space-y-2">
                 <button class="verify-attestation-btn bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded text-xs font-medium transition">
@@ -183,7 +175,6 @@
     </div>
 </div>
 
-<!-- Add this AFTER the existing attestationDetailsModal -->
 <!-- Provider Booking Attestation Modal -->
 <div id="providerBookingAttestationModal"
      tabindex="-1"
@@ -248,14 +239,9 @@
 </template>
 
 {% endif %}
-<!--Stats (for buyers and providers)-->
+
+
 {% if user.role == "buyer" or user.role == "provider" %}
-
-
-<!--  -->
-
-
-
 <!--Stats(for buyers and providers)-->
 <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
     <div class="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
@@ -275,10 +261,6 @@
         <div id="stat-past" class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">0</div>
     </div>
 </div>
-
-<!--  -->
-
-
 {% endif %}
 
 <!-- Add after stats section, before tabs -->
@@ -303,7 +285,6 @@
 </div>
 
 <!-- Organization Management Section (for org admins) -->
-<!-- Find this section and remove the invite button -->
 <div id="orgManagementSection" class="mb-8 hidden">
     <h2 class="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Organization Management</h2>
     
@@ -421,10 +402,7 @@
 {% endif %}
 
 
-<!--Tabs (for buyers and providers)-->
 {% if user.role == "buyer" or user.role == "provider" %}
-<!--  -->
-
 <!--Tab Panels (for buyers and providers)-->
 <div class="mb-4 border-b border-gray-200 dark:border-gray-700">
     <ul class="flex flex-wrap -mb-px text-sm font-medium text-center text-gray-500 dark:text-gray-400"
@@ -500,15 +478,11 @@
     </div>
 
 </div>
-
-<!--  -->
-
 {% endif %}
 
-<!--  -->
 
-<!--PROVIDER: Create Listing Modal-->
 {% if user.role == "provider" %}
+<!--PROVIDER: Create Listing Modal-->
 <div id="createListingModal"
      tabindex="-1"
      aria-hidden="true"
@@ -530,7 +504,7 @@
 
             <form id="create-listing-form" class="p-6 space-y-4">
 
-                <!--NEW MACHINE SELECT-->
+                <!--New machine select-->
                 <div>
                     <label class="block mb-2 text-sm font-medium">Machine</label>
                     <select name="machine_id"
@@ -813,10 +787,6 @@
                             Evidence: <a href="#" target="_blank" class="evidence-link text-blue-600 dark:text-blue-400 hover:underline">View</a>
                         </p>
                     </div>
-                </div>
-                <div class="mt-3">
-                    <p class="text-sm text-gray-500 dark:text-gray-400">Notes</p>
-                    <p class="text-sm text-gray-700 dark:text-gray-300 notes-content">...</p>
                 </div>
             </div>
             <button class="ml-4 view-attestation-details-btn bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-xs font-medium transition"

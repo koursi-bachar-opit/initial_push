@@ -25,7 +25,7 @@ async function request(path, options = {}) {
         throw new Error(`${resp.status}: ${errorDetail}`);
     }
 
-    //for 204 no content responses, return null
+    // for 204 no content responses, return null
     if (resp.status === 204) {
         return null;
     }
@@ -87,7 +87,7 @@ export function apiCreateMachine(payload) {
     });
 }
 
-//Admin provider endpoints
+// Admin provider endpoints
 export async function apiGetProviders() {
     return request("/providers/admin/providers");
 }
@@ -97,9 +97,9 @@ export async function apiGetProviderStats() {
 }
 
 export async function apiVerifyProvider(providerId, status, notes = "") {
-    //First get the verification ID for this provider
+    // First get the verification ID for this provider
     const verifications = await request(`/providers/admin/providers/${providerId}/verifications`);
-    const latestVerification = verifications[0]; //Get the most recent verification
+    const latestVerification = verifications[0]; // Get the most recent verification
     
     if (!latestVerification) {
         throw new Error("No verification request found for this provider");
@@ -119,7 +119,7 @@ export function apiSearchListings(searchTerm) {
     return request(`/listings/search?name=${encodeURIComponent(searchTerm)}`);
 }
 
-//Advanced Listings Search with Filters
+// Advanced Listings search with filters
 export function apiSearchListingsWithFilters(filters = {}) {
     const params = new URLSearchParams();
     
@@ -267,7 +267,7 @@ export async function apiGetOrgStats(orgId) {
     }
 }
 
-// api.js - Add Member function using the request helper
+// Add Member function using the request helper
 export async function apiAddMember(orgId, payload) {
     return request(`/organizations/${orgId}/members`, {
         method: 'POST',
