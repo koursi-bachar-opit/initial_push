@@ -1,8 +1,8 @@
 """New domain models
 
-Revision ID: a674ecd8b079
+Revision ID: d8c0da1c1b21
 Revises: 
-Create Date: 2025-12-11 09:00:27.362343
+Create Date: 2025-12-13 07:26:36.992218
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'a674ecd8b079'
+revision: str = 'd8c0da1c1b21'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -219,7 +219,6 @@ def upgrade() -> None:
     sa.Column('machine_id', sa.UUID(), nullable=False),
     sa.Column('method', sa.String(), nullable=False),
     sa.Column('evidence_uri', sa.String(), nullable=True),
-    sa.Column('notes', sa.String(), nullable=True),
     sa.Column('attested_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('status', sa.Enum('PENDING', 'VERIFIED', 'REJECTED', name='wipereviewstatus'), nullable=False),
     sa.ForeignKeyConstraint(['booking_id'], ['bookings.id'], ondelete='CASCADE'),
