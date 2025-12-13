@@ -27,7 +27,7 @@ def create_test_machine_data(**overrides):
         return MachineCreate(**base)
 
 class TestMachinesRepository:
-    #def create_machine(self, db: Session, machine_data: MachineCreate):
+
     def test_create_machine_successfully_creates_machine(self):
         """Test that machine creation works with valid data"""
         #Mock the database session and create test data
@@ -46,7 +46,6 @@ class TestMachinesRepository:
         assert mock_db.refresh.called
         assert result is not None
 
-    #def get_machine(self, db: Session, machine_id: UUID) -> Machine | None:
     def test_get_machine_returns_machine_when_exists(self):
         """Test retrieving an existing machine by ID"""
         #Mock db.query().filter().first() to return a machine
@@ -77,7 +76,6 @@ class TestMachinesRepository:
 
         assert result is None
 
-    #def list_machines_for_provider(self, db: Session, provider_id: UUID) -> list[Machine]:
     def test_list_machines_for_provider_returns_provider_machines(self):
         """Test listing machines for a specific provider"""
         #Mock db.query().filter().all() to return a list of machines
@@ -111,7 +109,6 @@ class TestMachinesRepository:
 
         assert result == []
 
-    #def provider_owns_machine(self, db: Session, provider_id: UUID, machine_id: UUID) -> bool:
     def test_provider_owns_machine_returns_true_when_owner(self):
         """Test ownership check returns true when provider owns machine"""
         #Mock db.query().filter().count() to return 1

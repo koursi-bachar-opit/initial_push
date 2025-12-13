@@ -18,7 +18,6 @@ def test_access_credentials_public_implements_protocol():
     assert callable(public_impl.revoke_for_booking)
     assert callable(public_impl.get_for_booking)
 
-
 def test_access_credentials_public_delegates_to_service():
     """Test that all public methods correctly delegate to the service layer"""
     mock_service = Mock()

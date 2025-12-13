@@ -22,7 +22,6 @@ def test_organizations_public_implements_protocol():
     assert callable(public_impl.list_user_organizations)
     assert callable(public_impl.get_membership)
 
-
 def test_organizations_public_delegates_to_service():
     """Test that all public methods correctly delegate to the service layer"""
     mock_service = Mock()

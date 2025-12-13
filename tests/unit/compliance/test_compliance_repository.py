@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import Mock, create_autospec
+from unittest.mock import Mock, create_autospec, patch
 from uuid import uuid4
 from datetime import datetime, timezone
 
@@ -12,12 +12,10 @@ def mock_db():
     """Mock database session fixture"""
     return Mock()
 
-
 @pytest.fixture
 def compliance_repository():
     """ComplianceRepository instance fixture"""
     return ComplianceRepository()
-
 
 @pytest.fixture
 def sample_attestation():
@@ -28,11 +26,9 @@ def sample_attestation():
     attestation.machine_id = uuid4()
     attestation.method = "full_disk_wipe"
     attestation.evidence_uri = "https://example.com/evidence.pdf"
-    attestation.notes = "Wipe completed successfully"
     attestation.attested_at = datetime.now(timezone.utc)
     attestation.status = WipeReviewStatus.PENDING
     return attestation
-
 
 class TestComplianceRepository:
     
@@ -42,7 +38,6 @@ class TestComplianceRepository:
         machine_id = uuid4()
         method = "full_disk_wipe"
         evidence_uri = "https://example.com/evidence.pdf"
-        notes = "Wipe completed successfully"
         
         mock_db.add.return_value = None
         mock_db.commit.return_value = None
@@ -54,7 +49,6 @@ class TestComplianceRepository:
             machine_id=machine_id,
             method=method,
             evidence_uri=evidence_uri,
-            notes=notes
         )
         
         mock_db.add.assert_called_once()
@@ -65,27 +59,29 @@ class TestComplianceRepository:
         """Test getting attestation by booking ID returns attestation"""
         booking_id = uuid4()
         
-        mock_query = Mock()
-        mock_filter = Mock()
-        mock_options = Mock()
+        mock_stmt = Mock()
+        mock_where = Mock()
+        mock_result = Mock()
         
-        mock_db.query.return_value = mock_query
-        mock_query.filter_by.return_value = mock_filter
-        mock_filter.first.return_value = sample_attestation
-        
-        result = compliance_repository.get_by_booking(mock_db, booking_id)
-        
-        assert result == sample_attestation
-        mock_db.query.assert_called_once_with(WipeAttestation)
-        mock_query.filter_by.assert_called_once_with(booking_id=booking_id)
+        # The repository imports select directly from sqlalchemy
+        with patch('app.compliance.repository.select') as mock_select:
+            mock_select.return_value = mock_stmt
+            mock_stmt.where.return_value = mock_where
+            mock_db.execute.return_value = mock_result
+            mock_result.scalar_one_or_none.return_value = sample_attestation
+            
+            result = compliance_repository.get_by_booking(mock_db, booking_id)
+            
+            assert result == sample_attestation
+            mock_select.assert_called_once_with(WipeAttestation)
 
     def test_get_by_booking_with_relations_returns_attestation(self, mock_db, compliance_repository, sample_attestation):
         """Test getting attestation by booking ID with relations returns attestation"""
         booking_id = uuid4()
         
         mock_query = Mock()
-        mock_filter = Mock()
         mock_options = Mock()
+        mock_filter = Mock()
         
         mock_db.query.return_value = mock_query
         mock_query.options.return_value = mock_options
@@ -102,18 +98,20 @@ class TestComplianceRepository:
         """Test getting attestation by booking ID returns None when not found"""
         booking_id = uuid4()
         
-        mock_query = Mock()
-        mock_filter = Mock()
+        mock_stmt = Mock()
+        mock_where = Mock()
+        mock_result = Mock()
         
-        mock_db.query.return_value = mock_query
-        mock_query.filter_by.return_value = mock_filter
-        mock_filter.first.return_value = None
-        
-        result = compliance_repository.get_by_booking(mock_db, booking_id)
-        
-        assert result is None
-        mock_db.query.assert_called_once_with(WipeAttestation)
-        mock_query.filter_by.assert_called_once_with(booking_id=booking_id)
+        with patch('app.compliance.repository.select') as mock_select:
+            mock_select.return_value = mock_stmt
+            mock_stmt.where.return_value = mock_where
+            mock_db.execute.return_value = mock_result
+            mock_result.scalar_one_or_none.return_value = None
+            
+            result = compliance_repository.get_by_booking(mock_db, booking_id)
+            
+            assert result is None
+            mock_select.assert_called_once_with(WipeAttestation)
 
     def test_get_by_booking_with_relations_returns_none_when_not_found(self, mock_db, compliance_repository):
         """Test getting attestation by booking ID with relations returns None when not found"""

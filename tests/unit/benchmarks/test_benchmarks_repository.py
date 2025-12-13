@@ -13,12 +13,10 @@ def mock_db():
     """Mock database session fixture"""
     return Mock()
 
-
 @pytest.fixture
 def benchmark_repository():
     """BenchmarksRepository instance fixture"""
     return BenchmarksRepository()
-
 
 @pytest.fixture
 def sample_machine_benchmark():
@@ -34,7 +32,6 @@ def sample_machine_benchmark():
     benchmark.created_at = datetime.now(timezone.utc)
     return benchmark
 
-
 @pytest.fixture
 def sample_benchmark_create():
     """Fixture for benchmark creation data"""
@@ -46,9 +43,7 @@ def sample_benchmark_create():
     benchmark_create.artifact_uri = "https://example.com/artifact.zip"
     return benchmark_create
 
-
 class TestBenchmarksRepository:
-    
     def test_create_performs_database_operations(self, benchmark_repository, mock_db, sample_benchmark_create):
         """Test that benchmark creation performs database operations"""
         machine_id = uuid4()

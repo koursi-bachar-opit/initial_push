@@ -1,6 +1,7 @@
 from factories.users import create_user_by_role, auth_headers_by_role
 from test_config import TestConfig
 
+
 def machine_payload(**overrides):
     #Removed provider_user_id from base (comes from auth context)
     base = {
@@ -11,7 +12,6 @@ def machine_payload(**overrides):
     }
     base.update(overrides)
     return base
-
 
 def machine_payload(provider_id, **overrides):
     base = {
@@ -30,7 +30,6 @@ def machine_payload(provider_id, **overrides):
     }
     base.update(overrides)
     return base
-
 
 def create_machine(client, db_session, provider_role="provider", **overrides):
     """
@@ -65,7 +64,6 @@ def create_machine(client, db_session, provider_role="provider", **overrides):
     )
     assert resp.status_code == 201
     return resp.json()
-
 
 def valid_machine_payload(**overrides):
     """Return a valid machine payload for testing."""

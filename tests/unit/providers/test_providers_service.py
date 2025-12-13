@@ -13,12 +13,10 @@ def mock_db():
     """Mock database session fixture"""
     return Mock()
 
-
 @pytest.fixture
 def mock_repository():
     """Mock ProviderRepository fixture"""
     return Mock(spec=ProviderRepository)
-
 
 @pytest.fixture
 def provider_profile_service(mock_db, mock_repository):
@@ -28,7 +26,6 @@ def provider_profile_service(mock_db, mock_repository):
         repo=mock_repository
     )
 
-
 @pytest.fixture
 def verification_service(mock_db, mock_repository):
     """VerificationService fixture that composes all dependencies"""
@@ -36,7 +33,6 @@ def verification_service(mock_db, mock_repository):
         db=mock_db,
         repo=mock_repository
     )
-
 
 @pytest.fixture
 def sample_provider_profile():
@@ -47,7 +43,6 @@ def sample_provider_profile():
     profile.payout_account_ref = "acc_123"
     profile.verification_status = ProviderVerificationStatus.PENDING
     return profile
-
 
 @pytest.fixture
 def sample_verification():
@@ -60,7 +55,6 @@ def sample_verification():
     verification.notes = "Initial verification"
     return verification
 
-
 @pytest.fixture
 def sample_profile_create_data():
     """Fixture for sample provider profile creation data"""
@@ -68,14 +62,12 @@ def sample_profile_create_data():
         payout_account_ref="acc_123"
     )
 
-
 @pytest.fixture
 def sample_profile_update_data():
     """Fixture for sample provider profile update data"""
     return ProviderProfileUpdate(
         payout_account_ref="acc_updated_456"
     )
-
 
 @pytest.fixture
 def sample_verification_create_data():
@@ -86,9 +78,8 @@ def sample_verification_create_data():
         notes="Initial verification"
     )
 
-
 class TestProviderProfileService:
-    #def create_profile(self, user_id, data: schemas.ProviderProfileCreate):
+
     def test_create_profile_successfully_creates_profile(
         self, provider_profile_service, mock_repository, sample_profile_create_data, sample_provider_profile
     ):
@@ -113,7 +104,6 @@ class TestProviderProfileService:
         
         assert result == mock_profile
 
-
     def test_create_profile_raises_error_when_profile_already_exists(
         self, provider_profile_service, mock_repository, sample_profile_create_data
     ):
@@ -134,7 +124,6 @@ class TestProviderProfileService:
         mock_repository.get_by_user_id.assert_called_once_with(user_id)
         mock_repository.create.assert_not_called()
 
-    #def update_profile(self, user_id, profile_id, data: schemas.ProviderProfileUpdate):
     def test_update_profile_successfully_updates_owned_profile(
         self, provider_profile_service, mock_repository, sample_profile_update_data, sample_provider_profile
     ):
@@ -161,7 +150,6 @@ class TestProviderProfileService:
         mock_repository.get.assert_called_once_with(profile_id)
         mock_repository.update.assert_called_once_with(mock_owned_profile, data)
         assert result == mock_owned_profile
-
 
     def test_update_profile_raises_error_when_profile_not_found(
         self, provider_profile_service, mock_repository, sample_profile_update_data
@@ -204,7 +192,6 @@ class TestProviderProfileService:
 
         mock_repository.update.assert_not_called()
 
-    #def require_profile(self, user_id):
     def test_require_profile_returns_profile_when_exists(
         self, provider_profile_service, mock_repository, sample_provider_profile
     ):
@@ -274,7 +261,7 @@ class TestProviderProfileService:
 
 
 class TestVerificationService:
-    #def create_verification_request(self, user_id, data: schemas.VerificationCreate):
+
     def test_create_verification_request_successfully_creates_for_owned_provider(
         self, verification_service, mock_repository, sample_verification_create_data, sample_provider_profile
     ):
@@ -381,7 +368,6 @@ class TestVerificationService:
         mock_repository.create_verification.assert_called_once_with(data)
         assert result == mock_verification
 
-    #def admin_update_verification(self, admin_user_id, verification_id, new_status, notes):
     def test_admin_update_verification_successfully_updates_and_updates_provider_status(
         self, verification_service, mock_repository, mock_db, sample_verification, sample_provider_profile
     ):
@@ -512,7 +498,6 @@ class TestVerificationService:
         
         mock_repository.save_verification.assert_not_called()
 
-    #def list_verifications(self, subject_type, subject_id):
     def test_list_verifications_delegates_to_repository(
         self, verification_service, mock_repository
     ):

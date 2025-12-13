@@ -12,12 +12,10 @@ def mock_db():
     """Mock database session fixture"""
     return Mock()
 
-
 @pytest.fixture
 def listing_repository():
     """ListingsRepository instance fixture"""
     return ListingsRepository()
-
 
 @pytest.fixture
 def sample_listing():
@@ -28,7 +26,6 @@ def sample_listing():
     listing.price = 100.0
     listing.machine_id = uuid4()
     return listing
-
 
 class TestListingsRepository:
 

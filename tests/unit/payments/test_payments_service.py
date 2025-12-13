@@ -10,37 +10,31 @@ from app.payments.models import Payment, PaymentType, PaymentStatus
 from app.providers.public import ProvidersPublic
 from app.notifications.public import NotificationsPublic
 
-import stripe
 
 @pytest.fixture
 def mock_db():
     """Mock database session fixture"""
     return Mock()
 
-
 @pytest.fixture
 def mock_repository():
     """Mock PaymentsRepository fixture"""
     return Mock(spec=PaymentsRepository)
-
 
 @pytest.fixture
 def mock_port():
     """Mock PaymentPort fixture"""
     return Mock(spec=PaymentPort)
 
-
 @pytest.fixture
 def mock_providers_public():
     """Mock ProvidersPublic fixture"""
     return Mock(spec=ProvidersPublic)
 
-
 @pytest.fixture
 def mock_notifications_public():
     """Mock NotificationsPublic fixture"""
     return Mock(spec=NotificationsPublic)
-
 
 @pytest.fixture
 def payments_service(mock_db, mock_repository, mock_port, mock_providers_public, mock_notifications_public):
@@ -53,7 +47,6 @@ def payments_service(mock_db, mock_repository, mock_port, mock_providers_public,
         notifications_public=mock_notifications_public
     )
 
-
 @pytest.fixture
 def sample_booking():
     """Fixture for a mock booking object"""
@@ -61,7 +54,6 @@ def sample_booking():
     booking.id = uuid4()
     booking.buyer = Mock()
     return booking
-
 
 @pytest.fixture
 def sample_escrow_payment():
@@ -76,7 +68,6 @@ def sample_escrow_payment():
     payment.status = PaymentStatus.AUTHORIZED
     return payment
 
-
 @pytest.fixture
 def sample_refund_payment():
     """Fixture for a mock refund payment object"""
@@ -90,7 +81,6 @@ def sample_refund_payment():
     payment.status = PaymentStatus.REFUNDED
     return payment
 
-
 @pytest.fixture
 def sample_payment_intent_response():
     """Fixture for Stripe PaymentIntent response"""
@@ -101,10 +91,8 @@ def sample_payment_intent_response():
         "currency": "USD"
     }
 
-
 class TestPaymentsService:
     
-    #def create_escrow(self, db: Session, *, booking, amount: Decimal, currency: str) -> Payment:
     def test_create_escrow_successfully_creates_authorization_hold(
         self, payments_service, mock_db, mock_port, mock_repository, sample_booking, sample_escrow_payment
     ):
@@ -150,7 +138,6 @@ class TestPaymentsService:
 
         mock_repository.create_payment.assert_not_called()
 
-    #def capture(self, db: Session, *, booking) -> Payment:
     def test_capture_successfully_captures_authorized_escrow(
         self, payments_service, mock_db, mock_repository, mock_port, mock_notifications_public, sample_booking, sample_escrow_payment
     ):
@@ -231,7 +218,6 @@ class TestPaymentsService:
 
         mock_repository.update_payment.assert_not_called()
 
-    #def void_escrow(self, db: Session, *, booking) -> Payment:
     def test_void_escrow_successfully_cancels_authorized_payment(
         self, payments_service, mock_db, mock_repository, mock_port, sample_booking, sample_escrow_payment
     ):
@@ -324,7 +310,6 @@ class TestPaymentsService:
         
         mock_repository.create_payment.assert_not_called()
 
-    #def list_for_booking(self, db: Session, booking_id):
     def test_list_for_booking_delegates_to_repository(
         self, payments_service, mock_db, mock_repository, sample_booking
     ):
@@ -355,7 +340,6 @@ class TestPaymentsService:
 
         assert result == []
 
-    #def get_payments_for_bookings(self, db: Session, booking_ids: list[UUID]):
     def test_get_payments_for_bookings_delegates_to_repository(
         self, payments_service, mock_db, mock_repository
     ):
@@ -387,8 +371,6 @@ class TestPaymentsService:
         mock_repository.list_payments_for_bookings.assert_called_once_with(mock_db, empty_list)
         assert result == []
 
-
-    #def create_payment_intent(self, booking_id: UUID, amount: Decimal, currency: str = "USD") -> dict:
     def test_create_payment_intent_successfully_creates_stripe_intent(
         self, payments_service, mock_repository, mock_port, sample_payment_intent_response
     ):

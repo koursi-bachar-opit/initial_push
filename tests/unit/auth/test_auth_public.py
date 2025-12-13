@@ -67,7 +67,6 @@ class TestAuthPublicImpl:
         assert result.current_user == mock_current_user
         assert result.users_public == mock_users_public
 
-    #New tests for the direct dependency functions
     def test_ensure_buyer_dependency(self):
         """Test the ensure_buyer FastAPI dependency"""
         from app.auth.public import ensure_buyer

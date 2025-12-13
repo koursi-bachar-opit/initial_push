@@ -43,9 +43,8 @@ def sample_machine_data():
         notes="Test machine"
     )
 
-
 class TestMachinesService:
-    #def get_machine(self, machine_id: UUID) -> Machine:
+
     def test_get_machine_returns_machine_when_exists(self, machines_service, mock_db, mock_repository):
         """Test successful machine retrieval"""
         #Mock repository.get_machine to return a machine
@@ -75,7 +74,6 @@ class TestMachinesService:
         
         mock_repository.get_machine.assert_called_once_with(mock_db, machine_id)
 
-    #def list_machines_for_provider(self, provider_id: UUID) -> list[Machine]:
     def test_list_machines_for_provider_delegates_to_repository(self, machines_service, mock_db, mock_repository):
         """Test listing machines delegates to repository"""
         #Mock repository.list_machines_for_provider to return machines
@@ -91,7 +89,6 @@ class TestMachinesService:
         assert result == mock_machines
         mock_repository.list_machines_for_provider.assert_called_once_with(mock_db, provider_id)
 
-    #def create_machine(self, payload: MachineCreate) -> Machine:
     def test_create_machine_delegates_to_repository(self, machines_service, mock_db, mock_repository, sample_machine_data):
         """Test machine creation delegates to repository"""
         #Mock repository.create_machine to return a machine
@@ -106,7 +103,6 @@ class TestMachinesService:
         assert result == mock_machine
         mock_repository.create_machine.assert_called_once_with(mock_db, sample_machine_data)
 
-    #def delete_machine(self, machine_id: UUID, provider_id: UUID):
     def test_delete_machine_successfully_deletes_owned_machine(self, machines_service, mock_db, mock_repository):
         """Test successful deletion when provider owns machine"""
         #Mock repository.get_machine to return owned machine
@@ -124,7 +120,6 @@ class TestMachinesService:
 
         mock_repository.get_machine.assert_called_once_with(mock_db, machine_id)
         mock_repository.delete_machine.assert_called_once_with(mock_db, mock_machine)
-
 
     def test_delete_machine_raises_error_when_machine_not_found(self, machines_service, mock_db, mock_repository):
         """Test error when deleting non-existent machine"""

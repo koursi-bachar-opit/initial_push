@@ -2,6 +2,7 @@ from factories.users import auth_headers_by_role
 from factories.machines import create_machine
 from assertions import assert_status_code, assert_forbidden
 
+
 def test_get_nonexistent_machine_returns_404(client, db_session):
     """
     Getting a non-existent machine returns a 404 error.
@@ -11,7 +12,6 @@ def test_get_nonexistent_machine_returns_404(client, db_session):
         headers=auth_headers_by_role("provider")
     )
     assert_status_code(resp, 404)
-
 
 def test_provider_cannot_access_other_providers_machine(client, db_session):
     """

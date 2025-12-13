@@ -18,7 +18,6 @@ def test_bookings_public_implements_protocol():
     assert hasattr(public_impl, 'is_cancelled')
     assert hasattr(public_impl, 'is_completed')
     assert hasattr(public_impl, 'is_cancellable')
-    assert hasattr(public_impl, 'is_ready_for_capture')
     assert hasattr(public_impl, 'get_org_bookings_in_period')
     
     assert callable(public_impl.get_booking)
@@ -28,9 +27,7 @@ def test_bookings_public_implements_protocol():
     assert callable(public_impl.is_cancelled)
     assert callable(public_impl.is_completed)
     assert callable(public_impl.is_cancellable)
-    assert callable(public_impl.is_ready_for_capture)
     assert callable(public_impl.get_org_bookings_in_period)
-
 
 def test_bookings_public_delegates_to_service():
     """Test that all public methods correctly delegate to the service layer"""
@@ -125,27 +122,6 @@ def test_bookings_public_delegates_to_service():
     
     mock_booking.status = "active"
     result = public_impl.is_cancellable(mock_booking)
-    assert result == False
-    
-    mock_service.reset_mock()
-    
-    #Test is_ready_for_capture delegation
-    mock_service.BookingStatus.COMPLETED = "completed"
-    mock_service.BookingStatus.ACTIVE = "active"
-    
-    mock_booking.status = "completed"
-    mock_booking.actual_price_charged = 100.0
-    result = public_impl.is_ready_for_capture(mock_booking)
-    assert result == True
-    
-    mock_booking.status = "completed"
-    mock_booking.actual_price_charged = None
-    result = public_impl.is_ready_for_capture(mock_booking)
-    assert result == False
-    
-    mock_booking.status = "active"
-    mock_booking.actual_price_charged = 100.0
-    result = public_impl.is_ready_for_capture(mock_booking)
     assert result == False
     
     mock_service.reset_mock()

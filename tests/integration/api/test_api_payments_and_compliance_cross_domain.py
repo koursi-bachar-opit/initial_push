@@ -1,6 +1,5 @@
-from decimal import Decimal
-
 import pytest
+from datetime import datetime, timezone, timedelta
 
 from test_config import TestConfig
 from test_helpers import ApiClient
@@ -9,18 +8,10 @@ from assertions import (
 )
 
 from factories.bookings import create_booking
-from factories.users import auth_headers_by_role, auth_headers_for, create_user
-
-from app.providers.models import ProviderProfile, ProviderVerificationStatus
-
-from datetime import datetime, timezone, timedelta
-
-# -----------------------------------------------------------
-# Helper: unified create-machine → create-listing → create-booking
-# -----------------------------------------------------------
 from factories.machines import create_machine
 from factories.listings import listing_payload
 from factories.bookings import create_booking_for_listing
+from factories.users import auth_headers_by_role
 
 
 def create_booking_with_machine_and_listing(client, db_session, buyer_role="buyer", provider_role="provider"):
@@ -62,7 +53,6 @@ COMPLIANCE_BASE_URL = f"{TestConfig.BASE_URL}/compliance"
 # ---------------------------------------------------------------------------
 # PAYMENTS ↔ BOOKINGS CROSS-DOMAIN TESTS
 # ---------------------------------------------------------------------------
-
 def _list_payments_for_booking(client, booking_id, role="buyer"):
     """
     Helper to call the payments API for a given booking.
@@ -133,7 +123,6 @@ def test_capture_on_booking_completion_updates_escrow_status(client, db_session)
 # ---------------------------------------------------------------------------
 # COMPLIANCE ↔ BOOKINGS / PROVIDERS / MACHINES CROSS-DOMAIN TESTS
 # ---------------------------------------------------------------------------
-
 def _create_wipe_attestation_payload(booking_id, machine_id):
     return {
         "booking_id": booking_id,
@@ -215,9 +204,7 @@ def create_start_end_times():
 
 
 def test_booking_completion_auto_generates_wipe_attestation(client, db_session):
-    """
-    FIXED: Now uses helper to ensure machine + listing + provider verification
-    """
+    """FIXED: Now uses helper to ensure machine + listing + provider verification"""
     booking, listing, machine = create_booking_with_machine_and_listing(client, db_session)
 
     machine_id = machine["id"]
@@ -245,9 +232,7 @@ def test_booking_completion_auto_generates_wipe_attestation(client, db_session):
 
 
 def test_booking_can_complete_after_wipe_attestation_exists(client, db_session):
-    """
-    FIXED: Uses helper to guarantee valid machine/listing + verified provider
-    """
+    """FIXED: Uses helper to guarantee valid machine/listing + verified provider"""
     booking, listing, machine = create_booking_with_machine_and_listing(client, db_session)
 
     machine_id = machine["id"]

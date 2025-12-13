@@ -22,7 +22,6 @@ def test_providers_public_implements_protocol():
     assert callable(public_impl.is_verified)
     assert callable(public_impl.list_verifications)
 
-
 def test_providers_public_delegates_to_service():
     """Test that all public methods correctly delegate to the service layer"""
     mock_profile_service = Mock()

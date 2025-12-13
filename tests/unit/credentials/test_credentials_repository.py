@@ -12,12 +12,10 @@ def mock_db():
     """Mock database session fixture"""
     return Mock()
 
-
 @pytest.fixture
 def credentials_repository():
     """AccessCredentialRepository instance fixture"""
     return AccessCredentialRepository()
-
 
 @pytest.fixture
 def sample_credential():
@@ -29,7 +27,6 @@ def sample_credential():
     credential.ssh_public_key_fingerprint = "SHA256:abc123"
     credential.revoked_at = None
     return credential
-
 
 class TestAccessCredentialRepository:
     

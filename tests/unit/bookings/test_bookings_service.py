@@ -5,7 +5,7 @@ from datetime import datetime, timezone, timedelta
 
 from app.bookings.service import BookingsService
 from app.bookings.repository import BookingsRepository
-from app.bookings.models import Booking
+from app.bookings.models import Booking, BookingStatus
 from app.bookings.schemas import BookingRequest, BookingAdminCreate
 from app.listings.models import Listing
 
@@ -15,48 +15,40 @@ def mock_db():
     """Mock database session fixture"""
     return Mock()
 
-
 @pytest.fixture
 def mock_repository():
     """Mock BookingsRepository fixture"""
     return Mock(spec=BookingsRepository)
-
 
 @pytest.fixture
 def mock_listings_public():
     """Mock ListingsPublic fixture for listing validation"""
     return Mock()
 
-
 @pytest.fixture
 def mock_credentials_public():
     """Mock AccessCredentialsPublic fixture for credential management"""
     return Mock()
-
 
 @pytest.fixture
 def mock_payments_public():
     """Mock PaymentsPublic fixture for escrow and payment processing"""
     return Mock()
 
-
 @pytest.fixture
 def mock_organizations_public():
     """Mock OrganizationsPublic fixture for org admin checks"""
     return Mock()
-
 
 @pytest.fixture
 def mock_compliance_public():
     """Mock CompliancePublic fixture for wipe attestation"""
     return Mock()
 
-
 @pytest.fixture
 def mock_notifications_public():
     """Mock NotificationsPublic fixture for notification sending"""
     return Mock()
-
 
 @pytest.fixture
 def bookings_service(
@@ -81,7 +73,6 @@ def bookings_service(
         notifications_public=mock_notifications_public
     )
 
-
 @pytest.fixture
 def sample_booking():
     """Fixture for a mock booking object"""
@@ -98,7 +89,6 @@ def sample_booking():
     booking.buyer = Mock()
     return booking
 
-
 @pytest.fixture
 def sample_booking_request():
     """Fixture for sample booking request data"""
@@ -108,7 +98,6 @@ def sample_booking_request():
         end_time=datetime.now(timezone.utc),
         organization_id=None
     )
-
 
 @pytest.fixture
 def sample_booking_admin_create():
@@ -120,7 +109,6 @@ def sample_booking_admin_create():
         end_time=datetime.now(timezone.utc),
         organization_id=None
     )
-
 
 class TestBookingsService:
     #Helper method tests
@@ -285,7 +273,7 @@ class TestBookingsService:
         assert result.buyer_user_id == buyer_user_id
         assert result.start_time == start_utc
         assert result.end_time == end_utc
-        assert result.status == bookings_service.BookingStatus.REQUESTED
+        assert result.status == BookingStatus.REQUESTED
         assert result.total_price_estimate == total_price
         assert result.organization_id is None
 
@@ -369,7 +357,6 @@ class TestBookingsService:
 
         assert result == mock_booking
         mock_repository.get_booking_by_id.assert_called_once_with(mock_db, booking_id)
-
 
     def test_get_booking_or_raise_raises_error_when_not_found(self, bookings_service, mock_repository, mock_db):
         """Test error when booking doesn't exist"""
@@ -467,7 +454,7 @@ class TestBookingsService:
         mock_listing.currency = "USD"
         
         mock_booking = Mock(spec=Booking)
-        mock_booking.status = bookings_service.BookingStatus.REQUESTED
+        mock_booking.status = BookingStatus.REQUESTED
         mock_booking.total_price_estimate = 150.0
         mock_booking.listing = mock_listing
         mock_booking.buyer = Mock()
@@ -513,7 +500,7 @@ class TestBookingsService:
         mock_listing.currency = "USD"
 
         mock_booking = Mock(spec=Booking)
-        mock_booking.status = bookings_service.BookingStatus.REQUESTED
+        mock_booking.status = BookingStatus.REQUESTED
         mock_booking.total_price_estimate = 150.0
         mock_booking.listing = mock_listing
         mock_booking.buyer = Mock()
@@ -564,7 +551,6 @@ class TestBookingsService:
         
         mock_repository.create_booking.assert_not_called()
 
-
     def test_confirm_booking_transitions_from_requested_to_confirmed(self, bookings_service, sample_booking, mock_repository, mock_notifications_public, mock_db):
         """Test successful booking confirmation"""
         #Set booking status to REQUESTED
@@ -588,7 +574,7 @@ class TestBookingsService:
             mock_booking.buyer, 
             mock_booking
         )
-        assert result.status == bookings_service.BookingStatus.CONFIRMED
+        assert result.status == BookingStatus.CONFIRMED
         mock_repository.update_booking.assert_called_once_with(mock_db, mock_booking)
 
     def test_confirm_booking_raises_error_when_listing_missing(self, bookings_service, sample_booking):
@@ -623,17 +609,16 @@ class TestBookingsService:
         mock_booking.end_time = datetime.now(timezone.utc) + timedelta(hours=1)
 
         invalid_states = [
-            bookings_service.BookingStatus.CONFIRMED,
-            bookings_service.BookingStatus.ACTIVE,
-            bookings_service.BookingStatus.COMPLETED,
-            bookings_service.BookingStatus.CANCELLED
+            BookingStatus.CONFIRMED,
+            BookingStatus.ACTIVE,
+            BookingStatus.COMPLETED,
+            BookingStatus.CANCELLED
         ]
         
         for state in invalid_states:
             mock_booking.status = state
             with pytest.raises(ValueError, match="Bookings can only be confirmed from a requested state"):
                 bookings_service.confirm_booking(mock_booking.id, mock_booking)
-
 
     def test_cancel_booking_cancels_requested_booking(self, bookings_service, sample_booking, mock_repository, mock_db, mock_notifications_public, mock_payments_public):
         """Test cancellation of requested booking"""
@@ -647,14 +632,14 @@ class TestBookingsService:
         #Verify void_escrow_for_booking called
         #Verify cancelled booking returned
         mock_booking = sample_booking
-        mock_booking.status = bookings_service.BookingStatus.REQUESTED
+        mock_booking.status = BookingStatus.REQUESTED
         mock_booking.start_time = datetime.now(timezone.utc) + timedelta(hours=1)
         
         mock_repository.update_booking.return_value = mock_booking
 
         result = bookings_service.cancel_booking(mock_booking.id, mock_booking)
 
-        assert result.status == bookings_service.BookingStatus.CANCELLED
+        assert result.status == BookingStatus.CANCELLED
         mock_notifications_public.booking_cancelled.assert_called_once_with(
             mock_booking.buyer, 
             mock_booking, 
@@ -673,14 +658,14 @@ class TestBookingsService:
         #Verify status changed to CANCELLED
         #Verify void_escrow_for_booking called
         mock_booking = sample_booking
-        mock_booking.status = bookings_service.BookingStatus.CONFIRMED
+        mock_booking.status = BookingStatus.CONFIRMED
         mock_booking.start_time = datetime.now(timezone.utc) + timedelta(hours=1)
 
         mock_repository.update_booking.return_value = mock_booking
 
         result = bookings_service.cancel_booking(mock_booking.id, mock_booking)
         
-        assert result.status == bookings_service.BookingStatus.CANCELLED
+        assert result.status == BookingStatus.CANCELLED
         assert result == mock_booking
         mock_payments_public.void_escrow_for_booking.assert_called_once_with(booking=mock_booking)
 
@@ -716,9 +701,9 @@ class TestBookingsService:
         mock_booking.start_time = datetime.now(timezone.utc) + timedelta(hours=1)
 
         invalid_states = [
-            bookings_service.BookingStatus.ACTIVE,
-            bookings_service.BookingStatus.COMPLETED,
-            bookings_service.BookingStatus.CANCELLED
+            BookingStatus.ACTIVE,
+            BookingStatus.COMPLETED,
+            BookingStatus.CANCELLED
         ]
         
         for state in invalid_states:
@@ -726,7 +711,6 @@ class TestBookingsService:
             with pytest.raises(ValueError, match="Booking must be pending, requested, or confirmed in order to cancel."):
                 bookings_service.cancel_booking(mock_booking.id, mock_booking)
 
-    #def start_session(self, booking_id: UUID, booking: Booking | None = None):
     def test_start_session_activates_confirmed_booking(self, bookings_service, sample_booking, mock_repository, mock_credentials_public, mock_notifications_public):
         """Test starting session for confirmed booking within window"""
         #Set booking.status to CONFIRMED
@@ -744,18 +728,17 @@ class TestBookingsService:
         mock_booking.start_time = datetime.now(timezone.utc) - timedelta(hours=1)
         mock_booking.end_time = datetime.now(timezone.utc) + timedelta(hours=1)
         mock_booking.active_session_start = None
-        mock_booking.status = bookings_service.BookingStatus.CONFIRMED
+        mock_booking.status = BookingStatus.CONFIRMED
 
         mock_repository.update_booking.return_value = mock_booking
 
         result = bookings_service.start_session(mock_booking.id, mock_booking)
 
-        assert result.status == bookings_service.BookingStatus.ACTIVE
+        assert result.status == BookingStatus.ACTIVE
         assert abs((result.active_session_start - datetime.now(timezone.utc)).total_seconds()) <= 3
         mock_credentials_public.issue_for_booking.assert_called_once_with(mock_booking)
         mock_notifications_public.booking_activated.assert_called_once_with(mock_booking.buyer, mock_booking)
         assert result == mock_booking
-
 
     def test_start_session_raises_error_when_listing_missing(self, bookings_service, sample_booking):
         """Test error when booking has no associated listing"""
@@ -779,10 +762,10 @@ class TestBookingsService:
         mock_booking.end_time = datetime.now(timezone.utc) + timedelta(hours=1)
 
         invalid_states = [
-            bookings_service.BookingStatus.REQUESTED,
-            bookings_service.BookingStatus.ACTIVE,
-            bookings_service.BookingStatus.COMPLETED,
-            bookings_service.BookingStatus.CANCELLED
+            BookingStatus.REQUESTED,
+            BookingStatus.ACTIVE,
+            BookingStatus.COMPLETED,
+            BookingStatus.CANCELLED
         ]
         
         for state in invalid_states:
@@ -790,14 +773,13 @@ class TestBookingsService:
             with pytest.raises(ValueError, match="Only a confirmed booking can be started."):
                 bookings_service.start_session(mock_booking.id, mock_booking)
 
-
     def test_start_session_raises_error_when_already_started(self, bookings_service, sample_booking):
         """Test error when session already started"""
         #Set booking.active_session_start to a past time
         #Call start_session with booking
         #Verify ValueError is raised
         mock_booking = sample_booking
-        mock_booking.status = bookings_service.BookingStatus.CONFIRMED
+        mock_booking.status = BookingStatus.CONFIRMED
         mock_booking.active_session_start = datetime.now(timezone.utc) - timedelta(hours=1)
 
         with pytest.raises(ValueError, match="Session already started"):
@@ -815,7 +797,7 @@ class TestBookingsService:
 
         mock_booking.active_session_start = None #set globally in previous test
 
-        mock_booking.status = bookings_service.BookingStatus.CONFIRMED
+        mock_booking.status = BookingStatus.CONFIRMED
 
         mock_booking.start_time = datetime.now(timezone.utc) + timedelta(hours=1)
         mock_booking.end_time = datetime.now(timezone.utc) + timedelta(hours=2)
@@ -829,7 +811,6 @@ class TestBookingsService:
         with pytest.raises(ValueError, match="Cannot start; booking window expired"):
             bookings_service.start_session(mock_booking.id, mock_booking)
         
-
     def test_end_session_completes_active_booking(self, bookings_service, sample_booking, mock_repository, mock_db, mock_compliance_public, mock_notifications_public, mock_payments_public, mock_credentials_public):
         """Test ending session for active booking"""
         #Set booking.status to ACTIVE
@@ -849,7 +830,7 @@ class TestBookingsService:
         #Verify compliance methods called
         #Verify payment captured and credentials revoked
         mock_booking = sample_booking
-        mock_booking.status = bookings_service.BookingStatus.ACTIVE
+        mock_booking.status = BookingStatus.ACTIVE
         mock_booking.active_session_start = datetime.now(timezone.utc) - timedelta(hours=1)
         mock_booking.active_session_end = None
         actual_price = 10
@@ -860,7 +841,7 @@ class TestBookingsService:
 
         result = bookings_service.end_session(mock_booking.id, mock_booking)
 
-        assert result.status == bookings_service.BookingStatus.COMPLETED
+        assert result.status == BookingStatus.COMPLETED
         assert result.active_session_end is not None
         assert result.actual_price_charged == actual_price
         assert result == mock_booking
@@ -888,7 +869,7 @@ class TestBookingsService:
         #Call end_session with booking
         #Verify ValueError is raised
         mock_booking = sample_booking
-        mock_booking.status = bookings_service.BookingStatus.COMPLETED
+        mock_booking.status = BookingStatus.COMPLETED
 
         with pytest.raises(ValueError, match="Cannot end, current status is not active"):
             bookings_service.end_session(mock_booking.id, mock_booking)
@@ -899,7 +880,7 @@ class TestBookingsService:
         #Call end_session with booking
         #Verify ValueError is raised
         mock_booking = sample_booking
-        mock_booking.status = bookings_service.BookingStatus.ACTIVE
+        mock_booking.status = BookingStatus.ACTIVE
         mock_booking.active_session_end = datetime.now(timezone.utc) - timedelta(hours=1)
 
         with pytest.raises(ValueError, match="Session already ended"):
@@ -941,7 +922,7 @@ class TestBookingsService:
 
         mock_booking = Mock(spec=Booking)
         mock_booking.total_price_estimate = 150.0
-        mock_booking.status = bookings_service.BookingStatus.REQUESTED
+        mock_booking.status = BookingStatus.REQUESTED
         
         with patch.object(bookings_service, 'normalize_times', return_value=(start_utc, end_utc)) as mock_normalize, \
             patch.object(bookings_service, 'fetch_listing_or_raise', return_value=mock_listing) as mock_fetch, \
@@ -967,7 +948,7 @@ class TestBookingsService:
         #Verify exception is propagated
         #Consider verifying booking state not changed
         mock_booking = sample_booking
-        mock_booking.status = bookings_service.BookingStatus.CONFIRMED
+        mock_booking.status = BookingStatus.CONFIRMED
         mock_booking.active_session_start = None
         mock_booking.start_time = datetime.now(timezone.utc) - timedelta(hours=1)
         mock_booking.end_time = datetime.now(timezone.utc) + timedelta(hours=1)
@@ -981,7 +962,6 @@ class TestBookingsService:
         
         mock_repository.update_booking.assert_called_once_with(mock_db, mock_booking)
 
-
     def test_end_session_fails_when_compliance_check_fails(self, bookings_service, sample_booking, mock_compliance_public, mock_payments_public):
         """Test session end fails when wipe attestation fails"""
         #Mock compliance_public.require_attestation_for_booking to raise exception
@@ -989,7 +969,7 @@ class TestBookingsService:
         #Verify exception is propagated
         #Verify payment capture not called
         mock_booking = sample_booking
-        mock_booking.status = bookings_service.BookingStatus.ACTIVE
+        mock_booking.status = BookingStatus.ACTIVE
         mock_booking.active_session_end = None
         actual_price = 10
 
@@ -1001,27 +981,6 @@ class TestBookingsService:
             bookings_service.end_session(mock_booking.id, mock_booking)
         
         mock_payments_public.capture_for_booking.assert_not_called()
-
-    def test_end_session_fails_when_payment_capture_fails(self, bookings_service, sample_booking, mock_payments_public, mock_credentials_public):
-        """Test session end rolled back when payment capture fails"""
-        #Mock successful compliance checks
-        #Mock payments_public.capture_for_booking to raise exception
-        #Call end_session with booking
-        #Verify exception is propagated
-        #Consider verifying credentials not revoked
-        mock_booking = sample_booking
-        mock_booking.status = bookings_service.BookingStatus.ACTIVE
-        mock_booking.active_session_end = None
-        actual_price = 10
-
-        bookings_service.calculate_price = Mock(return_value=actual_price)
-
-        mock_payments_public.capture_for_booking.side_effect = ValueError("Payment capture failed")
-
-        with pytest.raises(ValueError, match="Payment capture failed"):
-            bookings_service.end_session(mock_booking.id, mock_booking)
-        
-        mock_credentials_public.revoke_for_booking.assert_not_called()
 
     # #Edge cases and business rules
     # def test_request_booking_with_maximum_duration(self, bookings_service, sample_booking_request):

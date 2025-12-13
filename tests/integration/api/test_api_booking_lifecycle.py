@@ -38,7 +38,6 @@ def test_full_booking_lifecycle_confirm_cancel(client, db_session):
     assert_status_code(response, 200)
     assert_booking_status(response, 'cancelled')
 
-
 def test_booking_usage_session_start_and_end(client, db_session):
     """
     confirm -> start -> end

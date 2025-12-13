@@ -12,11 +12,8 @@ def listing_payload(machine_id, **overrides):
     base.update(overrides)
     return base
 
-
 def create_listing(client, db_session, provider_role="provider", **overrides):
-    """
-    Create machine using config-based provider
-    """
+    """Create machine using config-based provider"""
     machine = create_machine(client, db_session, provider_role=provider_role)
     payload = listing_payload(machine_id=machine["id"], **overrides)
 
@@ -28,19 +25,13 @@ def create_listing(client, db_session, provider_role="provider", **overrides):
     assert resp.status_code == 201
     return resp.json()
 
-
 def valid_listing_payload(client, db_session, provider_role="provider", **overrides):
-    """
-    Create a machine and return listing payload (without creating listing).
-    """
+    """Create a machine and return listing payload (without creating listing)."""
     machine = create_machine(client, db_session, provider_role=provider_role)
     return listing_payload(machine_id=machine["id"], **overrides)
 
-
 def create_listing_with_machine(client, db_session, machine_payload_overrides=None, listing_payload_overrides=None):
-    """
-    Create a listing with custom machine and listing parameters.
-    """
+    """Create a listing with custom machine and listing parameters."""
     machine_overrides = machine_payload_overrides or {}
     listing_overrides = listing_payload_overrides or {}
     

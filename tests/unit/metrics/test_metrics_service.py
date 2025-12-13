@@ -16,18 +16,15 @@ def mock_db():
     """Mock database session fixture"""
     return Mock()
 
-
 @pytest.fixture
 def mock_repository():
     """Mock MetricsRepository fixture"""
     return Mock(spec=MetricsRepository)
 
-
 @pytest.fixture
 def mock_machines_public():
     """Mock MachinesPublic fixture"""
     return Mock(spec=MachinesPublic)
-
 
 @pytest.fixture
 def metrics_service(mock_db, mock_repository, mock_machines_public):
@@ -38,7 +35,6 @@ def metrics_service(mock_db, mock_repository, mock_machines_public):
         machines_public=mock_machines_public
     )
 
-
 @pytest.fixture
 def sample_machine():
     """Fixture for a mock machine object"""
@@ -46,7 +42,6 @@ def sample_machine():
     machine.id = uuid4()
     machine.provider_id = uuid4()
     return machine
-
 
 @pytest.fixture
 def sample_metric_sample():
@@ -62,7 +57,6 @@ def sample_metric_sample():
     sample.net_tx_mb = 512.3
     return sample
 
-
 @pytest.fixture
 def sample_metric_sample_create():
     """Fixture for sample metric creation data"""
@@ -75,7 +69,6 @@ def sample_metric_sample_create():
         net_tx_mb=512.3
     )
 
-
 @pytest.fixture
 def sample_metrics_query_params():
     """Fixture for metrics query parameters"""
@@ -84,7 +77,6 @@ def sample_metrics_query_params():
         end=datetime.now(timezone.utc),
         limit=100
     )
-
 
 @pytest.fixture
 def sample_raw_metrics():
@@ -95,7 +87,6 @@ def sample_raw_metrics():
         "cpu_util": 65.2,
         "mem_gb": 16.8
     }
-
 
 class TestMetricsService:
     

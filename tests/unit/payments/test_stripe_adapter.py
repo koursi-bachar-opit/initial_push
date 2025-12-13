@@ -13,12 +13,10 @@ def real_stripe_adapter():
     with patch.dict(os.environ, {"STRIPE_SECRET_KEY": "sk_test_123"}):
         return RealStripeAdapter()
 
-
 @pytest.fixture
 def mock_stripe_adapter():
     """MockStripeAdapter fixture"""
     return MockStripeAdapter()
-
 
 class TestRealStripeAdapter:
     
@@ -194,7 +192,6 @@ class TestRealStripeAdapter:
                     processor_ref="pi_123",
                     amount=Decimal("75.50")
                 )
-
 
 class TestMockStripeAdapter:
     

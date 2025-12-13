@@ -13,18 +13,15 @@ def mock_db():
     """Mock database session fixture"""
     return Mock()
 
-
 @pytest.fixture
 def mock_repository():
     """Mock BenchmarksRepository fixture"""
     return Mock(spec=BenchmarksRepository)
 
-
 @pytest.fixture
 def mock_machines_public():
     """Mock MachinesPublic fixture"""
     return Mock(spec=MachinesPublic)
-
 
 @pytest.fixture
 def benchmark_service(mock_repository, mock_machines_public, mock_db):
@@ -35,30 +32,25 @@ def benchmark_service(mock_repository, mock_machines_public, mock_db):
         machines_public=mock_machines_public
     )
 
-
 @pytest.fixture
 def sample_machine_id():
     """Fixture for a machine ID"""
     return uuid4()
-
 
 @pytest.fixture
 def sample_provider_id():
     """Fixture for a provider ID"""
     return uuid4()
 
-
 @pytest.fixture
 def sample_listing_id():
     """Fixture for a listing ID"""
     return uuid4()
 
-
 @pytest.fixture
 def sample_benchmark_create():
     """Fixture for a BenchmarkCreate object"""
     return Mock(spec=BenchmarkCreate)
-
 
 @pytest.fixture
 def sample_benchmark_read():
@@ -69,7 +61,6 @@ def sample_benchmark_read():
     benchmark.name = "Test Benchmark"
     benchmark.score = "95.5"
     return benchmark
-
 
 @pytest.fixture
 def sample_benchmark_list():
@@ -86,7 +77,6 @@ def sample_benchmark_list():
 
 
 class TestBenchmarkService:
-    
     def test_create_benchmark_successfully_creates_benchmark(self, benchmark_service, mock_db, mock_repository, mock_machines_public, sample_machine_id, sample_provider_id, sample_benchmark_read):
         """Test successful benchmark creation"""
         mock_machines_public.provider_owns_machine.return_value = True

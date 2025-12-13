@@ -124,7 +124,7 @@ class TestAuthDependencies:
             
             assert result is None
 
-    # REFACTOR SUGGESTION: require_roles is a decorator factory - hard to test directly
+    #refactor: require_roles is a decorator factory - hard to test directly
     # Consider extracting the role checking logic to make it more testable
     def test_require_roles_decorator_with_valid_role(self):
         """Test require_roles allows access with valid role"""

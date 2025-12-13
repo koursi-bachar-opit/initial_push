@@ -23,7 +23,6 @@ def test_invoices_public_implements_protocol():
     assert public_impl.repo == mock_repo
     assert public_impl.service == mock_service
 
-
 def test_invoices_public_delegates_to_repository():
     """Test that all public methods correctly delegate to the repository layer"""
     mock_db = Mock()

@@ -4,7 +4,7 @@ from uuid import uuid4
 from datetime import datetime, timezone
 from decimal import Decimal
 
-from app.invoices.service import InvoiceService, BookingSummary, PaymentSummary
+from app.invoices.service import InvoicesService, BookingSummary, PaymentSummary
 from app.invoices.repository import InvoicesRepository
 from app.invoices.models import Invoice, InvoiceStatus
 from app.invoices.schemas import InvoiceCreate
@@ -18,31 +18,25 @@ from app.notifications.public import NotificationsPublic
 def mock_db():
     return Mock()
 
-
 @pytest.fixture
 def mock_repository():
     return Mock(spec=InvoicesRepository)
-
 
 @pytest.fixture
 def mock_bookings_public():
     return Mock(spec=BookingsPublic)
 
-
 @pytest.fixture
 def mock_payments_public():
     return Mock(spec=PaymentsPublic)
-
 
 @pytest.fixture
 def mock_organizations_public():
     return Mock(spec=OrganizationsPublic)
 
-
 @pytest.fixture
 def mock_notifications_public():
     return Mock(spec=NotificationsPublic)
-
 
 @pytest.fixture
 def invoice_service(
@@ -50,7 +44,7 @@ def invoice_service(
     mock_organizations_public, mock_notifications_public
 ):
     """Main service fixture that composes other fixtures"""
-    return InvoiceService(
+    return InvoicesService(
         db=mock_db,
         repo=mock_repository,
         bookings_public=mock_bookings_public,
@@ -58,7 +52,6 @@ def invoice_service(
         organizations_public=mock_organizations_public,
         notifications_public=mock_notifications_public,
     )
-
 
 @pytest.fixture
 def sample_invoice_data():
@@ -69,7 +62,6 @@ def sample_invoice_data():
         period_end=datetime(2024, 1, 31, tzinfo=timezone.utc),
         currency="USD",
     )
-
 
 @pytest.fixture
 def sample_invoice():
@@ -84,7 +76,6 @@ def sample_invoice():
     invoice.status = InvoiceStatus.PENDING
     invoice.organization = Mock()
     return invoice
-
 
 @pytest.fixture
 def sample_booking_summaries():
@@ -105,7 +96,6 @@ def sample_booking_summaries():
             currency="USD",
         ),
     ]
-
 
 @pytest.fixture
 def sample_payment_summaries():
@@ -134,7 +124,6 @@ def sample_payment_summaries():
         ),
     ]
 
-
 @pytest.fixture
 def sample_organization():
     """Fixture for sample organization"""
@@ -143,8 +132,7 @@ def sample_organization():
     org.name = "Test Organization"
     return org
 
-
-class TestInvoiceService:
+class TestInvoicesService:
     
     # Test: generate_invoice
     def test_generate_invoice_success_admin(
@@ -335,7 +323,6 @@ class TestInvoiceService:
                 is_org_member=False,
             )
 
-    # Test: list_all_invoices
     def test_list_all_invoices_success_admin(
         self, invoice_service, mock_db, mock_repository
     ):
@@ -366,7 +353,6 @@ class TestInvoiceService:
                 is_site_admin=False,
             )
 
-    # Test: get_invoice
     def test_get_invoice_success_admin(
         self, invoice_service, mock_db, mock_repository, sample_invoice
     ):
@@ -429,7 +415,6 @@ class TestInvoiceService:
                 user_org_ids=user_org_ids,
             )
 
-    # Test: finalize_invoice
     def test_finalize_invoice_success_admin(
         self, invoice_service, mock_db, mock_repository, mock_notifications_public,
         sample_invoice
@@ -498,7 +483,6 @@ class TestInvoiceService:
         
         mock_repository.update_status.assert_not_called()
 
-    # Test: void_invoice
     def test_void_invoice_success_admin(
         self, invoice_service, mock_db, mock_repository, sample_invoice
     ):
@@ -562,7 +546,6 @@ class TestInvoiceService:
         
         mock_repository.update_status.assert_not_called()
 
-    # Test: mark_invoice_paid
     def test_mark_invoice_paid_success_admin(
         self, invoice_service, mock_db, mock_repository, sample_invoice
     ):
@@ -626,7 +609,6 @@ class TestInvoiceService:
         
         mock_repository.update_status.assert_not_called()
 
-    # Test: _aggregate_total_amount
     def test_aggregate_total_amount_calculates_correctly(
         self, invoice_service, mock_payments_public, sample_booking_summaries,
         sample_payment_summaries
@@ -701,7 +683,6 @@ class TestInvoiceService:
         # Should be negative since only refunds
         assert result == Decimal("-300.00")
 
-    # Test: _ensure_org_exists
     def test_ensure_org_exists_success(
         self, invoice_service, mock_organizations_public
     ):

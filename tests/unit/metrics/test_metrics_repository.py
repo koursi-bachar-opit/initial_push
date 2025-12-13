@@ -12,12 +12,10 @@ def mock_db():
     """Mock database session fixture"""
     return Mock()
 
-
 @pytest.fixture
 def metrics_repository():
     """MetricsRepository instance fixture"""
     return MetricsRepository()
-
 
 @pytest.fixture
 def sample_metric_sample():
@@ -34,7 +32,6 @@ def sample_metric_sample():
     sample.created_at = datetime.now(timezone.utc)
     return sample
 
-
 @pytest.fixture
 def sample_metric_data():
     """Fixture for metric sample creation data"""
@@ -47,7 +44,6 @@ def sample_metric_data():
         "net_rx_mb": 1024.8,
         "net_tx_mb": 512.3,
     }
-
 
 class TestMetricsRepository:
     

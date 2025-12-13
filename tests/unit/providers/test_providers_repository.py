@@ -12,12 +12,10 @@ def mock_db():
     """Mock database session fixture"""
     return Mock()
 
-
 @pytest.fixture
 def provider_repository(mock_db):
     """ProviderRepository instance fixture"""
     return ProviderRepository(mock_db)
-
 
 @pytest.fixture
 def sample_provider_profile():
@@ -27,7 +25,6 @@ def sample_provider_profile():
     profile.user_id = uuid4()
     profile.payout_account_ref = "acc_123"
     return profile
-
 
 @pytest.fixture
 def sample_verification():
@@ -39,7 +36,6 @@ def sample_verification():
     verification.notes = "Initial verification"
     return verification
 
-
 @pytest.fixture
 def sample_profile_create_data():
     """Fixture for sample provider profile creation data"""
@@ -47,14 +43,12 @@ def sample_profile_create_data():
         payout_account_ref="acc_123"
     )
 
-
 @pytest.fixture
 def sample_profile_update_data():
     """Fixture for sample provider profile update data"""
     return ProviderProfileUpdate(
         payout_account_ref="acc_updated_456"
     )
-
 
 @pytest.fixture
 def sample_verification_create_data():
@@ -64,7 +58,6 @@ def sample_verification_create_data():
         subject_id=uuid4(),
         notes="Initial verification"
     )
-
 
 class TestProviderRepository:
     
@@ -142,7 +135,7 @@ class TestProviderRepository:
         
         #We need to mock models.ProviderProfile to return our mock
         with pytest.MonkeyPatch.context() as mp:
-            mp.setattr('app.providers.repository.models.ProviderProfile', lambda **kwargs: mock_profile)
+            mp.setattr('app.providers.repository.ProviderProfile', lambda **kwargs: mock_profile)
             result = provider_repository.create(user_id, sample_profile_create_data)
         
         assert result == mock_profile
@@ -202,7 +195,7 @@ class TestProviderRepository:
         
         #We need to mock models.Verification to return our mock
         with pytest.MonkeyPatch.context() as mp:
-            mp.setattr('app.providers.repository.models.Verification', lambda **kwargs: mock_verification)
+            mp.setattr('app.providers.repository.Verification', lambda **kwargs: mock_verification)
             result = provider_repository.create_verification(sample_verification_create_data)
         
         assert result == mock_verification

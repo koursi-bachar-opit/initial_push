@@ -3,7 +3,7 @@ from unittest.mock import Mock
 from uuid import uuid4
 from fastapi import HTTPException, status
 
-from app.organizations.service import OrganizationService
+from app.organizations.service import OrganizationsService
 from app.organizations.repository import OrganizationsRepository
 from app.organizations.models import Organization, OrganizationMembership, OrganizationStatus, OrgRole
 from app.organizations.schemas import OrganizationCreate, OrganizationUpdate, MembershipCreate, MembershipUpdateRole
@@ -11,32 +11,29 @@ from app.organizations.permissions import OrgPermission
 
 from app.users.public import UsersPublic
 
+
 @pytest.fixture
 def mock_db():
     """Mock database session fixture"""
     return Mock()
-
 
 @pytest.fixture
 def mock_repository():
     """Mock OrganizationsRepository fixture"""
     return Mock(spec=OrganizationsRepository)
 
-
 @pytest.fixture
 def mock_users_public():
     return Mock(spec=UsersPublic)
 
-
 @pytest.fixture
 def organization_service(mock_db, mock_repository, mock_users_public):
-    """OrganizationService fixture with all dependencies"""
-    return OrganizationService(
+    """OrganizationsService fixture with all dependencies"""
+    return OrganizationsService(
         db=mock_db,
         repo=mock_repository,
         users_public=mock_users_public,
     )
-
 
 @pytest.fixture
 def sample_organization():
@@ -50,7 +47,6 @@ def sample_organization():
     organization.updated_at = Mock()
     return organization
 
-
 @pytest.fixture
 def sample_membership():
     """Fixture for a mock membership object"""
@@ -61,7 +57,6 @@ def sample_membership():
     membership.org_role = OrgRole.ADMIN
     membership.created_at = Mock()
     return membership
-
 
 @pytest.fixture
 def sample_member_membership():
@@ -74,7 +69,6 @@ def sample_member_membership():
     membership.created_at = Mock()
     return membership
 
-
 @pytest.fixture
 def sample_organization_create_data():
     """Fixture for sample organization creation data"""
@@ -82,7 +76,6 @@ def sample_organization_create_data():
         name="Test Organization",
         billing_email="billing@test.org"
     )
-
 
 @pytest.fixture
 def sample_organization_update_data():
@@ -93,7 +86,6 @@ def sample_organization_update_data():
         status=OrganizationStatus.SUSPENDED
     )
 
-
 @pytest.fixture
 def sample_membership_create_data():
     """Fixture for sample membership creation data"""
@@ -102,7 +94,6 @@ def sample_membership_create_data():
         role=OrgRole.MEMBER
     )
 
-
 @pytest.fixture
 def sample_membership_update_data():
     """Fixture for sample membership update data"""
@@ -110,8 +101,7 @@ def sample_membership_update_data():
         role=OrgRole.ADMIN
     )
 
-
-class TestOrganizationService:
+class TestOrganizationsService:
     
     def test_create_organization_successfully_creates_and_adds_creator_as_admin(self, organization_service, mock_db, mock_repository, sample_organization_create_data, sample_organization, sample_member_membership):
         """Test successful organization creation with creator as admin"""

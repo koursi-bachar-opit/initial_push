@@ -14,36 +14,30 @@ def mock_db():
     """Mock database session fixture"""
     return Mock()
 
-
 @pytest.fixture
 def mock_repository():
     """Mock ListingsRepository fixture"""
     return Mock(spec=ListingsRepository)
-
 
 @pytest.fixture
 def mock_machines_public():
     """Mock MachinesPublic fixture for machine ownership checks"""
     return Mock()
 
-
 @pytest.fixture
 def mock_providers_public():
     """Mock ProvidersPublic fixture for provider verification"""
     return Mock()
-
 
 @pytest.fixture
 def mock_metrics_public():
     """Mock MetricsPublic fixture for metrics collection"""
     return Mock()
 
-
 @pytest.fixture
 def mock_agent():
     """Mock ProviderAgentClient fixture for metrics collection"""
     return Mock()
-
 
 @pytest.fixture
 def listings_service(
@@ -64,7 +58,6 @@ def listings_service(
         agent=mock_agent
     )
 
-
 @pytest.fixture
 def sample_listing_data():
     """Fixture for sample listing creation data"""
@@ -80,14 +73,12 @@ def sample_listing_data():
         availability_status="active"
     )
 
-
 @pytest.fixture
 def sample_listing_read():
     """Fixture for a mock ListingRead object"""
     listing_read = Mock(spec=ListingRead)
     listing_read.model_dump.return_value = {"id": uuid4(), "title": "Test Listing"}
     return listing_read
-
 
 @pytest.fixture
 def sample_listing():
@@ -125,7 +116,6 @@ def sample_listing():
     
     listing.machine = machine
     return listing
-
 
 class TestListingsService:
     
