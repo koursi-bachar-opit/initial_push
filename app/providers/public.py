@@ -12,11 +12,7 @@ from .models import ProviderVerificationStatus
 
 
 class ProvidersPublic(Protocol):
-    """
-    Public interface for interacting with the Providers domain.
-    Other domains should use this instead of directly depending on
-    providers.service or providers.repository.
-    """
+    """Protocol defining the public interface for providers queries."""
     def get_profile_by_user(self, user_id: UUID):
         ...
 
@@ -29,11 +25,8 @@ class ProvidersPublic(Protocol):
     def list_verifications(self, subject_type, subject_id):
         ...
 
-
 class ProvidersPublicImpl:
-    """
-    Concrete implementation of the public facade.
-    """
+    """Concrete implementation of ProvidersPublic using the ProviderProfileService and VerificationService."""
     def __init__(
         self,
         profile_service: ProviderProfileService,
@@ -58,11 +51,11 @@ class ProvidersPublicImpl:
     def list_verifications(self, subject_type, subject_id):
         return self.verification_service.list_verifications(subject_type, subject_id)
 
-
 def get_providers_public(
     profile_service: ProviderProfileService = Depends(get_provider_profile_service),
     verification_service: VerificationService = Depends(get_verification_service),
 ) -> ProvidersPublic:
+    """Dependency injection provider for ProviderProfileService and VerificationService interface."""
     return ProvidersPublicImpl(
         profile_service=profile_service,
         verification_service=verification_service,

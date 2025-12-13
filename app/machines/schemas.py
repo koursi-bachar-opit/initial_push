@@ -21,7 +21,6 @@ class MachineCreate(BaseModel):
     network_mbps: int = Field(..., ge=1, description="Network bandwidth in Mbps")
     notes: Optional[str] = Field(None, description="Additional notes or description")
 
-
 class MachineRead(MachineCreate):
     id: UUID
     created_at: datetime

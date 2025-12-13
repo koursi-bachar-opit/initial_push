@@ -6,17 +6,16 @@ from .service import BenchmarkService, get_benchmark_service
 from .schemas import BenchmarkCreate, BenchmarkRead
 from app.users.models import User, UserRole
 
+
 router = APIRouter()
 
 #consider: more upfront validation if authorization is refactored
 #consider: pass BenchmarkCreate payload instead of as individual parameters
 #Provider upload
-router = APIRouter()
-
 @router.post("/machines/{machine_id}", response_model=BenchmarkRead, status_code=201)
 def create_machine_benchmark(
     machine_id: UUID,
-    benchmark: BenchmarkCreate,  # Change to accept BenchmarkCreate schema
+    benchmark: BenchmarkCreate,
     user: User = Depends(get_current_user),
     service: BenchmarkService = Depends(get_benchmark_service),
 ):
@@ -32,8 +31,6 @@ def create_machine_benchmark(
         artifact_uri=benchmark.artifact_uri
     )
     
-
-#Public read
 @router.get("/machines/{machine_id}", response_model=list[BenchmarkRead])
 def get_machine_benchmarks(
     machine_id: UUID,

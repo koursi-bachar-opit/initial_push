@@ -10,12 +10,10 @@ from sqlalchemy.orm import relationship
 from app.database import Base
 
 
-#Enums
 class PaymentType(str, Enum):
     ESCROW = "escrow"
     CAPTURE = "capture"
     REFUND = "refund"
-
 
 class PaymentStatus(str, Enum):
     AUTHORIZED = "authorized"
@@ -24,8 +22,6 @@ class PaymentStatus(str, Enum):
     FAILED = "failed"
     CANCELLED = "cancelled"
 
-
-#Payment model
 class Payment(Base):
     """
     Payment domain model.
@@ -46,7 +42,6 @@ class Payment(Base):
         index=True,
     )
 
-    #Domain fields
     type = Column(
         SQLEnum(PaymentType, name="payment_type_enum"),
         nullable=False,

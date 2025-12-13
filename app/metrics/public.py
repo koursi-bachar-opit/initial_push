@@ -8,11 +8,7 @@ from .schemas import MetricSampleListItem, MetricSampleRead, MetricsQueryParams
 
 
 class MetricsPublic(Protocol):
-    """
-    Public interface for interacting with the Metrics domain.
-    Write operations (ingest) are not exposed publicly — only ProviderAgentClient
-    uses MetricsService directly via the routes layer.
-    """
+    """Protocol defining the public interface for machines queries."""
     def get_latest_metrics(self, machine_id: UUID) -> Optional[MetricSampleRead]:
         ...
 
@@ -28,9 +24,7 @@ class MetricsPublic(Protocol):
 
 
 class MetricsPublicImpl:
-    """
-    Concrete implementation of MetricsPublic.
-    """
+    """Concrete implementation of MetricsPublic using the MetricsService."""
     def __init__(self, service: MetricsService):
         self.service = service
 
@@ -47,8 +41,8 @@ class MetricsPublicImpl:
     def ingest_raw_metrics(self, machine_id: UUID, raw: dict, provider_id: UUID):
         return self.service.ingest_raw_metrics(machine_id, raw, provider_id)
 
-
 def get_metrics_public(
     service: MetricsService = Depends(get_metrics_service),
 ) -> MetricsPublic:
+    """Dependency injection provider for MetricsService interface."""
     return MetricsPublicImpl(service)

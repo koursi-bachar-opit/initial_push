@@ -32,7 +32,6 @@ class MetricSampleCreate(BaseModel):
         None, ge=0, description="Transmitted MB during sampling interval"
     )
 
-
 class MetricSampleRead(BaseModel):
     id: UUID
     machine_id: UUID
@@ -45,7 +44,6 @@ class MetricSampleRead(BaseModel):
     net_tx_mb: Optional[float]
 
     model_config = ConfigDict(from_attributes=True)
-
 
 class MetricSampleListItem(BaseModel):
     """
@@ -60,7 +58,6 @@ class MetricSampleListItem(BaseModel):
     net_tx_mb: Optional[float]
 
     model_config = ConfigDict(from_attributes=True)
-
 
 #Optional query parameters for filtering & windowing.
 class MetricsQueryParams(BaseModel):

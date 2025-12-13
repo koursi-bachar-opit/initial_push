@@ -8,15 +8,11 @@ from app.database import Base
 
 
 class Machine(Base):
-    """
-    These are the physical servers offered by providers.
-    Most hardware attributes are nullable until full buildout.
-    """
+    """These are the physical servers offered by providers."""
     __tablename__ = "machines"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
-    #Link to the provider's user account
     provider_id = Column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
@@ -24,7 +20,7 @@ class Machine(Base):
         index=True,
     )
 
-    #Hardware and descriptive attributes (note: to be non nullable later)
+    # Hardware and descriptive attributes
     hostname = Column(String, nullable=False)
     location_region = Column(String, nullable=False)
 

@@ -13,11 +13,9 @@ class OrganizationStatus(str, Enum):
     SUSPENDED = "suspended"
     CLOSED = "closed"
 
-
 class OrgRole(str, Enum):
     ADMIN = "admin"
     MEMBER = "member"
-
 
 class Organization(Base):
     __tablename__ = "organizations"
@@ -51,8 +49,6 @@ class Organization(Base):
         back_populates="organization",
         cascade="all, delete-orphan"
     )
-
-
 
 class OrganizationMembership(Base):
     __tablename__ = "organization_memberships"

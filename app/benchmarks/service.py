@@ -8,7 +8,9 @@ from fastapi import Depends
 
 from app.machines.public import MachinesPublic, get_machines_public
 
+
 class BenchmarkService:
+    """Business logic for benchmark operations, including ownership validation."""
     def __init__(
         self,
         db: Session,
@@ -19,7 +21,6 @@ class BenchmarkService:
         self.repo = repo
         self.machines_public = machines_public
 
-    #Create
     def create_benchmark(
         self,
         machine_id: UUID,
@@ -29,6 +30,7 @@ class BenchmarkService:
         methodology_uri: Optional[str] = None,
         artifact_uri: Optional[str] = None,
     ) -> BenchmarkRead:
+        # Authorization: verify provider owns the machine before creating benchmark
         if not self.machines_public.provider_owns_machine(provider_id, machine_id):
             raise PermissionError("User does not own this machine")
         
@@ -41,19 +43,17 @@ class BenchmarkService:
         )
         return self.repo.create(self.db, machine_id, payload)
 
-
-    #Read
     def list_machine_benchmarks(self, machine_id: UUID) -> List[BenchmarkRead]:
         return self.repo.list_for_machine(self.db, machine_id)
 
     def list_listing_benchmarks(self, listing_id: UUID) -> List[BenchmarkRead]:
         return self.repo.list_for_listing(self.db, listing_id)
 
-
 def get_benchmark_service(
     db: Session = Depends(get_db),
     machines_public: MachinesPublic = Depends(get_machines_public),
 ):
+    """Dependency injection factory for BenchmarksService."""
     repo = BenchmarksRepository()
     return BenchmarkService(
         db=db,

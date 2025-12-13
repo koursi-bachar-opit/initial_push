@@ -3,6 +3,7 @@ from pydantic import BaseModel, HttpUrl, ConfigDict
 from datetime import datetime
 from typing import Optional
 
+
 class BenchmarkCreate(BaseModel):
     name: str
     score: str

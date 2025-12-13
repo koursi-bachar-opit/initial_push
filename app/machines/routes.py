@@ -21,8 +21,7 @@ def get_machine(
 ):
     try:
         machine = service.get_machine(machine_id)
-    #except MachineNotFoundError:
-    except ValueError as e:
+    except ValueError as e: #consider: except MachineNotFoundError:
         raise HTTPException(404, "Machine not found")
 
     #Provider authorization
@@ -30,7 +29,6 @@ def get_machine(
         raise HTTPException(403, "Not allowed")
 
     return machine
-
 
 @router.get("/", response_model=list[MachineRead])
 def list_machines(
@@ -42,7 +40,6 @@ def list_machines(
 
     return service.list_machines_for_provider(user.id)
 
-
 @router.delete("/{machine_id:uuid}", status_code=204)
 def delete_machine(
     machine_id: UUID,
@@ -51,13 +48,10 @@ def delete_machine(
 ):
     try:
         service.delete_machine(machine_id, provider_id=user.id)
-    #consider: except MachineNotFoundError:
-    except ValueError as e:
+    except ValueError as e: #consider: except MachineNotFoundError:
         raise HTTPException(404, "Machine not found")
-    #consider: except NotProviderMachineError:
-    except ValueError as e:
+    except ValueError as e: #consider: except NotProviderMachineError:
         raise HTTPException(403, "Not allowed")
-
 
 @router.post("/", response_model=MachineRead, status_code=201)
 def create_machine(

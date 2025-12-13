@@ -17,11 +17,7 @@ class DisputeStatus(str, Enum):
     RESOLVED_DENIED = "resolved_denied"
     CLOSED = "closed"
 
-
 class Dispute(Base):
-    """
-    Dispute management for buyer-provider conflicts.
-    """
     __tablename__ = "disputes"
 
     id = Column(

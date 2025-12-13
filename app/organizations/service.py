@@ -1,7 +1,8 @@
-from uuid import UUID
-from typing import Optional, List, Dict
-
+import random
 from fastapi import Depends, HTTPException, status
+from datetime import datetime, timedelta, timezone
+from uuid import UUID
+from typing import List, Dict
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -11,13 +12,11 @@ from .models import OrgRole
 from .schemas import OrganizationCreate, OrganizationUpdate, MembershipCreate, MembershipUpdateRole
 from .permissions import OrgPermission
 
-import random
-from datetime import datetime, timedelta, timezone
-
 from app.users.public import UsersPublic, get_users_public
 
+
 #refactor: verbose user functions
-class OrganizationService:
+class OrganizationsService:
     def __init__(
         self,
         db: Session,
@@ -28,11 +27,8 @@ class OrganizationService:
         self.repo = repo
         self.users_public = users_public
 
-
     def create_organization(self, creator_user_id: UUID, payload: OrganizationCreate):
-        """
-        Creator becomes the first admin automatically.
-        """
+        """Creator becomes the first admin automatically."""
         org = self.repo.create(self.db, payload.model_dump())
 
         #creator is automatically an admin
@@ -41,9 +37,7 @@ class OrganizationService:
         return org
 
     def update_organization(self, org_id: UUID, actor_user_id: UUID, payload: OrganizationUpdate):
-        """
-        Only organization admins may update org metadata.
-        """
+        """Only organization admins may update org metadata."""
         membership = self.repo.get_membership(self.db, org_id, actor_user_id)
         OrgPermission.require_admin(membership)
 
@@ -66,7 +60,6 @@ class OrganizationService:
 
         return self.repo.add_member(self.db, org_id, user_id, role)
 
-
     def remove_member(self, org_id: UUID, actor_user_id: UUID, user_id: UUID):
         """
         Admin removes a member.
@@ -75,18 +68,6 @@ class OrganizationService:
         OrgPermission.require_admin(membership)
 
         return self.repo.remove_member(self.db, org_id, user_id)
-
-
-    # def change_member_role(self, org_id: UUID, actor_user_id: UUID, user_id: UUID, role: OrgRole):
-    #     """
-    #     Admin changes another user's role.
-    #     """
-    #     membership = self.repo.get_membership(self.db, org_id, actor_user_id)
-    #     OrgPermission.require_admin(membership)
-
-    #     updated = self.repo.change_role(self.db, org_id, user_id, role)
-    #     return updated
-
 
     def list_user_organizations(self, user_id: UUID):
         """
@@ -122,14 +103,14 @@ class OrganizationService:
         membership = self.repo.get_membership(self.db, org_id, actor_user_id)
         OrgPermission.require_admin(membership)
         
-        #Check if trying to change own role
+        # Check if trying to change own role
         if actor_user_id == user_id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Cannot change your own role",
             )
         
-        #Check if at least one admin remains
+        # Check if at least one admin remains
         if role != OrgRole.ADMIN:
             admin_count = len([
                 m for m in self.repo.list_members(self.db, org_id)
@@ -261,13 +242,12 @@ class OrganizationService:
         
         return results
 
-
 def get_organization_service(
     db: Session = Depends(get_db),
     users_public: UsersPublic = Depends(get_users_public)
-) -> OrganizationService:
+) -> OrganizationsService:
     repo = OrganizationsRepository()
-    return OrganizationService(
+    return OrganizationsService(
         db=db,
         repo=repo,
         users_public=users_public,

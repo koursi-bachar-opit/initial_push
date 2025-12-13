@@ -9,7 +9,6 @@ from .models import Invoice, InvoiceStatus
 
 
 class InvoicesRepository:
-    #CRUD
     def create(
         self,
         db: Session,

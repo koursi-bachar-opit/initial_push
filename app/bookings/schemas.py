@@ -8,30 +8,25 @@ from app.listings.schemas import ListingRead
 
 
 class BookingStatus(str, Enum):
-    PENDING_PAYMENT = "pending_payment" #new status
+    PENDING_PAYMENT = "pending_payment"
     REQUESTED = "requested"
     CONFIRMED = "confirmed"
     ACTIVE = "active"
     COMPLETED = "completed"
     CANCELLED = "cancelled"
 
-
 class BookingAdminCreate(BaseModel):
     """
-    For admins only. Buyers should never use this schema. 
-    Includes buyer_user_id because admins assign the target buyer explicitly.
+    Includes buyer_user_id because admins
+    assign the target buyer explicitly.
     """
     listing_id: UUID
     start_time: datetime
     end_time: datetime
     buyer_user_id: UUID
-    organization_id: Optional[UUID] = None  #NEW LINE
-
+    organization_id: Optional[UUID] = None
 
 class BookingRequest(BaseModel):
-    """
-    Buyer booking creation payload.
-    """
     listing_id: UUID
     start_time: datetime
     end_time: datetime
@@ -47,14 +42,10 @@ class BookingRequest(BaseModel):
         return v
 
 class BookingRead(BaseModel):
-    """
-    Full booking object.
-    Includes raw DB fields and conveniece fields for API responses
-    """
     id: UUID
     listing_id: UUID
     buyer_user_id: UUID
-    organization_id: Optional[UUID] = None  #NEW LINE
+    organization_id: Optional[UUID] = None
     start_time: datetime
     end_time: datetime
     status: BookingStatus
@@ -65,13 +56,9 @@ class BookingRead(BaseModel):
     actual_price_charged: Optional[float] = None
     usage_seconds: Optional[float] = None
 
-    """
-    Convenience field
-    (to generate API responses for now)
-    """
+    # These fields map to computed properties from the SQLAlchemy model
     listing_title: Optional[str] = None
     buyer_email: Optional[str] = None
-
     listing: Optional[ListingRead] = None
 
     model_config = ConfigDict(from_attributes=True)

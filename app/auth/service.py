@@ -1,9 +1,8 @@
-from typing import Optional
-
 import jwt
 from jwt import PyJWTError
 from fastapi import Depends
 from sqlalchemy.orm import Session
+from typing import Optional
 
 from app.users.public import get_users_public, UsersPublic
 from app.users.models import User
@@ -59,7 +58,7 @@ class AuthService:
         """
         Returns the authenticated user or None, if no token was provided
         Supported formats:
-
+        
         1. Mock tokens for tests/local dev (not real JWTs):
            - "provider:alice@example.com"
            - "admin:admin@example.com"

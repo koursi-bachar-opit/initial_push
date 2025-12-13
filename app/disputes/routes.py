@@ -16,7 +16,6 @@ from app.disputes.models import DisputeStatus
 
 router = APIRouter()
 
-
 #Open dispute, for buyers and providers
 @router.post("/", response_model=DisputeRead, status_code=201)
 def open_dispute(
@@ -33,18 +32,12 @@ def open_dispute(
         #consider: "booking not found." "Unauthorized, already has open dispute"
         raise HTTPException(status_code=400, detail=str(e))
 
-
-#List disputes
 @router.get("/me", response_model=list[DisputeListItem])
 def list_my_disputes(
     user: User = Depends(get_current_user),
     disputes: DisputesPublic = Depends(get_disputes_public),
 ):
-    """
-    Users see disputes they opened.
-    """
     return disputes.list_disputes_for_user(user.id)
-
 
 @router.get("/booking/{booking_id:uuid}", response_model=list[DisputeListItem])
 def list_disputes_for_booking(
@@ -60,8 +53,6 @@ def list_disputes_for_booking(
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
-
-#List open disputes
 @router.get("/admin", response_model=list[DisputeListItem])
 def list_open_disputes_for_admin(
     user: User = Depends(get_current_user),
@@ -72,8 +63,6 @@ def list_open_disputes_for_admin(
 
     return disputes.list_open_for_admin()
 
-
-#Update dispute status
 @router.put("/{dispute_id:uuid}/status", response_model=DisputeRead)
 def update_dispute_status(
     dispute_id: UUID,
@@ -94,8 +83,6 @@ def update_dispute_status(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-
-#Resolve dispute
 @router.post("/{dispute_id:uuid}/resolve", response_model=DisputeRead)
 def resolve_dispute(
     dispute_id: UUID,
@@ -111,8 +98,6 @@ def resolve_dispute(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-
-#Close dispute
 @router.post("/{dispute_id:uuid}/close", response_model=DisputeRead)
 def close_dispute(
     dispute_id: UUID,

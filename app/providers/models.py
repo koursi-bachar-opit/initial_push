@@ -15,17 +15,14 @@ class ProviderVerificationStatus(str, Enum):
     VERIFIED = "verified"
     REJECTED = "rejected"
 
-
 class VerificationStatus(str, Enum):
     PENDING = "pending"
     VERIFIED = "verified"
     REJECTED = "rejected"
 
-
 class VerificationSubject(str, Enum):
     PROVIDER = "provider"
     MACHINE = "machine"
-
 
 class ProviderProfile(Base):
     __tablename__ = "provider_profiles"
@@ -60,7 +57,6 @@ class ProviderProfile(Base):
     )
 
     user = relationship("User", back_populates="provider_profile")
-
 
 class Verification(Base):
     __tablename__ = "verifications"

@@ -17,6 +17,7 @@ from app.organizations.public import OrganizationsPublic, get_organizations_publ
 
 from app.notifications.public import NotificationsPublic, get_notifications_public
 
+
 @dataclass
 class BookingSummary:
     id: UUID
@@ -25,21 +26,19 @@ class BookingSummary:
     end_time: datetime
     currency: str
 
-
 @dataclass
 class PaymentSummary:
     id: UUID
     booking_id: UUID
     amount: Decimal
     currency: str
-    status: str  # "captured" | "refunded" | ...
+    status: str
 
-
-class InvoiceService:
+class InvoicesService:
     """
     Orchestrates invoice generation and lifecycle.
     Permissions:
-    - Admin-only for generate/finalize/void/list_all (enforced via flags).
+    - Admin-only for generate/finalize/void/list_alls.
     - Org admins (and optionally members) can read their org's invoices.
     """
     def __init__(
@@ -65,6 +64,10 @@ class InvoiceService:
         *,
         is_site_admin: bool,
     ) -> Invoice:
+        """
+        Generate an invoice for an organization.
+        Aggregates the total order amount from bookings and calculates total.
+        """
         if not is_site_admin:
             raise PermissionError("Only site admins may generate invoices.")
 
@@ -113,6 +116,7 @@ class InvoiceService:
         skip: int = 0,
         limit: int = 100,
     ) -> List[Invoice]:
+        """"Lists invoices for a given organization"""
         if not (is_site_admin or is_org_admin or is_org_member):
             raise PermissionError("Not allowed to view these invoices.")
 
@@ -160,6 +164,7 @@ class InvoiceService:
         *,
         is_site_admin: bool,
     ) -> Invoice:
+        """Admin function to finalize an invoice and change the invoice status."""
         if not is_site_admin:
             raise PermissionError("Only site admins may finalize invoices.")
 
@@ -182,6 +187,7 @@ class InvoiceService:
         *,
         is_site_admin: bool,
     ) -> Invoice:
+        """Admin function to void an invoice in case of errors."""
         if not is_site_admin:
             raise PermissionError("Only site admins may void invoices.")
 
@@ -252,16 +258,15 @@ class InvoiceService:
 
         return captured - refunded
 
-
 def get_invoice_service(
     db: Session = Depends(get_db),
     bookings_public: BookingsPublic = Depends(get_bookings_public),
     payments_public: PaymentsPublic = Depends(get_payments_public),
     organizations_public: OrganizationsPublic = Depends(get_organizations_public),
     notifications_public: NotificationsPublic = Depends(get_notifications_public),
-) -> InvoiceService:
+) -> InvoicesService:
     repo = InvoicesRepository()
-    return InvoiceService(
+    return InvoicesService(
         db=db,
         repo=repo,
         bookings_public=bookings_public,

@@ -5,14 +5,12 @@ from fastapi import Depends
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from .repository import UserRepository
+from .repository import UsersRepository
 from .models import User, UserRole
 
 
 class UsersPublic(Protocol):
-    """
-    Public interface for interacting with the Users domain.
-    """
+    """Protocol defining the public interface for users queries."""
     def get_user_by_supabase_id(self, sub: str) -> User | None:
         ...
 
@@ -37,16 +35,11 @@ class UsersPublic(Protocol):
     def is_admin_role(self, user: User) -> bool:
         ...
 
-
 class UsersPublicImpl:
-    """
-    Concrete implementation of the public interface.
-    Wraps the UserRepository, providing a stable boundary.
-    """
-
+    """Concrete implementation of UsersPublic using the UsersRepository."""
     def __init__(self, db: Session):
         self.db = db
-        self.repo = UserRepository()
+        self.repo = UsersRepository()
 
     def get_user_by_supabase_id(self, sub: str) -> User | None:
         return self.repo.get_user_by_supabase_id(self.db, sub)

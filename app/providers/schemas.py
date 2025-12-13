@@ -4,38 +4,31 @@ from datetime import datetime
 from enum import Enum
 
 
-#Enums
 class ProviderVerificationStatus(str, Enum):
     PENDING = "pending"
     VERIFIED = "verified"
     REJECTED = "rejected"
-
 
 class VerificationStatus(str, Enum):
     PENDING = "pending"
     VERIFIED = "verified"
     REJECTED = "rejected"
 
-
 class VerificationSubject(str, Enum):
     PROVIDER = "provider"
     MACHINE = "machine"
 
-
-#Provider profile schemas
 class ProviderProfileCreate(BaseModel):
     """
     User creates a provider profile for themselves.
     """
     payout_account_ref: str | None = None
 
-
 class ProviderProfileUpdate(BaseModel):
     """
     User can update payout info or metadata.
     """
     payout_account_ref: str | None = None
-
 
 class ProviderProfileRead(BaseModel):
     """
@@ -50,8 +43,6 @@ class ProviderProfileRead(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-
-#Verification schemas
 class VerificationCreate(BaseModel):
     """
     End-user or system requests a verification event.
@@ -66,14 +57,12 @@ class VerificationCreate(BaseModel):
     subject_id: UUID
     notes: str | None = None
 
-
 class VerificationUpdateStatus(BaseModel):
     """
     Admin approves/rejects a verification.
     """
     status: VerificationStatus
     notes: str | None = None
-
 
 class VerificationRead(BaseModel):
     """

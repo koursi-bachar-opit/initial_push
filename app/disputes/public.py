@@ -4,7 +4,7 @@ from uuid import UUID
 from fastapi import Depends
 from sqlalchemy.orm import Session
 
-from app.disputes.service import DisputeService, get_disputes_service
+from app.disputes.service import DisputesService, get_disputes_service
 from app.disputes.models import Dispute, DisputeStatus
 from app.disputes.schemas import (
     DisputeCreate,
@@ -13,9 +13,7 @@ from app.disputes.schemas import (
 
 
 class DisputesPublic(Protocol):
-    """
-    Public interface exposed to other domains and routes.
-    """
+    """Protocol defining the public interface for disputes queries."""
     def open_dispute(self, user_id: UUID, payload: DisputeCreate) -> Dispute:
         ...
 
@@ -52,11 +50,10 @@ class DisputesPublic(Protocol):
 
 
 class DisputesPublicImpl(DisputesPublic):
-    def __init__(self, service: DisputeService):
+    """Concrete implementation of DisputesPublic using the DisputesService."""
+    def __init__(self, service: DisputesService):
         self.service = service
 
-
-    #User and Provider operations
     def open_dispute(self, user_id: UUID, payload: DisputeCreate) -> Dispute:
         return self.service.open_dispute(user_id, payload)
 
@@ -66,8 +63,6 @@ class DisputesPublicImpl(DisputesPublic):
     def list_disputes_for_booking(self, booking_id: UUID):
         return self.service.list_disputes_for_booking(booking_id)
 
-
-    #Admin operations
     def list_open_for_admin(self) -> List[Dispute]:  
         return self.service.list_open_for_admin()
 
@@ -93,8 +88,8 @@ class DisputesPublicImpl(DisputesPublic):
     def list_all_for_admin(self) -> List[Dispute]:
         return self.service.list_all_for_admin()
 
-
 def get_disputes_public(
-    service: DisputeService = Depends(get_disputes_service),
+    service: DisputesService = Depends(get_disputes_service),
 ) -> DisputesPublic:
+    """Dependency injection provider for DisputesService interface."""
     return DisputesPublicImpl(service)

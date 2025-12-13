@@ -6,6 +6,7 @@ from sqlalchemy.sql import func
 from app.database import Base
 from datetime import datetime, timezone
 
+
 class MachineBenchmark(Base):
     __tablename__ = "machine_benchmarks"
 

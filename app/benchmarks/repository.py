@@ -5,6 +5,7 @@ from .schemas import BenchmarkCreate
 
 
 class BenchmarksRepository:
+    """Repository for managing machine benchmark data in the database."""
     def create(self, db: Session, machine_id, payload: BenchmarkCreate) -> MachineBenchmark:
         obj = MachineBenchmark(
             machine_id=machine_id,

@@ -11,13 +11,18 @@ from .schemas import (
     VerificationUpdateStatus,
     VerificationRead,
 )
-
 from .public import ProvidersPublic, get_providers_public
-from app.users.models import User  #matches your pattern in bookings/routes.py
+
+from app.users.models import User
+
+#consider: imports for new endpoints, do I need all of them?
+from app.database import get_db
+from app.users.public import UsersPublic, get_users_public
+from sqlalchemy.orm import Session
+from .models import ProviderProfile, VerificationSubject
 
 
 router = APIRouter()
-
 
 #Provider profiles
 @router.post("/me", response_model=ProviderProfileRead, status_code=201)
@@ -30,7 +35,6 @@ def create_my_provider_profile(
         return providers.profile_service.create_profile(user.id, payload)
     except ValueError as e:
         raise HTTPException(400, str(e))
-
 
 @router.patch("/me", response_model=ProviderProfileRead)
 def update_my_provider_profile(
@@ -46,7 +50,6 @@ def update_my_provider_profile(
     except ValueError as e:
         raise HTTPException(400, str(e))
 
-
 @router.get("/me", response_model=ProviderProfileRead)
 def get_my_provider_profile(
     user: User = Depends(get_current_user),
@@ -56,7 +59,6 @@ def get_my_provider_profile(
     if not profile:
         raise HTTPException(404, "Provider profile not found.")
     return profile
-
 
 #Verification (user requests verification)
 @router.post("/me/verification", response_model=VerificationRead, status_code=201)
@@ -72,7 +74,6 @@ def request_provider_verification(
     except ValueError as e:
         raise HTTPException(400, str(e))
 
-
 @router.get("/me/verifications", response_model=list[VerificationRead])
 def list_my_verifications(
     user: User = Depends(get_current_user),
@@ -82,7 +83,6 @@ def list_my_verifications(
     if not profile:
         raise HTTPException(404, "Provider profile not found.")
     return providers.list_verifications("provider", profile.id)
-
 
 #Admin review of verification entries
 @router.post("/verification/{verification_id}/review", response_model=VerificationRead)
@@ -102,7 +102,6 @@ def admin_review_verification(
     except ValueError as e:
         raise HTTPException(400, str(e))
 
-
 #Admin: list verification events
 @router.get("/verification/{subject_type}/{subject_id}", response_model=list[VerificationRead])
 def admin_list_verifications_for_subject(
@@ -113,12 +112,7 @@ def admin_list_verifications_for_subject(
 ):
     return providers.list_verifications(subject_type, subject_id)
 
-
 #refactor: Admin routes, provider managements
-from app.database import get_db
-from app.users.public import UsersPublic, get_users_public
-from sqlalchemy.orm import Session
-from .models import ProviderProfile, VerificationSubject
 @router.get("/admin/providers")
 def get_all_providers(
     admin: User = Depends(ensure_admin),
@@ -143,7 +137,6 @@ def get_all_providers(
     
     return result
 
-
 @router.get("/admin/providers/{provider_id}/verifications")
 def get_provider_verifications(
     provider_id: str,
@@ -152,7 +145,6 @@ def get_provider_verifications(
 ):
     """Get all verifications for a specific provider"""
     return providers.list_verifications(VerificationSubject.PROVIDER, provider_id)
-
 
 @router.get("/admin/stats")
 def get_provider_stats(

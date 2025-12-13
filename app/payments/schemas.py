@@ -2,11 +2,9 @@ from datetime import datetime
 from decimal import Decimal
 from uuid import UUID
 from typing import Optional
-
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, ConfigDict
 
 from .models import PaymentType, PaymentStatus
-
 
 #Base schema (shared fields)
 class PaymentBase(BaseModel):
@@ -16,14 +14,10 @@ class PaymentBase(BaseModel):
     currency: Optional[str] = None
     processor_ref: Optional[str] = None
 
-
 #Create schema (input)
 class PaymentCreate(PaymentBase):
-    """
-    Not exposed publicly to clients.
-    """
+    """Not exposed publicly to clients."""
     pass
-
 
 #Public read schema (output)
 class PaymentRead(BaseModel):

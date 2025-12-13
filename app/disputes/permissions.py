@@ -5,7 +5,7 @@
 
 """
 This module is intentionally minimal for now. Most dispute logic
-is ownership-based and enforced in DisputeService using
+is ownership-based and enforced in DisputesService using
 BookingsPublic -> booking/listing/machine relationships.
 """
 

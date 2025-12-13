@@ -3,14 +3,11 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.auth.service import AuthService, get_auth_service
 
-
 security = HTTPBearer(auto_error=False)
 
 
 def require_roles(*roles):
-    """
-    Enforces that the authenticated user must have one of the specified roles.
-    """
+    """Enforces that the authenticated user must have one of the specified roles."""
     def dependency(user=Depends(get_current_user)):
         if user.role not in roles:
             raise HTTPException(
@@ -44,6 +41,7 @@ def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     auth_service: AuthService = Depends(get_auth_service),
 ):
+    """Gets the user from auth token and raises exception if not found."""
     token = extract_token(credentials, request)
 
     try:
@@ -62,6 +60,7 @@ def optional_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     auth_service: AuthService = Depends(get_auth_service),
 ):
+    """Returns the authenticated user if a valid token is provided, otherwise returns None."""
     token = extract_token(credentials, request)
 
     try:

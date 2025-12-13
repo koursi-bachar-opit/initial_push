@@ -1,19 +1,19 @@
 from sqlalchemy.orm import Session
 from fastapi import Depends
-
-from app.database import get_db
-from app.machines.public import MachinesPublic, get_machines_public
-
-from .repository import ListingsRepository
-from .schemas import ListingCreate, ListingRead, ListingFilter #, ListingFilter
-from .models import Listing
-
 from uuid import UUID
 
-from app.providers.public import ProvidersPublic, get_providers_public  #NEW LINE
+from app.database import get_db
+
+from .repository import ListingsRepository
+from .schemas import ListingCreate, ListingRead, ListingFilter
+from .models import Listing
+
+from app.machines.public import MachinesPublic, get_machines_public
+from app.providers.public import ProvidersPublic, get_providers_public
 from app.provider_agent.client import ProviderAgentClient, get_agent_client
 from app.metrics.public import MetricsPublic, get_metrics_public
 
+#refactor: permissions
 # class MachineOwnershipError(Exception):
 #     """Raised when a provider tries to list a machine they do not own."""
 #     pass
@@ -24,14 +24,14 @@ class ListingsService:
         db: Session,
         listing_repo: ListingsRepository,
         machines_public: MachinesPublic,
-        providers_public: ProvidersPublic,  #NEW LINE
+        providers_public: ProvidersPublic,
         metrics_public: MetricsPublic,
         agent: ProviderAgentClient,
     ):
         self.db = db
         self.listing_repo = listing_repo
         self.machines_public = machines_public
-        self.providers_public = providers_public  #NEW LINE
+        self.providers_public = providers_public
         self.metrics_public = metrics_public
         self.agent = agent
 
@@ -40,7 +40,7 @@ class ListingsService:
         Business logic + validation for creating listings.
         """
 
-        self.providers_public.require_verified_provider(provider_id)  #NEW LINE
+        self.providers_public.require_verified_provider(provider_id)
         
         if not self.machines_public.provider_owns_machine(
             provider_id, payload.machine_id
@@ -51,13 +51,11 @@ class ListingsService:
         listing = Listing(**payload.model_dump())
         listing = self.listing_repo.create_listing(self.db, listing)
         return listing
-    
 
     def get_listing_by_id(self, listing_id: UUID) -> Listing | None:
         """Get a single listing by ID - for internal use."""
         return self.listing_repo.get_listing_by_id(self.db, listing_id)
     
-
     def _collect_listing_metrics(self, listing: Listing):
         """Helper to collect metrics for a single listing."""
         machine = listing.machine
@@ -69,8 +67,6 @@ class ListingsService:
         )
         return self.metrics_public.get_latest_metrics(machine.id)
 
-
-    #update tests
     def list_listings(self):
         """
         Public listing retrieval with metrics.
@@ -90,7 +86,6 @@ class ListingsService:
         
         return enhanced_listings
     
-
     #consider: metrics collection in listings
     #refactor: move to provider agent client and call when listing is found
     def search_listings_by_name(self, name: str):
@@ -114,7 +109,6 @@ class ListingsService:
             })
         
         return results
-    
 
     def search_listings_with_filters(self, filters: ListingFilter):
         """Search listings with advanced filtering by machine specifications."""
@@ -138,22 +132,20 @@ class ListingsService:
             "per_page": result["per_page"],
             "total_pages": result["total_pages"]
         }
-    #update tests
-
 
 def get_listings_service(
     db: Session = Depends(get_db),
     machines_public: MachinesPublic = Depends(get_machines_public),
     providers_public: ProvidersPublic = Depends(get_providers_public),
-    metrics_public: MetricsPublic = Depends(get_metrics_public),         # NEW
-    agent: ProviderAgentClient = Depends(get_agent_client),              # NEW
+    metrics_public: MetricsPublic = Depends(get_metrics_public),
+    agent: ProviderAgentClient = Depends(get_agent_client),
 ) -> ListingsService:
     repo = ListingsRepository()
     return ListingsService(
         db=db,
         listing_repo=repo,
         machines_public=machines_public,
-        providers_public=providers_public,  #NEW LINE
+        providers_public=providers_public,
         metrics_public=metrics_public,     
         agent=agent,                       
     )

@@ -14,7 +14,7 @@ from fastapi import Depends
 
 from app.notifications.public import NotificationsPublic, get_notifications_public
 
-#consider: auto collect wipe and attestation
+
 class ComplianceService:
     def __init__(
         self,
@@ -30,36 +30,30 @@ class ComplianceService:
         self.providers_public = providers_public
         self.notifications = notifications_public
 
-    #update tests
     def simulate_wipe_for_booking(self, booking):
         """
         Automatically simulate a wipe + create the attestation.
         """
-        #If already exists, return it (idempotent)
         if booking.wipe_attestation:
             return booking.wipe_attestation
 
-        #Construct fake attestation
         create_data = WipeAttestationCreate(
             booking_id=booking.id,
             machine_id=booking.listing.machine.id,
             method="simulated-secure-erase",
             evidence_uri=f"mock://wipe/{booking.id}.log",
-            notes="Simulated wipe completed successfully.",
         )
 
-        #Create the attestation via repository
+        # Create the attestation via repository
         attestation = self.repo.create(
             db=self.db,
             booking_id=create_data.booking_id,
             machine_id=create_data.machine_id,
             method=create_data.method,
             evidence_uri=create_data.evidence_uri,
-            notes=create_data.notes,
         )
         
         #consider: Update status to VERIFIED for simulation
-        #use the repository's update_status method
         updated_attestation = self.repo.update_status(
             db=self.db,
             attestation_id=attestation.id,
@@ -67,35 +61,7 @@ class ComplianceService:
         )
         
         return updated_attestation
-    # def simulate_wipe_for_booking(self, booking):
-    #     """
-    #     Automatically simulate a wipe + create the attestation.
-    #     """
-    #     #if already exists, return it (idempotent)
-    #     if booking.wipe_attestation:
-    #         return booking.wipe_attestation
 
-    #     #construct fake attestation
-    #     create_data = WipeAttestationCreate(
-    #         booking_id=booking.id,
-    #         machine_id=booking.listing.machine.id,
-    #         method="simulated-secure-erase",
-    #         evidence_uri=f"mock://wipe/{booking.id}.log",
-    #         notes="Simulated wipe completed successfully.",
-    #     )
-
-    #     return self.repo.create(
-    #         db=self.db,
-    #         booking_id=create_data.booking_id,
-    #         machine_id=create_data.machine_id,
-    #         method=create_data.method,
-    #         evidence_uri=create_data.evidence_uri,
-    #         notes=create_data.notes,
-    #     )
-    #update tests
-
-
-    #update tests (HTTP exception to ValueError)
     # Booking enforcement
     def require_attestation_for_booking(self, booking):
         att = self.repo.get_by_booking(self.db, booking.id)
@@ -103,19 +69,16 @@ class ComplianceService:
             raise ValueError("Booking cannot be completed until a wipe attestation exists.")
         
         return att
-    
 
-    #Provider submission
+    # Provider submission
     def submit_attestation(self, provider_id: UUID, data: WipeAttestationCreate):
         machine = self.machines_public.get_machine(data.machine_id)
         if machine is None:
             raise ValueError("Machine not found")
 
-        #provider must own the machine
         if machine.provider_id != provider_id:
             raise ValueError("You do not own this machine")
 
-        #enforce 1 -> 1
         if self.repo.get_by_booking(self.db, data.booking_id):
             raise ValueError("Wipe attestation already exists for this booking")
 
@@ -125,11 +88,8 @@ class ComplianceService:
             machine_id=data.machine_id,
             method=data.method,
             evidence_uri=data.evidence_uri,
-            notes=data.notes,
         )
 
-        #self.notifications.wipe_proof_submitted(provider, booking, att) #consider: provider and booking errors
-        
         return att
 
     #Admin review
@@ -138,8 +98,6 @@ class ComplianceService:
         if not updated:
             raise ValueError("Attestation not found")
         return updated
-    #update tests
-
 
     #Queries
     def get_attestation_by_booking(self, booking):
@@ -150,20 +108,13 @@ class ComplianceService:
 
     def list_all_attestations(self):
         return self.repo.list_all(self.db)
-    
 
-    #update tests
     def get_buyer_verification(self, booking_id: UUID, user_id: UUID):
-        """
-        Buyer gets verification status only.
-        Checks ownership internally using relationships.
-        """
-        #Get attestation with booking relationship
+        """Buyer gets verification status only."""
         attestation = self.repo.get_by_booking_with_relations(self.db, booking_id)
         if not attestation:
             raise ValueError("No booking attestation found.")
         
-        #Check ownership using relationship
         if attestation.booking.buyer_user_id != user_id:
             raise ValueError("Not your booking") #raise as HTTPException in routes
         
@@ -192,12 +143,11 @@ class ComplianceService:
         attestation = self.repo.get_by_booking_with_relations(self.db, booking_id)
         if not attestation:
             raise ValueError("No wipe attestation found")
-        
-        # Verify provider owns the machine (using relationship)
+    
         if attestation.machine.provider_id != provider_id:
             raise ValueError("Not authorized")
             
-        return attestation  # Full details with relationships
+        return attestation
     
     def get_admin_attestation(self, booking_id: UUID):
         """Admin gets full attestation"""
@@ -205,8 +155,6 @@ class ComplianceService:
         if not attestation:
             raise ValueError("No wipe attestation found")
         return attestation
-    #update tests
-
 
 def get_compliance_service(
     db: Session = Depends(get_db),

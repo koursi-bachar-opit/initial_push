@@ -5,7 +5,9 @@ from fastapi import Depends
 from .service import BenchmarkService, get_benchmark_service
 from .schemas import BenchmarkRead, BenchmarkCreate
 
+
 class BenchmarksPublic(Protocol):
+    """Protocol defining the public interface for benchmarks queries."""
     def get_benchmarks_for_machine(self, machine_id: UUID) -> List[BenchmarkRead]:
         ...
     
@@ -13,6 +15,7 @@ class BenchmarksPublic(Protocol):
         ...
 
 class BenchmarksPublicImpl(BenchmarksPublic):
+    """Concrete implementation of BenchmarksPublic using the BenchmarksService."""
     def __init__(self, service: BenchmarkService):
         self.service = service
 
@@ -25,4 +28,5 @@ class BenchmarksPublicImpl(BenchmarksPublic):
 def get_benchmarks_public(
     service: BenchmarkService = Depends(get_benchmark_service),
 ):
+    """Dependency injection provider for BenchmarksPublic interface."""
     return BenchmarksPublicImpl(service)

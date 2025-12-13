@@ -9,11 +9,6 @@ from .models import MetricSample
 
 
 class MetricsRepository:
-    """
-    Persistence layer for metric samples.
-    """
-    
-    #Create
     def create_sample(
         self,
         db: Session,
@@ -39,7 +34,7 @@ class MetricsRepository:
         db.refresh(sample)
         return sample
 
-    #Fetch list
+    #Fetch list of metrics
     def list_samples(
         self,
         db: Session,
@@ -63,7 +58,6 @@ class MetricsRepository:
 
         return list(db.scalars(stmt).all())
 
-    #Latest sample
     def get_latest_sample(
         self,
         db: Session,

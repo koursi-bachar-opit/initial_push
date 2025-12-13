@@ -14,8 +14,10 @@ from app.auth.public import ensure_provider, ensure_admin
 from app.auth.auth import get_current_user
 from app.auth.public import get_auth_public, AuthPublic
 
-router = APIRouter()
+from app.users.models import User, UserRole
 
+
+router = APIRouter()
 
 #Provider submission
 @router.post(
@@ -30,7 +32,6 @@ def submit_attestation(
     provider_id = current_user.id
     return service.submit_attestation(provider_id, data)
 
-
 #Admin review
 @router.patch(
     "/attestations/{attestation_id}/review",
@@ -44,18 +45,19 @@ def review_attestation(
 ):
     return service.admin_review(attestation_id, data)
 
-
 #Audit browsing (Admin)
 @router.get(
     "/attestations",
     response_model=list[WipeAttestationRead],
     dependencies=[Depends(ensure_admin)],
 )
-def list_all(service: ComplianceService = Depends(get_compliance_service)):
+def list_all(
+    service: ComplianceService = Depends(get_compliance_service),
+):
     return service.list_all_attestations()
 
-
-#Machine wipe log (Provider/Admin)
+# Machine wipe log (Provider/Admin)
+#consider: ensure provider or admin
 @router.get(
     "/machines/{machine_id}/attestations",
     response_model=list[WipeAttestationRead],
@@ -66,9 +68,8 @@ def machine_attestations(
 ):
     return service.list_machine_attestations(machine_id)
 
-
 #consider: merge with previous endpoints
-#New wipe and attestation endpoints
+# New wipe and attestation endpoints
 @router.get("/buyer/booking/{booking_id}/wipe-verification", response_model=WipeVerificationPublic)
 def get_wipe_verification(
     booking_id: UUID,
@@ -79,9 +80,8 @@ def get_wipe_verification(
     """Buyer gets wipe verification status for their completed booking"""
     auth.ensure_buyer()
     
-    #Service handles ownership check internally
+    # Service handles ownership check internally
     return service.get_buyer_verification(booking_id, user.id)
-
 
 @router.get("/provider/booking/{booking_id}/wipe-attestation", response_model=WipeAttestationPublic)
 def get_provider_attestation(
@@ -93,7 +93,6 @@ def get_provider_attestation(
     """Provider gets full wipe attestation for their machine"""
     auth.ensure_provider()
     return service.get_provider_attestation(user.id, booking_id)
-
 
 @router.get("/admin/booking/{booking_id}/wipe-attestation", response_model=WipeAttestationPublic)
 def get_admin_attestation(

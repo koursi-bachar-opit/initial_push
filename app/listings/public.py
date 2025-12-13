@@ -5,11 +5,7 @@ from typing import Protocol
 
 
 class ListingsPublic(Protocol):
-    """
-    Public interface for interacting with the Listings domain.
-    Other domains should use this instead of directly depending on
-    listings.service or listings.repository.
-    """
+    """Protocol defining the public interface for listings queries."""
     def create_listing(self, provider_id, payload):
         ...
 
@@ -23,6 +19,7 @@ class ListingsPublic(Protocol):
         ...    
 
 class ListingsPublicImpl:
+    """Concrete implementation of ListingsPublic using the ListingsService."""
     def __init__(self, service: ListingsService):
         self.service = service
 
@@ -33,7 +30,7 @@ class ListingsPublicImpl:
         return self.service.get_listing_by_id(listing_id)
     
     def search_listings_by_name(self, name: str):
-        return self.service.search_listings_by_name(name)  #consider: customer search with metrics injected
+        return self.service.search_listings_by_name(name)
 
     def list_listings(self):
         return self.service.list_listings()
@@ -42,4 +39,5 @@ class ListingsPublicImpl:
 def get_listings_public(
     service: ListingsService = Depends(get_listings_service),
 ) -> ListingsPublic:
+    """Dependency injection provider for ListingsService interface."""
     return ListingsPublicImpl(service)

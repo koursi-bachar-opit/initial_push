@@ -1,14 +1,16 @@
+"""
+Repository methods for looking up and creating application users.
+These are keyed by supabase_id (the "sub" field from Supabase JWTs).
+This file is the link between authentication and the DB model.
+"""
+
 from sqlalchemy.orm import Session
 from app.users.models import User, UserRole
 
 import uuid
 
-"""
-Repository methods for looking up and creating application users.
-These are keyed by supabase_id (the "sub" field from Supabase JWTs).
-This file is the link between authentication and our DB model.
-"""
-class UserRepository:
+
+class UsersRepository:
     def get_user_by_supabase_id(self, db: Session, sub: str) -> User | None:
         """
         supabase_id corresponds to the JWT 'sub' claim.
@@ -39,8 +41,6 @@ class UserRepository:
         db.commit()
         db.refresh(new_user)
         return new_user
-
-
 
     def get_or_create_user_by_supabase_id(
         self,

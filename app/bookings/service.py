@@ -1,10 +1,18 @@
+"""
+This service defines how bookings behave, including how they move from PENDING_PAYMENT, to REQUESTED,
+to CONFIRMED, become ACTIVE, and then COMPLETE or CANCELLED.
+
+The router calls into this layer whenever the user tries to perform
+an action. The repository only reads or writes to the DB. The rules
+for what is allowed live here.
+"""
+
 from datetime import datetime, timezone
 from decimal import Decimal, ROUND_HALF_UP
 from sqlalchemy.orm import Session
 
 from .models import Booking
 from .schemas import (
-    BookingRead,
     BookingRequest,
     BookingAdminCreate,
     BookingStatus
@@ -18,49 +26,34 @@ from app.database import get_db
 
 from uuid import UUID
 
-from app.credentials.public import AccessCredentialsPublic, get_credentials_public #credentials
-from app.payments.public import PaymentsPublic, get_payments_public #payments
-from app.organizations.public import OrganizationsPublic, get_organizations_public  #NEW LINE
+from app.credentials.public import AccessCredentialsPublic, get_credentials_public
+from app.payments.public import PaymentsPublic, get_payments_public
+from app.organizations.public import OrganizationsPublic, get_organizations_public
 from app.compliance.public import CompliancePublic, get_compliance_public
-
 from app.notifications.public import NotificationsPublic, get_notifications_public
 
-"""
-This service defines how bookings behave, including how they move from REQUESTED,
-to CONFIRMED, become ACTIVE, and then COMPLETE or CANCELLED.
-
-The router calls into this layer whenever the user tries to perform
-an action. The repository only reads or writes to the DB. The rules
-for what is allowed live here.
-"""
-
-#- **BookingService**
-#  - Request, confirm, activate, complete, and cancel bookings.
-#  - Coordinate escrow, credentials issuance, and wipe attestation.
 
 class BookingsService:
-    BookingStatus = BookingStatus #access ENUM
-
+    #refactor: remove this after checking tests BookingStatus = BookingStatus #access ENUM
     def __init__(
         self,
         db: Session,
         booking_repo: BookingsRepository,
         listings_public: ListingsPublic,
-        credentials_public: AccessCredentialsPublic, #credentials
-        payments_public: PaymentsPublic,    #payments
-        organizations_public: OrganizationsPublic,  #NEW LINE
-        compliance_public: CompliancePublic,     #NEW LINE
+        credentials_public: AccessCredentialsPublic,
+        payments_public: PaymentsPublic,
+        organizations_public: OrganizationsPublic,
+        compliance_public: CompliancePublic,
         notifications_public: NotificationsPublic,
     ):
         self.db = db
         self.booking_repo = booking_repo
         self.listings_public = listings_public
-        self.credentials_public = credentials_public #credentials
-        self.payments_public = payments_public  #payments
-        self.organizations_public = organizations_public  #NEW LINE
-        self.compliance_public = compliance_public  #NEW LINE
+        self.credentials_public = credentials_public
+        self.payments_public = payments_public
+        self.organizations_public = organizations_public
+        self.compliance_public = compliance_public
         self.notifications = notifications_public
-
 
     def normalize_times(self, start_time, end_time):
         """
@@ -74,23 +67,23 @@ class BookingsService:
         end_utc = end_time.astimezone(timezone.utc)
         return start_utc, end_utc
 
-
     def validate_booking_window(self, start_utc, end_utc):  #TODO: enforce maximum booking window (example: <= 7 days), and minimum bookings time
+        """Check that provided start time and end time are provided and sequential"""
         if start_utc is None or end_utc is None:
             raise ValueError("start_time and end_time must be provided.")   #TODO: convert to domain exception later
 
         if end_utc <= start_utc:
             raise ValueError("end_time must be after start_time")  #TODO: convert to domain exception later
 
-
     def fetch_listing_or_raise(self, listing_id):
+        """Get the listing or raise an error if none is found"""
         listing = self.listings_public.get_listing_by_id(listing_id)
         if not listing:
             raise ValueError("Listing not found") #TODO: convert to domain exception later
         return listing
-        
 
     def calculate_price(self, start_time, end_time, hourly_price):
+        """Calculate the price of a booking ensuring decimal data for financial rounding logic"""
         if not isinstance(hourly_price, Decimal):
             hourly_decimal = Decimal(str(hourly_price))
         else:
@@ -102,12 +95,8 @@ class BookingsService:
         total_price = (total_seconds * hourly_decimal) / Decimal('3600')
         return total_price.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
-
-    #def build_booking_model(self, payload, buyer_user_id, start_utc, end_utc, total_price):
-    def build_booking_model(self, payload, buyer_user_id, start_utc, end_utc, total_price, organization_id=None):  #NEW LINE
-        """
-        Build the Booking model for passing to the repository
-        """
+    def build_booking_model(self, payload, buyer_user_id, start_utc, end_utc, total_price, organization_id=None):
+        """Build the Booking model for passing to the repository"""
         booking = Booking( 
             listing_id=payload.listing_id,
             buyer_user_id=buyer_user_id,
@@ -115,7 +104,7 @@ class BookingsService:
             end_time=end_utc,
             total_price_estimate=total_price,
             status=BookingStatus.REQUESTED,  #until: status transitions eventually will be used in state machine
-            organization_id=organization_id,  #NEW LINE
+            organization_id=organization_id,
         )
         return booking
     
@@ -142,11 +131,8 @@ class BookingsService:
         """Gets booking object (for routes) to impose booking status changes"""
         return self._get_booking_or_raise(booking_id)
 
-
     def admin_create_booking(self, payload: BookingAdminCreate):
-        """
-        Check booking creation rules before creating booking
-        """
+        """Check booking creation rules before creating booking"""
         start_utc, end_utc = self.normalize_times(payload.start_time, payload.end_time)
         
         self.validate_booking_window(start_utc, end_utc)
@@ -166,11 +152,8 @@ class BookingsService:
         
         return self.booking_repo.create_booking(self.db, booking)
 
-
     def request_booking(self, buyer_user_id, payload: BookingRequest):
-        """
-        Check booking creation rules before creating booking
-        """
+        """Check booking creation rules before creating booking"""
         start_utc, end_utc = self.normalize_times(payload.start_time, payload.end_time)
         
         if buyer_user_id is None:
@@ -182,10 +165,10 @@ class BookingsService:
 
         total_price = self.calculate_price(start_utc, end_utc, listing.hourly_price)
 
-        if payload.organization_id is not None:  #NEW LINE
-            is_admin = self.organizations_public.is_org_admin(buyer_user_id, payload.organization_id)  #NEW LINE
-            if not is_admin:  #NEW LINE
-                raise ValueError("User is not an admin of the specified organization")  #NEW LINE
+        if payload.organization_id is not None:
+            is_admin = self.organizations_public.is_org_admin(buyer_user_id, payload.organization_id)
+            if not is_admin:
+                raise ValueError("User is not an admin of the specified organization")
 
         booking = self.build_booking_model(payload, buyer_user_id, start_utc, end_utc, total_price)
 
@@ -202,7 +185,6 @@ class BookingsService:
         )
 
         return created
-
 
     def confirm_booking(self, booking_id: UUID, booking: Booking | None = None):
         """
@@ -232,12 +214,10 @@ class BookingsService:
 
         return updated
 
-
-
-    #update tests
     def cancel_booking(self, booking_id: UUID, booking: Booking | None = None):
         """
-        Cancel only an existing booking.
+        Booking cancellation is only possible if a booking has not begun
+        A booking must be in a PENDING_PAYMENT, REQUESTED, or CONFIRMED state to cancel
         """
         if booking is None:
             booking = self._get_booking_or_raise(booking_id)
@@ -269,7 +249,6 @@ class BookingsService:
                 print(f"Warning: Could not void payment for booking {booking_id}: {str(e)}")
         
         return updated
-    #update tests
 
 
     # def cancel_booking(self, booking_id: UUID, booking: Booking | None = None):
@@ -341,16 +320,14 @@ class BookingsService:
         if booking.status != BookingStatus.ACTIVE:
             raise ValueError("Cannot issue credentials unless booking is ACTIVE.")
         
-        self.credentials_public.issue_for_booking(booking) #credentials
+        self.credentials_public.issue_for_booking(booking)
 
         return updated
 
-
-
-
-    #update tests
     def end_session(self, booking_id: UUID, booking: Booking | None = None):
         """
+        Ends the booking session. Checks for correct current booking status.
+        Simulates a sever wipe and credentials revoke, and triggers captured payment.
         Final billing is based on exact session duration.
         """
         if booking is None:
@@ -385,18 +362,16 @@ class BookingsService:
         self.notifications.booking_completed(booking.buyer, booking)
         
         #Capture the payment
-        # try:
-        self.payments_public.capture_for_booking(booking=booking)
-        # except ValueError as e:
-        #     #consider: implement consistently
-        #     #Log error but still complete booking
-        #     print(f"ERROR: Failed to capture payment for booking {booking_id}: {str(e)}")
+        #consider: implement try except consistently
+        try:
+            self.payments_public.capture_for_booking(booking=booking)
+        except ValueError as e:
+            print(f"ERROR: Failed to capture payment for booking {booking_id}: {str(e)}")
         
         #Revoke credentials
         self.credentials_public.revoke_for_booking(booking)
         
         return updated
-    #update tests
 
     # def end_session(self, booking_id: UUID, booking: Booking | None = None):
     #     """
@@ -466,7 +441,6 @@ class BookingsService:
             period_end=period_end,
         )
 
-    #update tests
     def create_booking_draft(
         self,
         buyer_user_id,
@@ -492,16 +466,13 @@ class BookingsService:
             if not is_admin:
                 raise ValueError("User is not an admin of the specified organization")
 
-        #Create booking with "pending_payment" status
         booking = self.build_booking_model(payload, buyer_user_id, start_utc, end_utc, total_price)
         
-        #OVERRIDE: Set status to pending_payment
         booking.status = BookingStatus.PENDING_PAYMENT
         
         created = self.booking_repo.create_booking(self.db, booking)
         
         return created
-    #update tests
 
 
     def get_bookings_for_organization(self, org_id: UUID):
@@ -515,10 +486,10 @@ class BookingsService:
 def get_bookings_service(
     db: Session = Depends(get_db),
     listings_public: ListingsPublic = Depends(get_listings_public),
-    credentials_public: AccessCredentialsPublic = Depends(get_credentials_public),  #credentials
-    payments_public: PaymentsPublic = Depends(get_payments_public), #payments
-    organizations_public: OrganizationsPublic = Depends(get_organizations_public),  #NEW LINE
-    compliance_public: CompliancePublic = Depends(get_compliance_public),   #NEW LINE
+    credentials_public: AccessCredentialsPublic = Depends(get_credentials_public),
+    payments_public: PaymentsPublic = Depends(get_payments_public),
+    organizations_public: OrganizationsPublic = Depends(get_organizations_public),
+    compliance_public: CompliancePublic = Depends(get_compliance_public),
     notifications_public: NotificationsPublic = Depends(get_notifications_public),
 ) -> BookingsService:
     repo = BookingsRepository()
@@ -526,9 +497,9 @@ def get_bookings_service(
         db=db,
         booking_repo=repo,
         listings_public=listings_public,
-        credentials_public=credentials_public,  #credentials
-        payments_public=payments_public,    #payments
-        organizations_public=organizations_public,  #NEW LINE
-        compliance_public=compliance_public,    #NEW LINE
+        credentials_public=credentials_public,
+        payments_public=payments_public,
+        organizations_public=organizations_public,
+        compliance_public=compliance_public,
         notifications_public=notifications_public,
     )
