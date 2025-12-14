@@ -20,15 +20,12 @@ class TestUsersRepository:
         # Assert
         assert result == mock_user
 
-    def test_get_user_by_supabase_id_returns_none_when_not_found(self):
-        # Arrange  
+    def test_get_user_by_supabase_id_returns_none_when_not_found(self):  
         mock_db = Mock()
         mock_db.query.return_value.filter_by.return_value.first.return_value = None
         
-        # Act
         result = UsersRepository().get_user_by_supabase_id(mock_db, "nonexistent_id")
         
-        # Assert
         assert result is None
 
     def test_create_user_successfully_creates_user(self):
