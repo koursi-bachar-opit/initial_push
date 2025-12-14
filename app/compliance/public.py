@@ -8,6 +8,7 @@ from fastapi import Depends
 
 
 class CompliancePublic(Protocol):
+    """Protocol defining the public interface for compliance queries."""
     def simulate_wipe_for_booking(self, booking) -> WipeAttestation: 
         ...
 
@@ -17,8 +18,8 @@ class CompliancePublic(Protocol):
     def require_attestation_for_booking(self, booking) -> WipeAttestation: 
         ...
 
-
 class CompliancePublicImpl(CompliancePublic):
+    """Concrete implementation of CompliancePublic using the ComplianceService."""
     def __init__(self, service: ComplianceService):
         self.service = service
 
@@ -31,8 +32,8 @@ class CompliancePublicImpl(CompliancePublic):
     def require_attestation_for_booking(self, booking):
         return self.service.require_attestation_for_booking(booking)
 
-
 def get_compliance_public(
     service: ComplianceService = Depends(get_compliance_service),
 ) -> CompliancePublic:
+    """Dependency injection provider for CompliancePublic interface."""
     return CompliancePublicImpl(service)

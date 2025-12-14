@@ -12,12 +12,10 @@ def mock_db():
     """Mock database session fixture"""
     return Mock()
 
-
 @pytest.fixture
 def disputes_repository():
     """DisputesRepository instance fixture"""
     return DisputesRepository()
-
 
 @pytest.fixture
 def sample_dispute():
@@ -32,7 +30,6 @@ def sample_dispute():
     dispute.resolution_notes = None
     dispute.resolved_at = None
     return dispute
-
 
 class TestDisputesRepository:
     

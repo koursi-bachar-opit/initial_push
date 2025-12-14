@@ -11,12 +11,10 @@ def mock_db():
     """Mock database session fixture"""
     return Mock()
 
-
 @pytest.fixture
 def payments_repository():
     """PaymentsRepository instance fixture"""
     return PaymentsRepository()
-
 
 @pytest.fixture
 def sample_payment():
@@ -31,7 +29,6 @@ def sample_payment():
     payment.status = PaymentStatus.AUTHORIZED
     payment.created_at = "2024-01-01T10:00:00"
     return payment
-
 
 class TestPaymentsRepository:
     

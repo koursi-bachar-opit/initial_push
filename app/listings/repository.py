@@ -1,31 +1,19 @@
 from uuid import UUID
-from sqlalchemy.orm import Session
+from sqlalchemy import desc, asc
+from sqlalchemy.orm import Session, joinedload
 
 from .models import Listing
 from .schemas import ListingFilter
 
-#
-from sqlalchemy.orm import joinedload
-#
+from app.machines.models import Machine     #refactor: remove Machine import
 
-from sqlalchemy import or_, and_, desc, asc
-from app.machines.models import Machine     #consider Machine import
-
-"""
-Repository for Listing objects, low-level DB helpers.
-The more complex validation and business logic lives in listings_service.py.
-"""
 
 class ListingsRepository:
-    # def get_listings(self, db: Session):
-    #     """Return all listings sorted by ID."""
-    #     return db.query(Listing).order_by(Listing.id.asc()).all()
-    
     def get_listings(self, db: Session):
         """Return all listings sorted by ID."""
         return db.query(Listing).options(
-            joinedload(Listing.machine)
-        ).order_by(Listing.id.asc()).all()
+            joinedload(Listing.machine) # Eager load the machine relationship
+        ).order_by(Listing.updated_at.desc()).all()
 
     def create_listing(self, db: Session, listing: Listing) -> Listing:
         """Create a new listing record and persist to the database."""
@@ -37,18 +25,7 @@ class ListingsRepository:
     def get_listing_by_id(self, db: Session, listing_id: UUID) -> Listing | None:
         """Fetch a listing by its primary key so search results are deterministic."""
         return db.get(Listing, listing_id)
-    
-    # def search_by_title(self, db: Session, title: str):
-    #     """Search listings by name with partial matching."""
-    #     if not title or not title.strip():
-    #         return []
-            
-    #     search_term = f"%{title.strip()}%"
-    #     return db.query(Listing).filter(
-    #         Listing.title.ilike(search_term)
-    #     ).order_by(Listing.title.asc()).all()
 
-    #update tests
     def search_by_title(self, db: Session, title: str):
         """Search listings by name with partial matching."""
         if not title or not title.strip():
@@ -63,8 +40,6 @@ class ListingsRepository:
     
     def search_listings_with_filters(self, db: Session, filters: ListingFilter):
         """Search listings with advanced filtering by machine specifications."""
-        from app.machines.models import Machine  # Import Machine model
-        
         query = db.query(Listing).options(joinedload(Listing.machine))
         
         # Text search in listing title
@@ -137,4 +112,3 @@ class ListingsRepository:
             "per_page": filters.per_page,
             "total_pages": (total + filters.per_page - 1) // filters.per_page
         }
-    #update tests

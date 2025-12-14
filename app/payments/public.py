@@ -10,9 +10,7 @@ from .models import Payment
 
 
 class PaymentsPublic(Protocol):
-    """
-    Public interface exposed to other domains.
-    """
+    """Protocol defining the public interface for payments queries."""
     def escrow_for_booking(
         self,
         booking,
@@ -51,6 +49,7 @@ class PaymentsPublic(Protocol):
 
 
 class PaymentsPublicImpl(PaymentsPublic):
+    """Concrete implementation of PaymentsPublic using the PaymentsService."""
     def __init__(self, service: PaymentsService):
         self.service = service
 
@@ -103,4 +102,5 @@ class PaymentsPublicImpl(PaymentsPublic):
 def get_payments_public(
     service: PaymentsService = Depends(get_payments_service),
 ) -> PaymentsPublic:
+    """Dependency injection provider for PaymentsService interface."""
     return PaymentsPublicImpl(service)

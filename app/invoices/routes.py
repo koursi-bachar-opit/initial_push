@@ -7,7 +7,7 @@ from app.auth.public import ensure_admin
 from app.organizations.public import OrganizationsPublic, get_organizations_public #type: ignore
 from app.auth.auth import get_current_user
 from app.invoices.schemas import InvoiceCreate, InvoiceListItem, InvoiceRead
-from app.invoices.service import InvoiceService, get_invoice_service
+from app.invoices.service import InvoicesService, get_invoice_service
 
 from app.users.models import User, UserRole
 
@@ -17,11 +17,10 @@ router = APIRouter()
 #Helpers
 def _user_org_ids(current_user) -> list[UUID]:
     """
-    Adjust to your user/org membership representation.
+    Adjust to user/org membership representation.
     For now we assume current_user has .organization_ids or similar.
     """
     return getattr(current_user, "organization_ids", []) or []
-
 
 #Admin endpoints
 @router.post(
@@ -31,7 +30,7 @@ def _user_org_ids(current_user) -> list[UUID]:
 )
 def generate_invoice_admin(
     invoice_in: InvoiceCreate,
-    service: InvoiceService = Depends(get_invoice_service),
+    service: InvoicesService = Depends(get_invoice_service),
     admin_user=Depends(ensure_admin),
 ):
     try:
@@ -46,13 +45,12 @@ def generate_invoice_admin(
         )
     return invoice
 
-
 @router.get(
     "/admin",
     response_model=List[InvoiceListItem],
 )
 def list_all_invoices_admin(
-    service: InvoiceService = Depends(get_invoice_service),
+    service: InvoicesService = Depends(get_invoice_service),
     admin_user=Depends(ensure_admin),
     skip: int = 0,
     limit: int = 100,
@@ -64,14 +62,13 @@ def list_all_invoices_admin(
     )
     return invoices
 
-
 @router.post(
     "/admin/{invoice_id}/finalize",
     response_model=InvoiceRead,
 )
 def finalize_invoice_admin(
     invoice_id: UUID,
-    service: InvoiceService = Depends(get_invoice_service),
+    service: InvoicesService = Depends(get_invoice_service),
     admin_user=Depends(ensure_admin),
 ):
     try:
@@ -86,14 +83,13 @@ def finalize_invoice_admin(
         )
     return invoice
 
-
 @router.post(
     "/admin/{invoice_id}/void",
     response_model=InvoiceRead,
 )
 def void_invoice_admin(
     invoice_id: UUID,
-    service: InvoiceService = Depends(get_invoice_service),
+    service: InvoicesService = Depends(get_invoice_service),
     admin_user=Depends(ensure_admin),
 ):
     try:
@@ -108,7 +104,6 @@ def void_invoice_admin(
         )
     return invoice
 
-
 #Organization endpoints
 @router.get(
     "/organizations/{org_id}",
@@ -116,7 +111,7 @@ def void_invoice_admin(
 )
 def list_org_invoices(
     org_id: UUID,
-    service: InvoiceService = Depends(get_invoice_service),
+    service: InvoicesService = Depends(get_invoice_service),
     organization_public: OrganizationsPublic = Depends(get_organizations_public),
     current_user=Depends(get_current_user),
     skip: int = 0,
@@ -143,14 +138,13 @@ def list_org_invoices(
         )
     return invoices
 
-
 @router.get(
     "/{invoice_id}",
     response_model=InvoiceRead,
 )
 def get_invoice_detail(
     invoice_id: UUID,
-    service: InvoiceService = Depends(get_invoice_service),
+    service: InvoicesService = Depends(get_invoice_service),
     current_user=Depends(get_current_user),
 ):
     is_site_admin = getattr(current_user, "is_site_admin", False)
@@ -179,7 +173,7 @@ def get_invoice_detail(
 def get_organization_invoices(
     org_id: UUID,
     user: User = Depends(get_current_user),
-    service: InvoiceService = Depends(get_invoice_service),
+    service: InvoicesService = Depends(get_invoice_service),
     organizations_public: OrganizationsPublic = Depends(get_organizations_public),
 ):
     """

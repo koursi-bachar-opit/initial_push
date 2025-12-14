@@ -5,7 +5,8 @@ from jinja2 import Environment, FileSystemLoader
 
 from .ports.email_port import EmailPort
 
-# class NotificationService:
+#consider: old template
+# class NotificationsService:
 #     def __init__(self, email_port: EmailPort, template_dir: str):
 #         self.email_port = email_port
 
@@ -15,7 +16,7 @@ from .ports.email_port import EmailPort
 #             autoescape=True
 #         )
 
-class NotificationService:
+class NotificationsService:
     def __init__(self, email_port: EmailPort, template_dir: str):
         self.email_port = email_port
 
@@ -46,7 +47,6 @@ class NotificationService:
     def _send(self, to: str, subject: str, template: str, context: Dict):
         html = self._render(template, context)
         self.email_port.send_email(to, subject, html)
-
 
     #Booking emails
     def send_booking_confirmation(self, user, booking):
@@ -139,7 +139,6 @@ class NotificationService:
             template="dispute_resolved.html",
             context={"dispute": dispute, "user": user},
         )
-
 
     #Compliance emails
     def send_wipe_proof_submitted(self, provider, booking, attestation):

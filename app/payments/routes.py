@@ -19,7 +19,6 @@ router = APIRouter()
 #Initialize templates
 templates = Jinja2Templates(directory="frontend/templates")
 
-
 @router.get(
     "/bookings/{booking_id}",
     response_model=list[PaymentRead],
@@ -57,14 +56,7 @@ def create_checkout(
     """
     try:
         base_url = str(request.base_url) if request else "http://localhost:8000"
-        
-        # success_url = (
-        #     f"{base_url}payments/success"
-        #     f"?session_id={{CHECKOUT_SESSION_ID}}"
-        #     f"&booking_id={checkout_data.booking_id}"
-        #     f"&amount={checkout_data.amount}"
-        #     f"&currency={checkout_data.currency}"
-        # )
+
         success_url = (
             f"{base_url}api/v1/payments/success"
             f"?session_id={{CHECKOUT_SESSION_ID}}"
@@ -73,8 +65,6 @@ def create_checkout(
             f"&currency={checkout_data.currency}"
         )
 
-        #consider: old text: success_url = f"{base_url}payments/success?session_id={{CHECKOUT_SESSION_ID}}&booking_id={checkout_data.booking_id}"
-        #cancel_url = f"{base_url}payments/cancel?booking_id={checkout_data.booking_id}"
         cancel_url = f"{base_url}api/v1/payments/cancel?booking_id={checkout_data.booking_id}"
         
         result = payments_service.create_checkout_session(
@@ -98,9 +88,7 @@ def verify_payment(
     session_id: str,
     payments_service: PaymentsService = Depends(get_payments_service),
 ):
-    """
-    Verify a Stripe Checkout Session payment.
-    """
+    """Verify a Stripe Checkout Session payment."""
     try:
         session = payments_service.verify_checkout_session(session_id)
         return {
@@ -178,7 +166,6 @@ def get_payment_status(
     """
     Get payment status for a PaymentIntent.
     """
-    # You could check Stripe API here or use your database
     payments = payments_public.list_for_booking(payment_intent_id)
     if payments:
         return {"status": payments[0].status}

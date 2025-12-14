@@ -26,7 +26,6 @@ def test_admin_create_booking_endpoint(client, db_session):
     )
     assert_status_code(resp, 201)
 
-
 def test_request_booking_and_list_for_buyer_and_provider(client, db_session):
     """
     A buyer sees the bookings they made.

@@ -1,53 +1,33 @@
 from uuid import UUID
 from typing import List, Optional
-
 from sqlalchemy.orm import Session
 
 from .models import Payment, PaymentType, PaymentStatus
 
 
 class PaymentsRepository:
-    """
-    Payment persistence layer.
-    """
     def create_payment(self, db: Session, payment: Payment) -> Payment:
-        """
-        Persist a newly created Payment ORM instance.
-        """
         db.add(payment)
         db.commit()
         db.refresh(payment)
         return payment
 
-
     def update_payment(self, db: Session, payment: Payment) -> Payment:
-        """
-        Commit and refresh an updated Payment instance.
-        """
         db.commit()
         db.refresh(payment)
         return payment
 
-
     def get_payment_by_id(self, db: Session, payment_id: UUID) -> Optional[Payment]:
-        """
-        Fetch a Payment by primary key.
-        """
         return db.get(Payment, payment_id)
 
-
-    #consider: first non-id ascending order
     def list_payments_for_booking(self, db: Session, booking_id: UUID) -> List[Payment]:
-        """
-        Returns all payments for a given booking, ordered chronologically.
-        """
+        """Returns all payments for a given booking, ordered chronologically."""
         return (
             db.query(Payment)
             .filter(Payment.booking_id == booking_id)
             .order_by(Payment.created_at.asc())
             .all()
         )
-
 
     def get_latest_escrow(self, db: Session, booking_id: UUID) -> Optional[Payment]:
         """

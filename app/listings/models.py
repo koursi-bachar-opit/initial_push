@@ -14,7 +14,6 @@ class ListingStatus(str, Enum):
     INACTIVE = "inactive"
     ARCHIVED = "archived"
 
-
 class Listing(Base):
     __tablename__ = "listings"
 

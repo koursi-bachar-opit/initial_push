@@ -1,10 +1,8 @@
+from fastapi import Depends
 from datetime import datetime, timezone
 from typing import Optional
 from uuid import UUID
-
 from sqlalchemy.orm import Session
-
-from fastapi import Depends
 
 from .repository import MetricsRepository
 from .schemas import (
@@ -26,7 +24,6 @@ class MetricsService:
     - Provider ownership validation (via MachinesPublic)
     - Append-only metric ingestion
     """
-
     def __init__(
         self,
         db: Session,
@@ -37,7 +34,6 @@ class MetricsService:
         self.repo = repo
         self.machines_public = machines_public
 
-
     #Ingest (ProviderAgentClient)
     def ingest_metrics(
         self,
@@ -45,10 +41,7 @@ class MetricsService:
         payload: MetricSampleCreate,
         provider_id: UUID,
     ) -> MetricSampleRead:
-        """
-        Only provider agents for the machine owner may submit metrics.
-        """
-
+        """Only provider agents for the machine owner may submit metrics."""
         machine = self.machines_public.get_machine(machine_id)
         if not machine:
             raise ValueError("Machine does not exist.")
@@ -74,8 +67,6 @@ class MetricsService:
 
         return MetricSampleRead.model_validate(sample)
 
-
-    #consider: test function for mock data
     def ingest_raw_metrics(self, machine_id: UUID, raw: dict, provider_id: UUID):
         """
         Converts raw agent metrics into MetricSampleCreate and delegates to ingest_metrics.
@@ -94,15 +85,11 @@ class MetricsService:
             provider_id=provider_id,
         )
 
-
-    #Read list
     def list_machine_metrics(
         self,
         machine_id: UUID,
         query: MetricsQueryParams,
     ) -> list[MetricSampleListItem]:
-
-        #Validate machine exists via domain rule pattern
         machine = self.machines_public.get_machine(machine_id)
         if not machine:
             raise ValueError("Machine does not exist.")
@@ -117,7 +104,6 @@ class MetricsService:
 
         return [MetricSampleListItem.model_validate(s) for s in samples]
 
-    #Latest sample
     def get_latest_metrics(
         self,
         machine_id: UUID,
@@ -132,7 +118,6 @@ class MetricsService:
             return None
 
         return MetricSampleRead.model_validate(sample)
-
 
 def get_metrics_service(
     db: Session = Depends(get_db),

@@ -31,13 +31,11 @@ def ingest_metric_sample(
     Metrics ingestion endpoint.
     For now, authenticated providers can push metrics (mock agent flow).
     """
-    provider_id = user.id  #MetricsService enforces real ownership
-
     try:
         return service.ingest_metrics(
             machine_id=machine_id,
             payload=payload,
-            provider_id=provider_id,
+            provider_id=user.id,
         )
     except ValueError as e:
         #consider: machine not found
@@ -51,9 +49,7 @@ def ingest_metric_sample(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=str(e),
         )
-    
 
-#Public read endpoints (authenticated users)
 @router.get(
     "/machines/{machine_id}",
     response_model=list[MetricSampleListItem],
@@ -65,10 +61,7 @@ def list_metrics_for_machine(
     user=Depends(get_current_user),
     service: MetricsService = Depends(get_metrics_service),
 ):
-    """
-    Any authenticated user may read machine metrics.
-    """
-
+    """Any authenticated user may read machine metrics."""
     try:
         return service.list_machine_metrics(machine_id, query)
     except ValueError as e:
@@ -76,7 +69,6 @@ def list_metrics_for_machine(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e),
         )
-
 
 @router.get(
     "/machines/{machine_id}/latest",
@@ -88,10 +80,7 @@ def get_latest_metrics(
     user=Depends(get_current_user),
     service: MetricsService = Depends(get_metrics_service),
 ):
-    """
-    Returns newest sample, or null if there are none.
-    """
-
+    """Returns newest sample, or null if there are none."""
     try:
         return service.get_latest_metrics(machine_id)
     except ValueError as e:

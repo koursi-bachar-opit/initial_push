@@ -12,12 +12,10 @@ def mock_db():
     """Mock database session fixture"""
     return Mock()
 
-
 @pytest.fixture
 def invoices_repository():
     """InvoicesRepository instance fixture"""
     return InvoicesRepository()
-
 
 @pytest.fixture
 def sample_invoice():
@@ -33,7 +31,6 @@ def sample_invoice():
     invoice.created_at = datetime.now(timezone.utc)
     return invoice
 
-
 @pytest.fixture
 def sample_invoice_data():
     """Fixture for invoice creation data"""
@@ -45,7 +42,6 @@ def sample_invoice_data():
         "currency": "USD",
         "status": InvoiceStatus.PENDING
     }
-
 
 class TestInvoicesRepository:
     

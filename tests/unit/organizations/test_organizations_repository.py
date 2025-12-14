@@ -12,12 +12,10 @@ def mock_db():
     """Mock database session fixture"""
     return Mock()
 
-
 @pytest.fixture
 def organizations_repository():
     """OrganizationsRepository instance fixture"""
     return OrganizationsRepository()
-
 
 @pytest.fixture
 def sample_organization():
@@ -31,7 +29,6 @@ def sample_organization():
     organization.updated_at = datetime.now(timezone.utc)
     return organization
 
-
 @pytest.fixture
 def sample_membership():
     """Fixture for a mock membership object"""
@@ -42,7 +39,6 @@ def sample_membership():
     membership.org_role = OrgRole.MEMBER
     membership.created_at = datetime.now(timezone.utc)
     return membership
-
 
 class TestOrganizationsRepository:
     

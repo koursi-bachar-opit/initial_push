@@ -1,14 +1,12 @@
+from fastapi import Depends
 from sqlalchemy.orm import Session
+from uuid import UUID
 
 from .repository import MachinesRepository
 from .schemas import MachineCreate
 from .models import Machine
 
-from fastapi import Depends
 from app.database import get_db
-
-from uuid import UUID
-
 from app.providers.public import ProvidersPublic, get_providers_public
 
 #until: Domain exceptions
@@ -23,15 +21,15 @@ class MachinesService:
     (authorization stays in routes).
     """
     def __init__(self, db: Session, machine_repo: MachinesRepository,
-                 providers_public: ProvidersPublic):  #NEW LINE
+                 providers_public: ProvidersPublic):
         self.db = db
         self.machine_repo = machine_repo
-        self.providers_public = providers_public  #NEW LINE
+        self.providers_public = providers_public
 
     def get_machine(self, machine_id: UUID) -> Machine:
         machine = self.machine_repo.get_machine(self.db, machine_id)
         if not machine:
-            raise ValueError("Machine does not exist.")  #MachineNotFoundError()
+            raise ValueError("Machine does not exist.")  #consider: MachineNotFoundError()
         return machine
 
     def list_machines_for_provider(self, provider_id: UUID) -> list[Machine]:
@@ -45,20 +43,15 @@ class MachinesService:
         if not machine:
             raise ValueError("Machine does not exist.") #consider: MachineNotFoundError()
 
-        #Business rule: providers can only delete their own machines
         if machine.provider_id != provider_id:
             raise ValueError("You do not own this machine.") #consider: #NotProviderMachineError()
 
-        #Delegate to repository
         self.machine_repo.delete_machine(self.db, machine)
 
 def get_machines_service(
     db: Session = Depends(get_db),
     providers_public: ProvidersPublic = Depends(get_providers_public),
 ) -> MachinesService:
-    """
-    FastAPI DI: builds a service with a fresh repository instance.
-    """
     repo = MachinesRepository()
     return MachinesService(
         db=db,

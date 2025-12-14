@@ -10,8 +10,6 @@ from app.bookings.public import BookingsPublic, get_bookings_public
 
 router = APIRouter()
 
-
-#Buyer endpoint to fetch credentials for their own active booking
 @router.get("/buyer/{booking_id}")
 def get_buyer_credentials(
     booking_id: UUID,
@@ -20,23 +18,19 @@ def get_buyer_credentials(
     service: AccessCredentialsService = Depends(get_access_credential_service),
     bookings_public: BookingsPublic = Depends(get_bookings_public),
 ):
-    auth.ensure_buyer() #Ensures the user is a buyer
+    auth.ensure_buyer()
 
     booking = bookings_public.get_booking(booking_id)
 
-    #Ensure ownership
     if booking.buyer_user_id != user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not own this booking.",
         )
 
-    #service will decide whether credentials should be shown
-    creds = service.get_for_booking(booking)        #consider: mixed passing of booking object and booking id
+    creds = service.get_for_booking(booking) #consider: mixed passing of booking object and booking id
     return {"credentials": creds}
 
-
-#Provider endpoint to fetch credentials for bookings on their machine
 @router.get("/provider/{booking_id}")
 def get_provider_credentials(
     booking_id: UUID,
@@ -45,7 +39,7 @@ def get_provider_credentials(
     service: AccessCredentialsService = Depends(get_access_credential_service),
     bookings_public: BookingsPublic = Depends(get_bookings_public),
 ):
-    auth.ensure_provider()  #Ensures the user is a provider
+    auth.ensure_provider()
 
     booking = bookings_public.get_booking(booking_id)
 
@@ -57,5 +51,5 @@ def get_provider_credentials(
             detail="You are not the provider of this machine.",
         )
 
-    creds = service.get_for_booking(booking)     #consider: mixed passing of booking object and booking id
+    creds = service.get_for_booking(booking) #consider: mixed passing of booking object and booking id
     return {"credentials": creds}

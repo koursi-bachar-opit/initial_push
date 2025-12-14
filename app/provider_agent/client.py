@@ -3,7 +3,6 @@ from uuid import UUID
 from datetime import datetime, timezone
 
 
-
 #consider: can issuer.py eventually call into this? why?
 @dataclass
 class AgentProvisionResult:

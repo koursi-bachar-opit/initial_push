@@ -20,7 +20,7 @@ from app.payments.public import get_payments_public
 
 from app.notifications.public import NotificationsPublic, get_notifications_public
 
-class DisputeService:
+class DisputesService:
     """
     Orchestrates the dispute lifecycle:
     - Open dispute (buyers or providers)
@@ -43,24 +43,22 @@ class DisputeService:
         self.payments_public = payments_public
         self.notifications = notifications_public
 
-
-    #Helpers
     def _get_dispute_or_raise(self, dispute_id: uuid.UUID):
+        """Gets a dispute if it exists, raises error if it doesn't"""
         dispute = self.repo.get_by_id(self.db, dispute_id)
         if not dispute:
             raise ValueError("Dispute not found")
         return dispute
 
     def _get_booking_or_raise(self, booking_id: uuid.UUID):
+        """Gets a booking if it exists, raises error if it doesn't"""
         booking = self.bookings_public.get_booking(booking_id)
         if not booking:
             raise ValueError("Booking not found")
         return booking
 
     def _validate_booking_access(self, booking, user_id: uuid.UUID):
-        """
-        Determines whether user may open a dispute for a given booking.
-        """
+        """Determines whether user may open a dispute for a given booking."""
         if booking.buyer_user_id == user_id:
             return True
 
@@ -71,6 +69,7 @@ class DisputeService:
         raise ValueError("User not authorized to dispute this booking")
 
     def _validate_unique_open_dispute(self, booking_id: uuid.UUID):
+        """Verifies a given booking doesn't already have a open dispute"""
         existing = self.repo.list_for_booking(self.db, booking_id)
         for d in existing:
             if d.status in {
@@ -79,7 +78,6 @@ class DisputeService:
                 DisputeStatus.NEEDS_INFO,
             }:
                 raise ValueError("An open dispute already exists for this booking")
-
 
     def open_dispute(self, user_id: uuid.UUID, payload: DisputeCreate):
         """
@@ -100,7 +98,6 @@ class DisputeService:
 
         return dispute
 
-
     def list_disputes_for_user(self, user_id: uuid.UUID):
         """
         User should see all disputes they opened.
@@ -113,7 +110,6 @@ class DisputeService:
     def list_open_for_admin(self):
         return self.repo.list_open_for_admin(self.db)
 
-
     def set_status(
         self,
         dispute_id: uuid.UUID,
@@ -123,20 +119,17 @@ class DisputeService:
     ):
         """
         Admin-only status transitions.
-        Allowed transitions:
-        OPEN -> IN_REVIEW
-        IN_REVIEW -> NEEDS_INFO
-        NEEDS_INFO -> IN_REVIEW
+        Only certain transitions are allowed.
         """
         dispute = self._get_dispute_or_raise(dispute_id)
 
-        #From OPEN -> IN_REVIEW -> NEEDS_INFO -> IN_REVIEW
         allowed = {
             (DisputeStatus.OPEN, DisputeStatus.IN_REVIEW),
             (DisputeStatus.IN_REVIEW, DisputeStatus.NEEDS_INFO),
             (DisputeStatus.NEEDS_INFO, DisputeStatus.IN_REVIEW),
         }
 
+        #consider: use logic for booking lifecycle
         if (dispute.status, new_status) not in allowed:
             raise ValueError("Invalid dispute status transition")
 
@@ -149,20 +142,11 @@ class DisputeService:
         )
         return updated
 
-
     def resolve_dispute(
         self,
         dispute_id: uuid.UUID,
         payload: DisputeResolution,
     ):
-        """
-        Admin-only.
-        Decisions:
-        -refund
-        -deny
-        When refund:
-        call -> PaymentsPublic.refund_for_booking()
-        """
         dispute = self._get_dispute_or_raise(dispute_id)
 
         if dispute.status not in {
@@ -180,10 +164,13 @@ class DisputeService:
             if payload.refund_amount is None or payload.refund_amount <= 0:
                 raise ValueError("refund_amount must be > 0 for refund decisions")
 
-            #Always refunds the full captured or held amount (from PaymentsPublic).
-            #PaymentService.refund() implementation.
-            #Extend PaymentsPublic for partial refund
-            _ = self.payments_public.refund_for_booking(
+            #consider: extend PaymentsPublic for partial refund
+            #safe
+            # _ = self.payments_public.refund_for_booking(
+            #     booking_id=booking.id,
+            #     reason="dispute_resolution",
+            # )
+            self.payments_public.refund_for_booking(
                 booking_id=booking.id,
                 reason="dispute_resolution",
             )
@@ -217,7 +204,6 @@ class DisputeService:
         else:
             raise ValueError("Unsupported decision type")
 
-
     def close_dispute(self, dispute_id: uuid.UUID):
         """
         Admin-only. Closes a dispute after it has been resolved.
@@ -243,16 +229,14 @@ class DisputeService:
         """Return ALL disputes for admin dashboard (including resolved/closed)"""
         return self.repo.list_all_for_admin(self.db)
 
-
-
 def get_disputes_service(
     db: Session = Depends(get_db),
     bookings_public: BookingsPublic = Depends(get_bookings_public),
     payments_public: PaymentsPublic = Depends(get_payments_public),
     notifications_public: NotificationsPublic = Depends(get_notifications_public),
-) -> DisputeService:
+) -> DisputesService:
     repo = DisputesRepository()
-    return DisputeService(
+    return DisputesService(
         db=db,
         repo=repo,
         bookings_public=bookings_public,

@@ -10,10 +10,8 @@ class AccessCredentialBase(BaseModel):
     vpn_config_uri: Optional[str] = None
     ssh_public_key_fingerprint: Optional[str] = None
 
-
 class AccessCredentialCreate(AccessCredentialBase):
     pass
-
 
 class AccessCredentialRead(AccessCredentialBase):
     id: UUID

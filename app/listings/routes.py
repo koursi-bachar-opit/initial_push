@@ -1,4 +1,11 @@
+"""
+Endpoints for listing servers.
+Providers and Admins can create listings.
+Everyone (including anonymous users) can browse listings.
+"""
+
 from fastapi import Depends, APIRouter, HTTPException
+from typing import Optional
 
 from app.users.models import User, UserRole
 from app.auth.auth import require_roles, get_current_user
@@ -6,15 +13,8 @@ from app.auth.auth import require_roles, get_current_user
 from .schemas import ListingCreate, ListingRead, ListingFilter #, ListingFilter
 from .service import ListingsService, get_listings_service
 
-from typing import Optional
 
 router = APIRouter()
-
-"""
-Endpoints for listing servers.
-Providers and Admins can create listings.
-Everyone (including anonymous users) can browse listings.
-"""
 
 @router.post(
     "/",
@@ -38,7 +38,7 @@ def create_listing(
     except ValueError as e:
         raise HTTPException(status_code=403)
 
-
+#consider: loads listings and attaches metrics to display for customers, not attached asynchronously
 @router.get("/search")
 def search_listings_by_name(
     name: str = "",
@@ -49,16 +49,10 @@ def search_listings_by_name(
         return []
     return service.search_listings_by_name(name)
 
-
 @router.get("/", response_model=list[dict])
 def list_listings(service: ListingsService = Depends(get_listings_service)):
-    """
-    Public listings endpoint.
-    Accessible even to anonymous users.
-    Returns listings with metrics.
-    """
+    """Public listings endpoint"""
     return service.list_listings()
-
 
 @router.get("/search/filter", response_model=dict)
 def search_listings_with_filters(

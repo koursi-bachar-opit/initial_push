@@ -26,7 +26,6 @@ def test_payments_public_implements_protocol():
     assert callable(public_impl.void_escrow_for_booking)
     assert callable(public_impl.get_payments_for_bookings)
 
-
 def test_payments_public_delegates_to_service():
     """Test that all public methods correctly delegate to the service layer"""
     mock_service = Mock()

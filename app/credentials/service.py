@@ -1,18 +1,12 @@
 from fastapi import Depends
 from app.database import get_db
-
-from datetime import datetime
-
-from .repository import AccessCredentialRepository
-from .issuer import CredentialIssuer
-
-from .issuer import get_credential_issuer
-
-from uuid import UUID
-
 from sqlalchemy.orm import Session
 
+from .repository import AccessCredentialRepository
+from .issuer import get_credential_issuer, CredentialIssuer
+
 from app.notifications.public import NotificationsPublic, get_notifications_public
+
 
 class AccessCredentialsService:
     def __init__(
@@ -27,17 +21,14 @@ class AccessCredentialsService:
         self.issuer = issuer
         self.notifications = notifications_public
 
-
     def issue_for_booking(self, booking):
         """
         Issues credentials for a booking, but only if the booking is ACTIVE.
         """
-
-        #Gather related objects
         user = booking.buyer
         machine = booking.listing.machine
 
-        #Issue via issuer strategy
+        #Issue via the dedicated credentials issuer
         payload = self.issuer.issue(
             booking=booking,
             user=user,
@@ -54,7 +45,6 @@ class AccessCredentialsService:
         self.notifications.credentials_issued(booking.buyer, saved)
 
         return saved
-
 
     def revoke_for_booking(self, booking):
         """
@@ -76,13 +66,11 @@ class AccessCredentialsService:
 
         return revoked_list
 
-
     def get_for_booking(self, booking):
         """
         Return credentials for displaying or auditing.
         """
         return self.repo.get_by_booking_id(self.db, booking.id)
-
 
 def get_access_credential_service(
     db: Session = Depends(get_db),

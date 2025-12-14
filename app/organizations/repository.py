@@ -4,7 +4,6 @@ from uuid import UUID
 from .models import Organization, OrganizationMembership, OrgRole
 
 class OrganizationsRepository:
-
     def create(self, db: Session, data: dict) -> Organization:
         org = Organization(**data)
         db.add(org)
@@ -30,7 +29,6 @@ class OrganizationsRepository:
             .all()
         )
 
-    #memberships
     def add_member(self, db: Session, org_id: UUID, user_id: UUID, role: OrgRole):
         record = OrganizationMembership(
             organization_id=org_id,

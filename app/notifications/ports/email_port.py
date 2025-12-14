@@ -10,8 +10,8 @@ class EmailPort(Protocol):
     def send_email(self, to: str, subject: str, html_body: str) -> None:
         """
         Send an email to a recipient.
-        :param to: Recipient email address
-        :param subject: Email subject line
-        :param html_body: Full HTML email body
+        to: Recipient email address
+        subject: Email subject line
+        html_body: Full HTML email body
         """
         ...

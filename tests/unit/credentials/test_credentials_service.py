@@ -14,24 +14,20 @@ def mock_db():
     """Mock database session fixture"""
     return Mock()
 
-
 @pytest.fixture
 def mock_repository():
     """Mock AccessCredentialRepository fixture"""
     return Mock(spec=AccessCredentialRepository)
-
 
 @pytest.fixture
 def mock_issuer():
     """Mock CredentialIssuer fixture"""
     return Mock(spec=CredentialIssuer)
 
-
 @pytest.fixture
 def mock_notifications_public():
     """Mock NotificationsPublic fixture"""
     return Mock(spec=NotificationsPublic)
-
 
 @pytest.fixture
 def credentials_service(mock_repository, mock_issuer, mock_notifications_public, mock_db):
@@ -43,7 +39,6 @@ def credentials_service(mock_repository, mock_issuer, mock_notifications_public,
         notifications_public=mock_notifications_public
     )
 
-
 @pytest.fixture
 def sample_booking():
     """Fixture for a mock booking object"""
@@ -53,7 +48,6 @@ def sample_booking():
     booking.listing = Mock()
     booking.listing.machine = Mock()
     return booking
-
 
 @pytest.fixture
 def sample_credential():
@@ -66,7 +60,6 @@ def sample_credential():
     credential.revoked_at = None
     return credential
 
-
 @pytest.fixture
 def sample_issuer_payload():
     """Fixture for mock issuer payload"""
@@ -74,7 +67,6 @@ def sample_issuer_payload():
     payload.vpn_config_uri = "https://example.com/vpn/config"
     payload.ssh_public_key_fingerprint = "SHA256:abc123"
     return payload
-
 
 class TestAccessCredentialsService:
     

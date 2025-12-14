@@ -7,39 +7,25 @@ from .models import WipeAttestation, WipeReviewStatus
 
 class ComplianceRepository:
     def create(self, db: Session, *, booking_id: UUID, machine_id: UUID, 
-               method: str, evidence_uri: str, notes: str):
+               method: str, evidence_uri: str):
 
         att = WipeAttestation(
             booking_id=booking_id,
             machine_id=machine_id,
             method=method,
             evidence_uri=evidence_uri,
-            notes=notes,
         )
         db.add(att)
         db.commit()
         db.refresh(att)
         return att
-
-    #update tests
-    def get_by_booking(self, db: Session, booking_id: UUID, include_relations: bool = False):
-        query = db.query(WipeAttestation)
-        
-        #consider: include_relations not necessary with get_by_booking_with_relations, check if anything depends on this function
-        if include_relations:
-            query = query.options(
-                joinedload(WipeAttestation.booking),
-                joinedload(WipeAttestation.machine)
-            )
-            
-        return query.filter_by(booking_id=booking_id).first()
     
-    # def get_by_booking(self, db: Session, booking_id: UUID):
-    #     stmt = select(WipeAttestation).where(
-    #         WipeAttestation.booking_id == booking_id
-    #     )
-    #     result = db.execute(stmt)
-    #     return result.scalar_one_or_none()
+    def get_by_booking(self, db: Session, booking_id: UUID):
+        stmt = select(WipeAttestation).where(
+            WipeAttestation.booking_id == booking_id
+        )
+        result = db.execute(stmt)
+        return result.scalar_one_or_none()
     
     def get_by_booking_with_relations(self, db: Session, booking_id: UUID):
         """
@@ -50,7 +36,6 @@ class ComplianceRepository:
             selectinload(WipeAttestation.booking),  # For ownership check
             selectinload(WipeAttestation.machine)   # For provider check
         ).filter_by(booking_id=booking_id).first()
-    #update tests
 
     def list_machine_attestations(self, db: Session, machine_id: UUID):
         stmt = select(WipeAttestation).where(
@@ -64,8 +49,7 @@ class ComplianceRepository:
         result = db.execute(stmt)
         return result.scalars().all()
 
-    def update_status(self, db: Session, attestation_id: UUID, 
-                      status: WipeReviewStatus):
+    def update_status(self, db: Session, attestation_id: UUID, status: WipeReviewStatus):
         stmt = select(WipeAttestation).where(WipeAttestation.id == attestation_id)
         result = db.execute(stmt)
         att = result.scalar_one_or_none()

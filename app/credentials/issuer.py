@@ -12,7 +12,6 @@ class IssuedCredentialPayload:
     vpn_config_uri: str
     ssh_public_key_fingerprint: str
 
-
 class CredentialIssuer:
     """
     Abstract interface for issuing & revoking credentials.
@@ -22,7 +21,6 @@ class CredentialIssuer:
 
     def revoke(self, credential):
         ...
-
 
 class VpnAndSshIssuer(CredentialIssuer):
     """
@@ -54,8 +52,8 @@ class VpnAndSshIssuer(CredentialIssuer):
             credential_id=credential.id
         )
 
-
 def get_credential_issuer(
     agent: ProviderAgentClient = Depends(get_agent_client),
 ) -> CredentialIssuer:
+    """Dependency injection provider for issuer interface."""
     return VpnAndSshIssuer(agent)

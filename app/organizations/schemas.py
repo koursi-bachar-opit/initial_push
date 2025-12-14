@@ -3,6 +3,7 @@ from pydantic import BaseModel, EmailStr, ConfigDict
 from datetime import datetime
 from enum import Enum
 
+
 class OrgStatus(str, Enum):
     ACTIVE = "active"
     SUSPENDED = "suspended"
@@ -12,17 +13,14 @@ class OrgRole(str, Enum):
     ADMIN = "admin"
     MEMBER = "member"
 
-
 class OrganizationCreate(BaseModel):
     name: str
     billing_email: EmailStr
-
 
 class OrganizationUpdate(BaseModel):
     name: str | None = None
     billing_email: EmailStr | None = None
     status: OrgStatus | None = None
-
 
 class OrganizationRead(BaseModel):
     id: UUID
@@ -33,11 +31,9 @@ class OrganizationRead(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-
 class MembershipCreate(BaseModel):
     user_id: UUID
     role: OrgRole
-
 
 class MembershipRead(BaseModel):
     id: UUID
@@ -46,7 +42,6 @@ class MembershipRead(BaseModel):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
-
 
 class MembershipUpdateRole(BaseModel):
     role: OrgRole

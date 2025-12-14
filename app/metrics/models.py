@@ -1,6 +1,5 @@
 from datetime import datetime, timezone
 from uuid import uuid4
-
 from sqlalchemy import Column, DateTime, Float, ForeignKey, Index
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
@@ -29,7 +28,6 @@ class MetricSample(Base):
         index=True,
     )
 
-    #When the metric snapshot was recorded on the machine/agent side
     recorded_at = Column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
@@ -37,8 +35,8 @@ class MetricSample(Base):
         index=True,
     )
 
-    gpu_util = Column(Float, nullable=True)      #percent (0–100)
-    cpu_util = Column(Float, nullable=True)      #percent (0–100)
+    gpu_util = Column(Float, nullable=True)
+    cpu_util = Column(Float, nullable=True)
     mem_used_gb = Column(Float, nullable=True)   #used RAM in GB
     net_rx_mb = Column(Float, nullable=True)     #received MB during window
     net_tx_mb = Column(Float, nullable=True)     #transmitted MB during window

@@ -11,11 +11,11 @@ from .models import Payment, PaymentType, PaymentStatus
 from .public import get_payments_public, PaymentsPublic
 from app.database import get_db
 
+
 router = APIRouter()
 
 #Initialize Stripe
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "")
-
 
 @router.post("/stripe")
 async def stripe_webhook(

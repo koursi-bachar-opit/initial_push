@@ -1,4 +1,4 @@
-import { apiGetListings, apiRequestBooking, apiSearchListings, apiSearchListingsWithFilters, apiGetMachineBenchmarks, apiRequestBookingWithPayment } from "./api.js";
+import { apiGetListings, apiRequestBooking, apiSearchListings, apiSearchListingsWithFilters, apiGetMachineBenchmarks, apiRequestBookingWithPayment, apiGetOrganizations } from "./api.js";
 
 // DOM Elements
 const listingsGrid = document.getElementById("listingsGrid");
@@ -514,6 +514,7 @@ Proceed with payment?`;
         const price = booking.total_price_estimate || totalPrice;
         
         // 3. Create Stripe checkout
+        // add to api.js
         const response = await fetch('/api/v1/payments/checkout', {
             method: 'POST',
             headers: {
@@ -653,92 +654,6 @@ async function selectOrganizationForBooking(organizations) {
         document.addEventListener('keydown', escapeHandler);
     });
 }
-
-// async function handleBookingRequest() {
-//     if (!selectedListing) return;
-
-//     // Get selected date and times
-//     const date = bookingDateInput.value;
-//     const startTime = startTimeInput.value;
-//     const endTime = endTimeInput.value;
-    
-//     if (!date || !startTime || !endTime) {
-//         alert("Please select a date and time for your booking");
-//         return;
-//     }
-    
-//     // Create datetime strings
-//     const startDateTime = new Date(`${date}T${startTime}`);
-//     const endDateTime = new Date(`${date}T${endTime}`);
-    
-//     // Validate times
-//     if (endDateTime <= startDateTime) {
-//         alert("End time must be after start time");
-//         return;
-//     }
-    
-//     // Calculate duration and price
-//     const durationMs = endDateTime - startDateTime;
-//     const durationHours = durationMs / (1000 * 60 * 60);
-//     const totalPrice = durationHours * currentListingPrice;
-    
-//     // Confirm with user
-//     const confirmMessage = `Booking Details:\n
-// - Date: ${date}
-// - Start: ${startTime}
-// - End: ${endTime}
-// - Duration: ${durationHours.toFixed(1)} hours
-// - Price: $${totalPrice.toFixed(2)}\n
-// Proceed with payment?`;
-    
-//     if (!confirm(confirmMessage)) {
-//         return;
-//     }
-
-//     try {
-//         // 1. Create booking draft
-//         const booking = await apiRequestBookingWithPayment({
-//             listing_id: selectedListing.id,
-//             start_time: startDateTime.toISOString(),
-//             end_time: endDateTime.toISOString(),
-//         });
-
-//         console.log('Booking draft created:', booking.id);
-        
-//         // 2. Use actual total price from booking or calculate
-//         const price = booking.total_price_estimate || totalPrice;
-        
-//         // 3. Create Stripe checkout
-//         const response = await fetch('/api/v1/payments/checkout', {
-//             method: 'POST',
-//             headers: {
-//                 'Content-Type': 'application/json',
-//                 'Authorization': `Bearer ${localStorage.getItem('access_token')}`
-//             },
-//             body: JSON.stringify({
-//                 booking_id: booking.id,
-//                 amount: price,
-//                 currency: "USD"
-//             })
-//         });
-        
-//         if (!response.ok) {
-//             const error = await response.json();
-//             throw new Error(error.detail || 'Failed to create payment session');
-//         }
-        
-//         const data = await response.json();
-        
-//         // 4. Redirect to Stripe
-//         console.log('Redirecting to Stripe:', data.checkout_url);
-//         window.location.href = data.checkout_url;
-        
-//     } catch (err) {
-//         console.error('Booking/payment error:', err);
-//         alert("Error: " + err.message);
-//         modal.hide();
-//     }
-// }
 
 function showError(message) {
     const errorDiv = document.createElement("div");

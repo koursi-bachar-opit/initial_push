@@ -71,7 +71,7 @@ class VerificationService:
         new_status: schemas.VerificationStatus,
         notes: Optional[str] = None,
     ):
-
+        """Admin can choose to approve or deny verification request."""
         verification = self.repo.get_verification(verification_id)
         if not verification:
             raise ValueError("Verification not found.")
@@ -90,7 +90,6 @@ class VerificationService:
 
     def list_verifications(self, subject_type, subject_id):
         return self.repo.list_verifications_for(subject_type, subject_id)
-
 
 def get_provider_profile_service(
     db: Session = Depends(get_db),

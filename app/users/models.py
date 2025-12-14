@@ -6,18 +6,13 @@ import uuid
 
 from app.database import Base
 
-
 class UserRole(str, Enum):
     BUYER = "buyer"
     PROVIDER = "provider"
     ADMIN = "admin"
     ORG_ADMIN = "org_admin"
 
-
 class User(Base):
-    """
-    Marketplace user.
-    """
     __tablename__ = "users"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -26,7 +21,6 @@ class User(Base):
     role = Column(SQLEnum(UserRole, native_enum=False), nullable=False, default=UserRole.BUYER)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
-    #A provider can own multiple machines (casecasde delete for data integrity)
     machines = relationship("Machine", back_populates="provider", cascade="all, delete")
     organization_memberships = relationship("OrganizationMembership", back_populates="user")
     bookings = relationship("Booking", back_populates="buyer")

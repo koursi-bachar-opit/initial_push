@@ -37,8 +37,8 @@ class AccessCredentialRepository:
         result = db.execute(stmt)
         credential = result.scalar_one_or_none()
 
-        if credential is None:
-            return None  #service layer decides how to handle "not found"
+        if credential is None:  #consider: use this pattern more consistently for DB operations
+            return None
 
         credential.revoked_at = datetime.now(timezone.utc)
         db.commit()

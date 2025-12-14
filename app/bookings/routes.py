@@ -1,3 +1,16 @@
+"""
+Routes for managing the booking lifecycle.
+Buyers:
+    - Can request a booking (`POST /request`)
+    - Can see their own bookings
+Providers:
+    - Can view bookings on their own machines
+Admins:
+    - Can view all bookings
+    - Can create bookings manually
+All business logic lives in bookings_service.py.
+"""
+
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.auth.auth import get_current_user
@@ -31,19 +44,6 @@ from typing import List
 
 
 router = APIRouter()
-
-"""
-Routes for managing the booking lifecycle.
-Buyers:
-    - Can request a booking (`POST /request`)
-    - Can see their own bookings
-Providers:
-    - Can view bookings on their own machines
-Admins:
-    - Can view all bookings
-    - Can create bookings manually
-All business logic lives in bookings_service.py.
-"""
 
 @router.post("/", response_model=BookingRead, status_code=201)
 def create_booking(
@@ -101,7 +101,6 @@ def request_booking(
         return service.request_booking(user.id, payload=booking)
     except ValueError as e: #NotFound -> 404 ValidationError ||| InvalidStateTransition → 400 / 409
         raise HTTPException(status_code=404, detail=str(e))
-#consider: legacy request
 
 @router.post("/request-with-payment", response_model=BookingRead)
 def request_booking_with_payment(
@@ -114,15 +113,12 @@ def request_booking_with_payment(
     Frontend will then call payments/checkout with this booking ID.
     """
     try:
-        # Create booking draft (pending_payment, no escrow)
         booking_obj = service.create_booking_draft(user.id, payload=booking)
         
-        # Return booking - frontend will handle payment
         return booking_obj
         
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    
 
 @router.post("/{booking_id}/confirm-payment", response_model=BookingRead)
 def confirm_booking_payment(
@@ -136,34 +132,20 @@ def confirm_booking_payment(
     Called by frontend after payment success page loads.
     """
     try:
-        # 1. Get booking
         booking = service.get_booking_readonly(booking_id)
         
-        # 2. Check payment exists and is authorized
         payments = payments_public.list_for_booking(booking_id)
         if not payments or payments[0].status != PaymentStatus.AUTHORIZED:
             raise ValueError("No authorized payment found for this booking")
         
-        # 3. Update booking status to "requested"
         booking.status = BookingStatus.REQUESTED
         service.booking_repo.update_booking(service.db, booking)
-        
-        # 4. Create escrow (optional - you already have payment)
-        # payments_public.escrow_for_booking(...)
         
         return booking
         
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-
-"""
-Represents Booking status values (through bookings_service calls)
-confirm_booking() -> CONFIRMED
-cancel_booking() -> CANCELLED
-start_booking_session() -> ACTIVE
-end_booking_session() -> COMPLETED
-"""
 @router.put("/{booking_id:uuid}/confirm", response_model=BookingRead)
 def confirm_booking(booking_id: UUID, service: BookingsService = Depends(get_bookings_service), user: User = Depends(get_current_user)):
     try:

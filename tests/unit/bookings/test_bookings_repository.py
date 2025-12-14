@@ -13,12 +13,10 @@ def mock_db():
     """Mock database session fixture"""
     return Mock()
 
-
 @pytest.fixture
 def bookings_repository():
     """BookingsRepository instance fixture"""
     return BookingsRepository()
-
 
 @pytest.fixture
 def sample_booking():
@@ -33,7 +31,6 @@ def sample_booking():
     booking.organization_id = uuid4()
     return booking
 
-
 @pytest.fixture
 def sample_listing():
     """Fixture for a mock listing object"""
@@ -41,7 +38,6 @@ def sample_listing():
     listing.id = uuid4()
     listing.machine_id = uuid4()
     return listing
-
 
 @pytest.fixture
 def sample_machine():
@@ -51,9 +47,7 @@ def sample_machine():
     machine.provider_id = uuid4()
     return machine
 
-
 class TestBookingsRepository:
-    
     def test_create_booking_performs_database_operations(self, mock_db, bookings_repository, sample_booking):
         """Test that booking creation performs database operations"""
         result = bookings_repository.create_booking(mock_db, sample_booking)
@@ -123,7 +117,6 @@ class TestBookingsRepository:
         mock_query.join.assert_called_once()
         mock_joined_query1.join.assert_called_once()
         mock_ordered_query.all.assert_called_once()
-
 
     def test_get_booking_by_id_returns_booking_when_exists(self, mock_db, bookings_repository):
         """Test retrieving an existing booking by ID"""

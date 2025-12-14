@@ -6,7 +6,7 @@ import {
     apiEndSession,
 } from "./api.js";
 
-//check bookings
+// check bookings
 document.addEventListener("DOMContentLoaded", async () => {
     const container = document.getElementById("bookings");
 
@@ -27,7 +27,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     container.innerHTML = bookings.map(b => bookingCardHTML(b, role)).join("");
 
-    //Attach button, choose bookings actions
+    // Attach button, choose bookings actions
     document.querySelectorAll("[data-act]").forEach(btn => {
         btn.addEventListener("click", async () => {
             const id = btn.dataset.id;
@@ -53,7 +53,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 
-//Flowbite card
+// Flowbite card
 function bookingCardHTML(b, role) {
     return `
         <div class="border border-gray-200 dark:border-gray-700 rounded-lg shadow bg-white dark:bg-gray-800 hover:shadow-md transition overflow-hidden">
@@ -98,7 +98,7 @@ function bookingCardHTML(b, role) {
 }
 
 
-//Action buttons
+// Action buttons
 function actionHTML(b, role) {
     const id = b.id;
 
@@ -128,7 +128,7 @@ function btn(act, label, id) {
     `;
 }
 
-//Badge and date helpers
+// Badge and date helpers
 function statusBadge(status) {
     const cls = {
         requested: "bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-300",

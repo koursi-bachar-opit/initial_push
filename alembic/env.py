@@ -5,24 +5,19 @@ from alembic import context
 
 from app.database import Base
 
-#from app import models
-from app.users.models import User
-from app.machines.models import Machine
-from app.listings.models import Listing
-from app.bookings.models import Booking
-from app.credentials.models import AccessCredential
-
+from app.users.models import *
+from app.machines.models import *
+from app.listings.models import *
+from app.bookings.models import *
+from app.credentials.models import *
 from app.compliance.models import *
 from app.disputes.models import *
 from app.organizations.models import *
 from app.payments.models import *
 from app.providers.models import *
-
 from app.invoices.models import *
 from app.benchmarks.models import *
-
 from app.metrics.models import *
-
 
 
 from dotenv import load_dotenv
@@ -37,7 +32,6 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 # Import model metadata for 'autogenerate' support if needed
-# from your_app.models import Base
 target_metadata = Base.metadata
 
 # Read DATABASE_URL (or TEST_DATABASE_URL) from environment

@@ -17,30 +17,25 @@ def mock_db():
     """Mock database session fixture"""
     return Mock()
 
-
 @pytest.fixture
 def mock_repository():
     """Mock ComplianceRepository fixture"""
     return Mock(spec=ComplianceRepository)
-
 
 @pytest.fixture
 def mock_machines_public():
     """Mock MachinesPublic fixture"""
     return Mock(spec=MachinesPublic)
 
-
 @pytest.fixture
 def mock_providers_public():
     """Mock ProvidersPublic fixture"""
     return Mock(spec=ProvidersPublic)
 
-
 @pytest.fixture
 def mock_notifications_public():
     """Mock NotificationsPublic fixture"""
     return Mock(spec=NotificationsPublic)
-
 
 @pytest.fixture
 def compliance_service(mock_db, mock_repository, mock_machines_public, mock_providers_public, mock_notifications_public):
@@ -53,7 +48,6 @@ def compliance_service(mock_db, mock_repository, mock_machines_public, mock_prov
         notifications_public=mock_notifications_public
     )
 
-
 @pytest.fixture
 def sample_booking():
     """Fixture for a mock booking object"""
@@ -65,7 +59,6 @@ def sample_booking():
     booking.wipe_attestation = None
     return booking
 
-
 @pytest.fixture
 def sample_machine():
     """Fixture for a mock machine object"""
@@ -73,7 +66,6 @@ def sample_machine():
     machine.id = uuid4()
     machine.provider_id = uuid4()
     return machine
-
 
 @pytest.fixture
 def sample_attestation():
@@ -84,11 +76,9 @@ def sample_attestation():
     attestation.machine_id = uuid4()
     attestation.method = "full_disk_wipe"
     attestation.evidence_uri = "https://example.com/evidence.pdf"
-    attestation.notes = "Wipe completed successfully"
     attestation.attested_at = Mock()
     attestation.status = WipeReviewStatus.PENDING
     return attestation
-
 
 @pytest.fixture
 def sample_attestation_with_relations():
@@ -103,11 +93,9 @@ def sample_attestation_with_relations():
     attestation.machine.provider_id = uuid4()
     attestation.method = "full_disk_wipe"
     attestation.evidence_uri = "https://example.com/evidence.pdf"
-    attestation.notes = "Wipe completed successfully"
     attestation.attested_at = Mock()
     attestation.status = WipeReviewStatus.PENDING
     return attestation
-
 
 @pytest.fixture
 def sample_attestation_create_data():
@@ -117,9 +105,7 @@ def sample_attestation_create_data():
         machine_id=uuid4(),
         method="full_disk_wipe",
         evidence_uri="https://example.com/evidence.pdf",
-        notes="Wipe completed successfully"
     )
-
 
 @pytest.fixture
 def sample_attestation_update_data():
@@ -127,7 +113,6 @@ def sample_attestation_update_data():
     return WipeAttestationUpdateStatus(
         status=WipeReviewStatus.VERIFIED,
     )
-
 
 class TestComplianceService:
     def test_simulate_wipe_for_booking_creates_new_attestation(self, compliance_service, mock_db, mock_repository, sample_booking, sample_attestation, sample_machine):
@@ -145,7 +130,6 @@ class TestComplianceService:
             machine_id=sample_machine.id,
             method="simulated-secure-erase",
             evidence_uri=f"mock://wipe/{sample_booking.id}.log",
-            notes="Simulated wipe completed successfully."
         )
         mock_repository.update_status.assert_called_once_with(
             db=mock_db,
@@ -199,7 +183,6 @@ class TestComplianceService:
             machine_id=sample_attestation_create_data.machine_id,
             method=sample_attestation_create_data.method,
             evidence_uri=sample_attestation_create_data.evidence_uri,
-            notes=sample_attestation_create_data.notes
         )
         assert result == sample_attestation
 

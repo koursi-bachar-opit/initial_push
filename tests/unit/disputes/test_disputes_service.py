@@ -3,7 +3,7 @@ from unittest.mock import Mock, patch
 from uuid import uuid4
 from datetime import datetime, timezone
 
-from app.disputes.service import DisputeService
+from app.disputes.service import DisputesService
 from app.disputes.repository import DisputesRepository
 from app.disputes.models import Dispute, DisputeStatus
 from app.disputes.schemas import DisputeCreate, DisputeResolution
@@ -11,45 +11,39 @@ from app.bookings.public import BookingsPublic
 from app.payments.public import PaymentsPublic
 from app.notifications.public import NotificationsPublic
 
-#consider: test redo
+
 @pytest.fixture
 def mock_db():
     return Mock()
-
 
 @pytest.fixture
 def mock_repository():
     return Mock(spec=DisputesRepository)
 
-
 @pytest.fixture
 def mock_bookings_public():
     return Mock(spec=BookingsPublic)
-
 
 @pytest.fixture
 def mock_payments_public():
     return Mock(spec=PaymentsPublic)
 
-
 @pytest.fixture
 def mock_notifications_public():
     return Mock(spec=NotificationsPublic)
-
 
 @pytest.fixture
 def dispute_service(
     mock_db, mock_repository, mock_bookings_public, mock_payments_public, mock_notifications_public
 ):
     """Main service fixture that composes other fixtures"""
-    return DisputeService(
+    return DisputesService(
         db=mock_db,
         repo=mock_repository,
         bookings_public=mock_bookings_public,
         payments_public=mock_payments_public,
         notifications_public=mock_notifications_public,
     )
-
 
 @pytest.fixture
 def sample_dispute_data():
@@ -58,7 +52,6 @@ def sample_dispute_data():
         booking_id=uuid4(),
         reason="Service not provided as described",
     )
-
 
 @pytest.fixture
 def sample_dispute():
@@ -73,7 +66,6 @@ def sample_dispute():
     dispute.resolved_at = None
     dispute.user = Mock()
     return dispute
-
 
 @pytest.fixture
 def sample_booking():
@@ -92,10 +84,8 @@ def sample_booking():
     
     return booking
 
-
-class TestDisputeService:
+class TestDisputesService:
     
-    # Test: _get_dispute_or_raise
     def test_get_dispute_or_raise_returns_dispute_when_exists(self, dispute_service, mock_db, mock_repository):
         """Test successful dispute retrieval"""
         mock_existing_dispute = Mock(spec=Dispute)
@@ -119,7 +109,6 @@ class TestDisputeService:
         
         mock_repository.get_by_id.assert_called_once_with(mock_db, dispute_id)
 
-    # Test: _get_booking_or_raise
     def test_get_booking_or_raise_returns_booking_when_exists(
         self, dispute_service, mock_bookings_public
     ):
@@ -147,7 +136,6 @@ class TestDisputeService:
         
         mock_bookings_public.get_booking.assert_called_once_with(booking_id)
 
-    # Test: _validate_booking_access
     def test_validate_booking_access_allows_buyer(self, dispute_service, sample_booking):
         """Test buyer can access their own booking"""
         user_id = sample_booking.buyer_user_id
@@ -173,7 +161,6 @@ class TestDisputeService:
         with pytest.raises(ValueError, match="User not authorized to dispute this booking"):
             dispute_service._validate_booking_access(sample_booking, unauthorized_user_id)
 
-    # Test: _validate_unique_open_dispute
     def test_validate_unique_open_dispute_allows_when_no_open_disputes(
         self, dispute_service, mock_db, mock_repository
     ):
@@ -203,7 +190,6 @@ class TestDisputeService:
         with pytest.raises(ValueError, match="An open dispute already exists for this booking"):
             dispute_service._validate_unique_open_dispute(booking_id)
 
-    # Test: open_dispute
     def test_open_dispute_successfully_creates_dispute(
         self, dispute_service, mock_db, mock_repository, mock_bookings_public,
         mock_notifications_public, sample_dispute_data, sample_booking
@@ -253,7 +239,6 @@ class TestDisputeService:
         with pytest.raises(ValueError, match="User not authorized to dispute this booking"):
             dispute_service.open_dispute(unauthorized_user_id, sample_dispute_data)
 
-    # Test: list_disputes_for_user
     def test_list_disputes_for_user_delegates_to_repository(
         self, dispute_service, mock_db, mock_repository
     ):
@@ -268,7 +253,6 @@ class TestDisputeService:
         assert result == mock_disputes
         mock_repository.list_for_user.assert_called_once_with(mock_db, user_id)
 
-    # Test: list_disputes_for_booking
     def test_list_disputes_for_booking_delegates_to_repository(
         self, dispute_service, mock_db, mock_repository
     ):
@@ -283,7 +267,6 @@ class TestDisputeService:
         assert result == mock_disputes
         mock_repository.list_for_booking.assert_called_once_with(mock_db, booking_id)
 
-    # Test: list_open_for_admin
     def test_list_open_for_admin_delegates_to_repository(
         self, dispute_service, mock_db, mock_repository
     ):
@@ -297,7 +280,6 @@ class TestDisputeService:
         assert result == mock_disputes
         mock_repository.list_open_for_admin.assert_called_once_with(mock_db)
 
-    # Test: set_status
     def test_set_status_successful_transition_open_to_in_review(
         self, dispute_service, mock_db, mock_repository, sample_dispute
     ):
@@ -382,7 +364,6 @@ class TestDisputeService:
         with pytest.raises(ValueError, match="Dispute not found"):
             dispute_service.set_status(dispute_id, new_status=DisputeStatus.IN_REVIEW)
 
-    # Test: resolve_dispute - refund decision
     def test_resolve_dispute_refund_success(
         self, dispute_service, mock_db, mock_repository, mock_bookings_public,
         mock_payments_public, mock_notifications_public, sample_dispute
@@ -436,7 +417,6 @@ class TestDisputeService:
         with pytest.raises(ValueError, match="refund_amount must be > 0 for refund decisions"):
             dispute_service.resolve_dispute(sample_dispute.id, payload)
 
-    # Test: resolve_dispute - deny decision
     def test_resolve_dispute_deny_success(
         self, dispute_service, mock_db, mock_repository, mock_bookings_public,
         mock_payments_public, mock_notifications_public, sample_dispute
@@ -510,7 +490,6 @@ class TestDisputeService:
             dispute_service.resolve_dispute(sample_dispute.id, payload)
         mock_payments_public.refund_for_booking.assert_not_called()
 
-    # Test: close_dispute
     def test_close_dispute_success_for_refunded(
         self, dispute_service, mock_db, mock_repository, sample_dispute
     ):

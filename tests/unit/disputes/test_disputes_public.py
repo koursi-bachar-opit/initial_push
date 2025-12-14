@@ -30,7 +30,6 @@ def test_disputes_public_implements_protocol():
     assert callable(public_impl.close_dispute)
     assert callable(public_impl.list_all_for_admin)
 
-
 def test_disputes_public_delegates_to_service():
     """Test that all public methods correctly delegate to the service layer"""
     mock_service = Mock()

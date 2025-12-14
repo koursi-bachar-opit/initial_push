@@ -1,20 +1,13 @@
+from fastapi import Depends
 from typing import Protocol, List
 from uuid import UUID
 
-from fastapi import Depends
-
-from app.database import get_db
-
-from .service import OrganizationService, get_organization_service
+from .service import OrganizationsService, get_organization_service
 from .models import Organization, OrganizationMembership
-
-from app.auth.auth import get_current_user
 
 
 class OrganizationsPublic(Protocol):
-    """
-    Public interface for interacting with the Organizations domain.
-    """
+    """Protocol defining the public interface for organizations queries."""
     def get_organization(self, org_id: UUID) -> Organization | None:
         ...
 
@@ -33,8 +26,8 @@ class OrganizationsPublic(Protocol):
         ...
 
 class OrganizationsPublicImpl(OrganizationsPublic):
-
-    def __init__(self, service: OrganizationService):
+    """Concrete implementation of OrganizationsPublic using the OrganizationsService."""
+    def __init__(self, service: OrganizationsService):
         self.service = service
 
     #Orgs
@@ -58,6 +51,7 @@ class OrganizationsPublicImpl(OrganizationsPublic):
 
 
 def get_organizations_public(
-    service: OrganizationService = Depends(get_organization_service),
+    service: OrganizationsService = Depends(get_organization_service),
 ) -> OrganizationsPublic:
+    """Dependency injection provider for OrganizationsService interface."""
     return OrganizationsPublicImpl(service)

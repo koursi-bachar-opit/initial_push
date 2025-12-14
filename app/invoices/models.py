@@ -16,7 +16,6 @@ class InvoiceStatus(str, Enum):
     PAID = "paid"
     VOID = "void"
 
-
 class Invoice(Base):
     __tablename__ = "invoices"
 

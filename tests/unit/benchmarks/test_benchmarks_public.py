@@ -19,7 +19,6 @@ def test_benchmarks_public_implements_protocol():
     
     assert public_impl.service == mock_service
 
-
 def test_benchmarks_public_delegates_to_service():
     """Test that all public methods correctly delegate to the service layer"""
     mock_service = Mock()

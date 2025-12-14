@@ -9,10 +9,6 @@ from app.disputes.models import Dispute, DisputeStatus
 
 
 class DisputesRepository:
-    """
-    Handles all persistence operations for the disputes domain.
-    """
-    
     def create_dispute(
         self,
         db: Session,
@@ -31,13 +27,10 @@ class DisputesRepository:
         db.refresh(dispute)
         return dispute
 
-
     def get_by_id(self, db: Session, dispute_id: uuid.UUID) -> Optional[Dispute]:
         stmt = select(Dispute).where(Dispute.id == dispute_id)
         return db.scalar(stmt)
 
-
-    #List queries
     def list_for_user(self, db: Session, user_id: uuid.UUID) -> List[Dispute]:
         """
         Returns all disputes opened by the user
@@ -73,8 +66,6 @@ class DisputesRepository:
         )
         return list(db.scalars(stmt))
 
-
-    #update operations
     def update_status(
         self,
         db: Session,

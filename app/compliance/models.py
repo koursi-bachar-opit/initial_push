@@ -13,11 +13,10 @@ class WipeReviewStatus(str, Enum):
     VERIFIED = "verified"
     REJECTED = "rejected"
 
-
 class WipeAttestation(Base):
     """
-    Proof that a machine was wiped after a booking.
-    Required to complete a booking and release escrow.
+    Records attestation that a machine was properly wiped after a booking.
+    Includes evidence and review workflow status.
     """
     __tablename__ = "wipe_attestations"
 
@@ -39,14 +38,12 @@ class WipeAttestation(Base):
     method = Column(String, nullable=False)
     evidence_uri = Column(String, nullable=True)
 
-    #refactor: remove
-    notes = Column(String, nullable=True)
-
     attested_at = Column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc), 
         nullable=False
     )
+
     status = Column(
         SQLEnum(WipeReviewStatus),
         default=WipeReviewStatus.PENDING,

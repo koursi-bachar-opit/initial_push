@@ -21,7 +21,6 @@ def test_machines_public_implements_protocol():
     assert callable(public_impl.get_machine)
     assert callable(public_impl.list_machines_for_provider)
 
-
 def test_ownership_checking_logic_works_correctly():
     """Test the business logic for machine ownership checking"""
     #Test provider_owns_machine with different scenarios

@@ -22,8 +22,6 @@ class AccessCredential(Base):
         index=True,
     )
 
-    #Access creds
-    #consider: changed access creds to be non-nullable
     vpn_config_uri = Column(String, nullable=False)
     ssh_public_key_fingerprint = Column(String, nullable=False)
 
@@ -38,5 +36,4 @@ class AccessCredential(Base):
         nullable=True,
     )
 
-    #Relationship back to booking
     booking = relationship("Booking", back_populates="access_credentials")

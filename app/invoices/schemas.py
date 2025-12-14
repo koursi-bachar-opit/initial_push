@@ -13,21 +13,17 @@ class InvoiceStatus(str, Enum):
     PAID = "paid"
     VOID = "void"
 
-
 class InvoiceBase(BaseModel):
     organization_id: UUID
     period_start: datetime
     period_end: datetime
     currency: str = Field("usd", max_length=3)
 
-
 class InvoiceCreate(InvoiceBase):
     """
     Used by admin/automation to request invoice generation.
-    total_amount + status are computed and ignored in input.
     """
     pass
-
 
 class InvoiceRead(InvoiceBase):
     id: UUID
@@ -37,11 +33,9 @@ class InvoiceRead(InvoiceBase):
 
     model_config = ConfigDict(from_attributes=True)
 
-
 class InvoiceListItem(InvoiceRead):
     """Currently same as read; split so you can later trim fields."""
     pass
-
 
 class InvoiceUpdateStatus(BaseModel):
     status: InvoiceStatus

@@ -16,11 +16,7 @@ class BookingStatus(str, Enum):
     COMPLETED = "completed"
     CANCELLED = "cancelled"
 
-
 class Booking(Base):
-    """
-    Buyer booking a listing for a specific time window.
-    """
     __tablename__ = "bookings"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -39,6 +35,7 @@ class Booking(Base):
         index=True,
     )
 
+    # Nullable to allow individual buyers to create bookings 
     organization_id = Column(  
         UUID(as_uuid=True),  
         ForeignKey("organizations.id", ondelete="SET NULL"),  
@@ -46,27 +43,25 @@ class Booking(Base):
         index=True,  
     )
 
-    #Booking window
+    # Booking window
     start_time = Column(DateTime(timezone=True), nullable=False)
     end_time = Column(DateTime(timezone=True), nullable=False)
 
-    #Session window for active state
+    # These track actual usage window 
     active_session_start = Column(DateTime(timezone=True), nullable=True)
     active_session_end = Column(DateTime(timezone=True), nullable=True)
 
-    #Pricing
     total_price_estimate = Column(
         Numeric(precision=10, scale=2),
         nullable=False
     )
 
-    #Final values for usage and price
     actual_price_charged = Column(
         Numeric(precision=10, scale=2), 
         nullable=True
         )
-    usage_seconds = Column(Numeric(precision=10, scale=2), nullable=True)
 
+    usage_seconds = Column(Numeric(precision=10, scale=2), nullable=True)
     currency = Column(String(length=3), nullable=False, default="USD")
 
     #refactor: default status pending_payment
@@ -82,7 +77,6 @@ class Booking(Base):
         nullable=False
     )
 
-    #Relationships
     listing = relationship("Listing", back_populates="bookings")
     buyer = relationship("User", back_populates="bookings")
     organization = relationship("Organization", back_populates="bookings")
@@ -112,10 +106,7 @@ class Booking(Base):
         cascade="all, delete-orphan"
     )
 
-    #consider: document or refactor
-    """
-    Additional temporary computed fields for API responses 
-    """
+    """Computed fields for API responses."""
     @property
     def listing_title(self):
         return self.listing.title if self.listing else None

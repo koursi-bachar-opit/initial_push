@@ -8,9 +8,7 @@ from .service import AccessCredentialsService, get_access_credential_service
 
 
 class AccessCredentialsPublic(Protocol):
-    """
-    Public interface exposed by the Credentials domain.
-    """
+    """Protocol defining the public interface for credentials queries."""
     def issue_for_booking(self, booking):
         ...
 
@@ -20,11 +18,8 @@ class AccessCredentialsPublic(Protocol):
     def get_for_booking(self, booking):
         ...
 
-
 class AccessCredentialsPublicImpl:
-    """
-    Concrete adapter around AccessCredentialsService.
-    """
+    """Concrete implementation of AccessCredentialsPublic using the AccessCredentialsService."""
     def __init__(self, svc: AccessCredentialsService):
         self.svc = svc
 
@@ -41,4 +36,5 @@ class AccessCredentialsPublicImpl:
 def get_credentials_public(
     svc: AccessCredentialsService = Depends(get_access_credential_service)
 ) -> AccessCredentialsPublic:
+    """Dependency injection provider for AccessCredentialsService interface."""
     return AccessCredentialsPublicImpl(svc)
