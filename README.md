@@ -6,6 +6,11 @@ Built with FastAPI, PostgreSQL, Supabase Auth, Tailwind/Flowbite, pytest, GitHub
 
 ---
 
+## Live site:
+https://remote-servers-marketplace-test.onrender.com/
+
+---
+
 ## Overview
 
 The SuperVision Remote Servers marketplace is a fully functional HPC server-rental platform that implements comprehensive testing, deployment, and maintenance practices. This Part 4 submission demonstrates:
@@ -198,35 +203,90 @@ Each domain contains: models, schemas, repository, service, public API, routes, 
 
 ---
 
-## Deliverables for Part 4
+# Course Deliverables Mapping (For Grading)
 
-### Stakeholders:
-1. **Testing Reports**:
-   - Created detailed test cases for user acceptance testing (UAT)
-   - Provided thorough reports on UAT, highlighting any identified issues or areas for improvement
+Below is a section that demonstrates fulfilment of the Part 4 project rubric. This section is intentionally separated to maintain industry-standard documentation above.
 
-2. **Maintenance Plan**:
-   - Developed a comprehensive maintenance plan covering monitoring, updates, and potential enhancements
-   - Included guidelines for handling bug fixes, performance improvements, and feature updates
+---
 
-### Developers:
-1. **Test Cases and Test Reports**:
-   - Performed unit testing, integration testing, and documented results in detailed test reports
-   - Ensured automated tests are included in the CI/CD pipeline with ≥80% coverage requirement
+## Stakeholders
 
-2. **Deployment Documentation**:
-   - Provided clear and detailed documentation for deploying the application to Render Web Services
-   - Included steps for setting up the environment, deploying the application, and all required configuration
+### 1. Testing Reports
+- **User Acceptance Testing (UAT) Documentation**: Comprehensive UAT test cases located in `docs/user-acceptance-testing/`
+- **Testing Feedback Reports**: Detailed reports highlighting identified issues and areas for improvement
+- **Stakeholder Validation**: Direct involvement in testing booking workflows, payment processing, and dispute resolution features
+- **Documentation**: UAT scenarios covering all major user roles (buyers, providers, admins)
 
-3. **Git Documentation**:
-   - Documented all Git workflows, including commit history, branch management, and collaboration efforts
-   - Ensured documentation reflects the use of Git for version control and collaboration throughout the project
+### 2. Maintenance Plan
+- **Comprehensive Maintenance Strategy**: Complete maintenance plan covering monitoring, updates, and enhancements
+- **Monitoring Guidelines**: Detailed procedures for application health, database performance, and external service monitoring
+- **Update Management**: Clear processes for dependency updates, security patches, and database migrations
+- **Enhancement Roadmap**: Phased approach for future improvements across four development phases
+- **Bug Fix Protocols**: Classification system with defined resolution timelines and procedures
+- **Performance Guidelines**: Structured approach to identifying and addressing performance issues
 
-### Combined Deliverables:
-1. **Updated Git Repository**:
-   - An updated Git repository with all testing, deployment, and maintenance documents committed
-   - Includes:
-     - Test cases and test reports (from both developers and stakeholders)
-     - Deployment documentation
-     - Maintenance plan
-     - Comprehensive Git documentation
+---
+
+## Developers
+
+### 1. Test Cases and Test Reports
+- **Comprehensive Test Coverage**: ≥80% line coverage maintained across all 15+ application domains
+- **Automated Testing Pipeline**: CI/CD integration with GitHub Actions running on every push and PR
+- **Domain-Specific Tests**: Unit and integration tests for each domain (bookings, payments, compliance, etc.)
+- **Test Documentation**: Detailed test reports including coverage analysis and test execution results
+- **Mock Implementations**: External services (Stripe, Supabase) mocked for reliable testing
+- **Database Testing**: Isolated test transactions with automatic rollback and factory patterns
+
+### 2. Deployment Documentation
+- **Complete Deployment Guide**: Step-by-step documentation for deploying to Render Web Services
+- **Environment Configuration**: Detailed instructions for setting up all required environment variables
+- **Cloud Platform Setup**: Comprehensive guide for Render PostgreSQL and Web Service configuration
+- **External Service Integration**: Instructions for configuring Supabase Auth and Stripe Payments
+- **Production Configuration**: SSL/TLS setup, health checks, monitoring configuration
+- **Troubleshooting Guide**: Common deployment issues and solutions documented
+
+### 3. Git Documentation
+- **Workflow Documentation**: Complete Git workflow documentation including branch strategy and commit standards
+- **Commit History Analysis**: Semantic commit messages and regular development patterns documented
+- **Pull Request Process**: Detailed PR creation, review, and merging procedures
+- **Quality Assurance**: Pre-commit hooks, protected branches, and automated checks documented
+- **Version Control Practices**: Repository structure management and conflict resolution protocols
+
+---
+
+## Combined Deliverables
+
+### Updated Git Repository Includes:
+- **Complete Source Code**: All 15+ application domains with full functionality
+- **Testing Documentation**: 
+  - Unit and integration test suites with ≥80% coverage
+  - User acceptance testing scenarios and reports
+  - Automated test pipeline configuration
+- **Deployment Documentation**:
+  - Render deployment guide with environment setup
+  - Production configuration and troubleshooting
+  - External service integration instructions
+- **Maintenance Plan**:
+  - Comprehensive monitoring strategy
+  - Update management procedures
+  - Performance optimization roadmap
+  - Bug fix and enhancement guidelines
+- **Git Documentation**:
+  - Complete workflow and collaboration documentation
+  - Branch management and version control practices
+  - Quality assurance procedures
+- **Infrastructure Configuration**:
+  - GitHub Actions CI/CD pipeline
+  - Docker Compose setup for local development
+  - Alembic migration files and procedures
+- **Live Deployment**: Fully operational application
+- **API Documentation**: Interactive FastAPI documentation available in live deployment at https://remote-servers-marketplace-test.onrender.com/docs
+- **Health Monitoring**: Operational health endpoint with real-time status reporting
+
+### Verification of Deliverables:
+1. **Live Application**: Accessible at the provided Render URL with all features functional
+2. **Test Coverage**: CI pipeline enforces and verifies ≥80% test coverage
+3. **Documentation**: All required documentation committed to the repository
+4. **Deployment**: Application successfully deployed and running on Render
+5. **Collaboration**: Git history demonstrates team collaboration and workflow adherence
+6. **Maintenance**: Comprehensive plan for ongoing support and enhancement
