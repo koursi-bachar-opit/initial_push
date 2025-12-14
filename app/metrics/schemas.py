@@ -5,7 +5,7 @@ from uuid import UUID
 from pydantic import BaseModel, Field, ConfigDict
 
 
-#Create (ingestion from agent)
+# Create (ingestion from agent)
 class MetricSampleCreate(BaseModel):
     """
     Schema used by ProviderAgentClient to submit one metric sample.
@@ -59,7 +59,7 @@ class MetricSampleListItem(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-#Optional query parameters for filtering & windowing.
+# Optional query parameters for filtering & windowing.
 class MetricsQueryParams(BaseModel):
     start: Optional[datetime] = Field(
         None, description="Return metrics recorded on/after this timestamp"

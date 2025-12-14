@@ -9,12 +9,8 @@ from .schemas import (
     WipeVerificationPublic
 )
 from .service import ComplianceService, get_compliance_service
-from app.auth.public import ensure_provider, ensure_admin
-
+from app.auth.public import ensure_provider, ensure_admin, get_auth_public, AuthPublic
 from app.auth.auth import get_current_user
-from app.auth.public import get_auth_public, AuthPublic
-
-from app.users.models import User, UserRole
 
 
 router = APIRouter()
@@ -57,7 +53,6 @@ def list_all(
     return service.list_all_attestations()
 
 # Machine wipe log (Provider/Admin)
-#consider: ensure provider or admin
 @router.get(
     "/machines/{machine_id}/attestations",
     response_model=list[WipeAttestationRead],
@@ -68,7 +63,6 @@ def machine_attestations(
 ):
     return service.list_machine_attestations(machine_id)
 
-#consider: merge with previous endpoints
 # New wipe and attestation endpoints
 @router.get("/buyer/booking/{booking_id}/wipe-verification", response_model=WipeVerificationPublic)
 def get_wipe_verification(

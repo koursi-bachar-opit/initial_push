@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from app.auth.auth import get_current_user
 from app.auth.public import ensure_admin
 
+from .models import ProviderProfile, VerificationSubject
 from .schemas import (
     ProviderProfileCreate,
     ProviderProfileUpdate,
@@ -12,14 +13,12 @@ from .schemas import (
     VerificationRead,
 )
 from .public import ProvidersPublic, get_providers_public
+from app.users.public import UsersPublic, get_users_public
 
 from app.users.models import User
 
-#consider: imports for new endpoints, do I need all of them?
 from app.database import get_db
-from app.users.public import UsersPublic, get_users_public
 from sqlalchemy.orm import Session
-from .models import ProviderProfile, VerificationSubject
 
 
 router = APIRouter()
@@ -112,7 +111,6 @@ def admin_list_verifications_for_subject(
 ):
     return providers.list_verifications(subject_type, subject_id)
 
-#refactor: Admin routes, provider managements
 @router.get("/admin/providers")
 def get_all_providers(
     admin: User = Depends(ensure_admin),
@@ -129,7 +127,7 @@ def get_all_providers(
             "id": provider.id,
             "user_id": provider.user_id,
             "user_email": user.email if user else "Unknown",
-            "verification_status": provider.verification_status.value,  #Get enum value
+            "verification_status": provider.verification_status.value,
             "payout_account_ref": provider.payout_account_ref,
             "created_at": provider.created_at,
             "updated_at": provider.updated_at,

@@ -12,8 +12,7 @@ class ProviderRepository:
     def __init__(self, db: Session):
         self.db = db
 
-
-    #ProviderProfile CRUD
+    # ProviderProfile CRUD
     def get(self, profile_id) -> Optional[ProviderProfile]:
         return (
             self.db.query(ProviderProfile)
@@ -54,8 +53,7 @@ class ProviderRepository:
         self.db.refresh(profile)
         return profile
 
-
-    #Verification CRUD
+    # Verification CRUD
     def get_verification(
         self,
         verification_id,

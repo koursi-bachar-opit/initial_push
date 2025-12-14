@@ -6,6 +6,7 @@ from .models import WipeAttestation, WipeReviewStatus
 
 
 class ComplianceRepository:
+    
     def create(self, db: Session, *, booking_id: UUID, machine_id: UUID, 
                method: str, evidence_uri: str):
 

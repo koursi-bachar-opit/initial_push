@@ -192,9 +192,8 @@ class TestMetricsService:
         call_args = mock_ingest.call_args
         assert call_args is not None
         
-        # The function is called with KEYWORD arguments, not positional
         # Check keyword arguments
-        kwargs = call_args[1]  # This is the keyword arguments dict
+        kwargs = call_args[1]  # Keyword arguments dict
         assert kwargs['machine_id'] == machine_id
         assert kwargs['provider_id'] == provider_id
         

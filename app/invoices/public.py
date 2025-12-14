@@ -9,7 +9,7 @@ from app.invoices.models import Invoice
 from app.invoices.repository import InvoicesRepository
 from app.invoices.service import InvoicesService, get_invoice_service
 
-#consider: invoices public not being used
+
 class InvoicesPublic(Protocol):
     """Protocol defining the public interface for invoices queries."""
     def get_invoice(self, invoice_id: UUID) -> Invoice | None:
@@ -18,7 +18,6 @@ class InvoicesPublic(Protocol):
     def get_invoices_for_org(self, org_id: UUID, limit: int = 100) -> List[Invoice]:
         ...
 
-#consider: remove repo from constructor, pass repo calls as self.service.repo
 class InvoicesPublicImpl(InvoicesPublic):
     """Concrete implementation of InvoicesPublic using the InvoicesService."""
     def __init__(

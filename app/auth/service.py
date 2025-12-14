@@ -53,7 +53,6 @@ class AuthService:
             role=role,
         )
 
-    #public API
     def get_current_user(self, token: Optional[str]) -> Optional[User]:
         """
         Returns the authenticated user or None, if no token was provided

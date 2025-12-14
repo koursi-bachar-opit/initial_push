@@ -2,13 +2,11 @@
 Reusable assertion helpers to run consistent test validation.
 """
 
-
 def _get_response_data(response):
     """Extract data from response object or return as-is if already a dict."""
     if hasattr(response, 'json'):
         return response.json()
     return response
-
 
 def assert_status_code(response, expected_code=200, message=None):
     """
@@ -28,7 +26,6 @@ def assert_status_code(response, expected_code=200, message=None):
         assert actual_code == expected_code, \
             f"Expected status {expected_code}, got {actual_code}. Response: {getattr(response, 'text', 'N/A')}"
 
-
 def assert_booking_status(response, expected_status):
     """
     Assert booking status in response.
@@ -40,7 +37,6 @@ def assert_booking_status(response, expected_status):
     actual_status = data["status"].lower()
     assert actual_status == expected_status.lower(), \
         f"Expected booking status '{expected_status}', got '{actual_status}'"
-
 
 def assert_response_contains(response, field, expected_value=None):
     """
@@ -57,7 +53,6 @@ def assert_response_contains(response, field, expected_value=None):
         assert data[field] == expected_value, \
             f"Field '{field}' expected '{expected_value}', got '{data[field]}'"
 
-
 def assert_response_contains_fields(response, *fields):
     """
     Assert response contains multiple fields.
@@ -67,7 +62,6 @@ def assert_response_contains_fields(response, *fields):
     data = _get_response_data(response)
     for field in fields:
         assert field in data, f"Field '{field}' not found in response: {data}"
-
 
 def assert_is_list(response, min_length=1):
     """
@@ -80,7 +74,6 @@ def assert_is_list(response, min_length=1):
     assert isinstance(data, list), f"Expected list, got {type(data)}"
     assert len(data) >= min_length, f"Expected at least {min_length} items, got {len(data)}"
 
-
 def assert_any_item_contains(response, field, value):
     """
     Assert any item in a list response contains field with value.
@@ -90,7 +83,6 @@ def assert_any_item_contains(response, field, value):
     data = _get_response_data(response)
     assert any(item.get(field) == value for item in data), \
         f"No item found with {field} = {value} in: {data}"
-
 
 def assert_timestamp_field_exists(response, field):
     """
@@ -102,13 +94,11 @@ def assert_timestamp_field_exists(response, field):
     assert field in data, f"Timestamp field '{field}' not found"
     assert data[field] is not None, f"Timestamp field '{field}' is None"
 
-
 #Specialized assertions for common patterns
 def assert_booking_created_successfully(response):
     """Assert common booking creation success patterns."""
     assert_status_code(response, 201)
     assert_response_contains_fields(response, "id", "status", "listing_id")
-
 
 def assert_booking_lifecycle_state(response, expected_status, has_active_session=False):
     """Assert booking state during lifecycle transitions."""
@@ -118,11 +108,9 @@ def assert_booking_lifecycle_state(response, expected_status, has_active_session
     if has_active_session:
         assert_timestamp_field_exists(response, "active_session_start")
 
-
 def assert_unauthorized(response):
     """Assert request was unauthorized (401)."""
     assert_status_code(response, 401)
-
 
 def assert_forbidden(response):
     """Assert request was forbidden (403)."""

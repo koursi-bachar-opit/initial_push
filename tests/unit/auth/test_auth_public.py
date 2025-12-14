@@ -6,6 +6,7 @@ from app.auth.public import AuthPublicImpl
 
 
 class TestAuthPublicImpl:
+    
     def test_ensure_buyer_success(self):
         """Test successful buyer role check"""
         mock_current_user = Mock()

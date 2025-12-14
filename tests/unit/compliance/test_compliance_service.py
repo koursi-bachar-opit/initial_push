@@ -115,6 +115,7 @@ def sample_attestation_update_data():
     )
 
 class TestComplianceService:
+    
     def test_simulate_wipe_for_booking_creates_new_attestation(self, compliance_service, mock_db, mock_repository, sample_booking, sample_attestation, sample_machine):
         """Test successful simulated wipe attestation creation when none exists"""
         sample_booking.wipe_attestation = None

@@ -18,6 +18,7 @@ class DisputeStatus(str, Enum):
     CLOSED = "closed"
 
 class Dispute(Base):
+    
     __tablename__ = "disputes"
 
     id = Column(

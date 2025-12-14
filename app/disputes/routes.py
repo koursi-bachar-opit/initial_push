@@ -16,7 +16,6 @@ from app.disputes.models import DisputeStatus
 
 router = APIRouter()
 
-#Open dispute, for buyers and providers
 @router.post("/", response_model=DisputeRead, status_code=201)
 def open_dispute(
     payload: DisputeCreate,
@@ -29,7 +28,6 @@ def open_dispute(
     try:
         return disputes.open_dispute(user.id, payload)
     except ValueError as e:
-        #consider: "booking not found." "Unauthorized, already has open dispute"
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.get("/me", response_model=list[DisputeListItem])

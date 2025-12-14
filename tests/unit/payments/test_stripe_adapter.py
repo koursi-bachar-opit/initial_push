@@ -260,7 +260,6 @@ class TestMockStripeAdapter:
         """Test mock cancellation completes without error"""
         mock_stripe_adapter.cancel_payment_intent(processor_ref="pi_123")
 
-
 class TestGetPaymentAdapter:
     
     def test_get_payment_adapter_returns_mock_by_default(self):

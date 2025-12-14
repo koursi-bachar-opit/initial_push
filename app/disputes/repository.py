@@ -9,6 +9,7 @@ from app.disputes.models import Dispute, DisputeStatus
 
 
 class DisputesRepository:
+    
     def create_dispute(
         self,
         db: Session,

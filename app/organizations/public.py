@@ -30,22 +30,22 @@ class OrganizationsPublicImpl(OrganizationsPublic):
     def __init__(self, service: OrganizationsService):
         self.service = service
 
-    #Orgs
+    # Orgs
     def get_organization(self, org_id: UUID):
         return self.service.repo.get(org_id)
 
-    #Permission helpers
+    # Permission helpers
     def is_org_admin(self, user_id: UUID, org_id: UUID) -> bool:
         return self.service.is_org_admin(user_id, org_id)
 
     def is_org_member(self, user_id: UUID, org_id: UUID) -> bool:
         return self.service.is_org_member(user_id, org_id)
 
-    #User's org list
+    # User's org list
     def list_user_organizations(self, user_id: UUID):
         return self.service.list_user_organizations(user_id)
 
-    #Membership lookup
+    # Membership lookup
     def get_membership(self, org_id: UUID, user_id: UUID):
         return self.service.repo.get_membership(org_id, user_id)
 

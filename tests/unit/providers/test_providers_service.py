@@ -84,12 +84,6 @@ class TestProviderProfileService:
         self, provider_profile_service, mock_repository, sample_profile_create_data, sample_provider_profile
     ):
         """Test successful profile creation when user has no existing profile"""
-        #Mock repository.get_by_user_id to return None (no existing profile)
-        #Mock repository.create to return a profile
-        #Call service.create_profile with user ID and profile data
-        #Verify repository.get_by_user_id was called
-        #Verify repository.create was called with correct parameters
-        #Verify the created profile is returned
         user_id = uuid4()
         data = sample_profile_create_data
         mock_profile = sample_provider_profile
@@ -108,10 +102,6 @@ class TestProviderProfileService:
         self, provider_profile_service, mock_repository, sample_profile_create_data
     ):
         """Test error when user already has a provider profile"""
-        #Mock repository.get_by_user_id to return an existing profile
-        #Call service.create_profile with user ID
-        #Verify ValueError is raised with correct message
-        #Verify repository.create is NOT called
         user_id = uuid4()
         data = sample_profile_create_data
         mock_existing_profile = Mock(spec=ProviderProfile)
@@ -128,13 +118,6 @@ class TestProviderProfileService:
         self, provider_profile_service, mock_repository, sample_profile_update_data, sample_provider_profile
     ):
         """Test successful profile update when user owns the profile"""
-        #Mock repository.get to return a profile owned by the user
-        #Mock repository.update to return updated profile
-        #Call service.update_profile with user ID, profile ID, and update data
-        #Verify repository.get was called with profile ID
-        #Verify ownership check passes (profile.user_id == user_id)
-        #Verify repository.update was called with profile and data
-        #Verify updated profile is returned
         user_id = uuid4()
         profile_id = uuid4()
         data = sample_profile_update_data
@@ -155,10 +138,6 @@ class TestProviderProfileService:
         self, provider_profile_service, mock_repository, sample_profile_update_data
     ):
         """Test error when trying to update non-existent profile"""
-        #Mock repository.get to return None
-        #Call service.update_profile with user ID and non-existent profile ID
-        #Verify ValueError is raised with correct message
-        #Verify repository.update is NOT called
         user_id = uuid4()
         profile_id = uuid4()
         data = sample_profile_update_data
@@ -173,10 +152,6 @@ class TestProviderProfileService:
         self, provider_profile_service, mock_repository, sample_profile_update_data, sample_provider_profile
     ):
         """Test error when user doesn't own the profile"""
-        #Mock repository.get to return a profile with different user_id
-        #Call service.update_profile with different user ID
-        #Verify ValueError is raised with correct message
-        #Verify repository.update is NOT called
         user_id = uuid4()
         different_user_id = uuid4()
         profile_id = uuid4()
@@ -196,10 +171,6 @@ class TestProviderProfileService:
         self, provider_profile_service, mock_repository, sample_provider_profile
     ):
         """Test successful profile retrieval when user has profile"""
-        #Mock repository.get_by_user_id to return a profile
-        #Call service.require_profile with user ID
-        #Verify repository.get_by_user_id was called
-        #Verify the profile is returned
         user_id = uuid4()
         mock_profile = sample_provider_profile
 
@@ -214,9 +185,6 @@ class TestProviderProfileService:
         self, provider_profile_service, mock_repository
     ):
         """Test error when user has no provider profile"""
-        #Mock repository.get_by_user_id to return None
-        #Call service.require_profile with user ID
-        #Verify ValueError is raised with correct message
         user_id = uuid4()
         
         mock_repository.get_by_user_id.return_value = None
@@ -228,10 +196,6 @@ class TestProviderProfileService:
         self, provider_profile_service, mock_repository, sample_provider_profile
     ):
         """Test successful verification check for verified provider"""
-        #Mock repository.get_by_user_id to return a profile
-        #Set profile.verification_status to VERIFIED
-        #Call service.require_verified with user ID
-        #Verify the verified profile is returned
         user_id = uuid4()
         mock_profile = sample_provider_profile
         mock_profile.verification_status = ProviderVerificationStatus.VERIFIED
@@ -246,10 +210,6 @@ class TestProviderProfileService:
         self, provider_profile_service, mock_repository, sample_provider_profile
     ):
         """Test error when provider is not verified"""
-        #Mock repository.get_by_user_id to return a profile
-        #Set profile.verification_status to PENDING (not verified)
-        #Call service.require_verified with user ID
-        #Verify ValueError is raised with correct message
         user_id = uuid4()
         mock_profile = sample_provider_profile
         mock_profile.verification_status = ProviderVerificationStatus.PENDING
@@ -266,13 +226,6 @@ class TestVerificationService:
         self, verification_service, mock_repository, sample_verification_create_data, sample_provider_profile
     ):
         """Test successful verification request creation for owned provider"""
-        #Set sample_verification_create_data.subject_type to PROVIDER
-        #Mock repository.get_by_user_id to return a profile matching subject_id
-        #Mock repository.create_verification to return verification
-        #Call service.create_verification_request with user ID and data
-        #Verify ownership check passes
-        #Verify repository.create_verification was called with data
-        #Verify created verification is returned
         user_id = uuid4()
         profile_id = uuid4()
 
@@ -301,11 +254,6 @@ class TestVerificationService:
         self, verification_service, mock_repository, sample_verification_create_data
     ):
         """Test error when user has no provider profile for provider verification"""
-        #Set sample_verification_create_data.subject_type to PROVIDER
-        #Mock repository.get_by_user_id to return None
-        #Call service.create_verification_request with user ID and data
-        #Verify ValueError is raised with correct message
-        #Verify repository.create_verification is NOT called
         user_id = uuid4()
         data = sample_verification_create_data
         data.subject_type = VerificationSubject.PROVIDER
@@ -322,12 +270,6 @@ class TestVerificationService:
         self, verification_service, mock_repository, sample_verification_create_data, sample_provider_profile
     ):
         """Test error when user doesn't own the provider profile for verification"""
-        #Set sample_verification_create_data.subject_type to PROVIDER
-        #Set sample_provider_profile.id different from data.subject_id
-        #Mock repository.get_by_user_id to return profile
-        #Call service.create_verification_request with user ID and data
-        #Verify ValueError is raised with correct message
-        #Verify repository.create_verification is NOT called
         user_id = uuid4()
         data = sample_verification_create_data
         data.subject_type = VerificationSubject.PROVIDER
@@ -348,14 +290,9 @@ class TestVerificationService:
         self, verification_service, mock_repository
     ):
         """Test successful verification request for non-provider subject types"""
-        #Create verification data with subject_type not equal to PROVIDER
-        #Mock repository.create_verification to return verification
-        #Call service.create_verification_request with user ID and data
-        #Verify repository.create_verification was called (no ownership check)
-        #Verify created verification is returned
         user_id = uuid4()
         data = VerificationCreate(
-            subject_type="machine",  #Non-PROVIDER subject type
+            subject_type="machine",  # Non-Provider subject type
             subject_id=uuid4(),
             notes="Machine verification"
         )
@@ -372,16 +309,6 @@ class TestVerificationService:
         self, verification_service, mock_repository, mock_db, sample_verification, sample_provider_profile
     ):
         """Test successful admin verification update with provider status update"""
-        #Set verification.subject_type to PROVIDER
-        #Mock repository.get_verification to return verification
-        #Mock repository.get to return provider profile matching subject_id
-        #Mock repository.save_verification to return updated verification
-        #Call service.admin_update_verification with admin ID, verification ID, new status, notes
-        #Verify repository.get_verification was called
-        #Verify verification status and admin ID were updated
-        #Verify profile.verification_status updated to new_status
-        #Verify repository.save_verification was called with updated verification
-        #Verify updated verification is returned
         admin_user_id = uuid4()
         verification_id = uuid4()
         new_status = VerificationStatus.VERIFIED
@@ -415,15 +342,6 @@ class TestVerificationService:
         self, verification_service, mock_repository, sample_verification
     ):
         """Test successful admin verification update for non-provider subjects"""
-        #Set verification.subject_type to something other than PROVIDER
-        #Mock repository.get_verification to return verification
-        #Mock repository.save_verification to return updated verification
-        #Call service.admin_update_verification with admin ID, verification ID, new status, notes
-        #Verify repository.get_verification was called
-        #Verify verification status and admin ID were updated
-        #Verify repository.get is NOT called for provider profile
-        #Verify repository.save_verification was called with updated verification
-        #Verify updated verification is returned
         admin_user_id = uuid4()
         verification_id = uuid4()
         new_status = VerificationStatus.VERIFIED
@@ -451,10 +369,6 @@ class TestVerificationService:
         self, verification_service, mock_repository
     ):
         """Test error when trying to update non-existent verification"""
-        #Mock repository.get_verification to return None
-        #Call service.admin_update_verification with admin ID and non-existent verification ID
-        #Verify ValueError is raised with correct message
-        #Verify repository.save_verification is NOT called
         admin_user_id = uuid4()
         verification_id = uuid4()
         new_status = VerificationStatus.VERIFIED
@@ -473,12 +387,6 @@ class TestVerificationService:
         self, verification_service, mock_repository, sample_verification
     ):
         """Test error when provider profile not found for provider verification"""
-        #Set verification.subject_type to PROVIDER
-        #Mock repository.get_verification to return verification
-        #Mock repository.get to return None (profile not found)
-        #Call service.admin_update_verification with admin ID, verification ID, new status, notes
-        #Verify ValueError is raised with correct message
-        #Verify repository.save_verification is NOT called
         admin_user_id = uuid4()
         verification_id = uuid4()
         new_status = VerificationStatus.VERIFIED
@@ -502,11 +410,6 @@ class TestVerificationService:
         self, verification_service, mock_repository
     ):
         """Test verification listing delegates to repository"""
-        #Create subject_type and subject_id
-        #Mock repository.list_verifications_for to return list of verifications
-        #Call service.list_verifications with subject_type and subject_id
-        #Verify repository.list_verifications_for was called with correct parameters
-        #Verify list of verifications is returned
         subject_type = "provider"
         subject_id = uuid4()
         mock_verifications = [Mock(spec=Verification), Mock(spec=Verification)]
@@ -523,10 +426,6 @@ class TestVerificationService:
         self, verification_service, mock_repository
     ):
         """Test verification listing returns empty list when none exist"""
-        #Mock repository.list_verifications_for to return empty list
-        #Call service.list_verifications with subject_type and subject_id
-        #Verify empty list is returned
-        #Verify repository.list_verifications_for was called
         subject_type = "provider"
         subject_id = uuid4()
 

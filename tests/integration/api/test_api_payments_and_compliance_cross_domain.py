@@ -45,10 +45,8 @@ def create_booking_with_machine_and_listing(client, db_session, buyer_role="buye
 
     return booking, listing, machine
 
-
 PAYMENTS_BASE_URL = f"{TestConfig.BASE_URL}/payments"
 COMPLIANCE_BASE_URL = f"{TestConfig.BASE_URL}/compliance"
-
 
 # ---------------------------------------------------------------------------
 # PAYMENTS ↔ BOOKINGS CROSS-DOMAIN TESTS
@@ -65,7 +63,6 @@ def _list_payments_for_booking(client, booking_id, role="buyer"):
     assert_status_code(resp, 200)
     return resp.json()
 
-
 def test_escrow_created_on_booking_request(client, db_session):
     booking = create_booking(client, db_session)
     payments = _list_payments_for_booking(client, booking["id"], role="buyer")
@@ -76,7 +73,6 @@ def test_escrow_created_on_booking_request(client, db_session):
     assert p["type"] == "escrow"
     assert p["status"] == "authorized"
     assert str(p["booking_id"]) == booking["id"]
-
 
 def test_escrow_voided_on_cancellation_without_refund_row(client, db_session):
     now = datetime.now(timezone.utc)
@@ -103,7 +99,6 @@ def test_escrow_voided_on_cancellation_without_refund_row(client, db_session):
     assert escrow["type"] == "escrow"
     assert escrow["status"] == "cancelled"
 
-
 def test_capture_on_booking_completion_updates_escrow_status(client, db_session):
     booking = create_booking(client, db_session)
     api = ApiClient(client)
@@ -119,7 +114,6 @@ def test_capture_on_booking_completion_updates_escrow_status(client, db_session)
     assert escrow["type"] == "escrow"
     assert escrow["status"] == "captured"
 
-
 # ---------------------------------------------------------------------------
 # COMPLIANCE ↔ BOOKINGS / PROVIDERS / MACHINES CROSS-DOMAIN TESTS
 # ---------------------------------------------------------------------------
@@ -131,7 +125,6 @@ def _create_wipe_attestation_payload(booking_id, machine_id):
         "evidence_uri": f"mock://wipe/{booking_id}.log",
         "notes": "Test wipe attestation",
     }
-
 
 def test_provider_can_submit_wipe_attestation_for_own_machine(client, db_session):
     booking, listing, machine = create_booking_with_machine_and_listing(client, db_session)
@@ -161,50 +154,14 @@ def test_provider_can_submit_wipe_attestation_for_own_machine(client, db_session
     assert_status_code(resp_list, 200)
     assert any(a["id"] == att["id"] for a in resp_list.json())
 
-#consider: provider submitted attestations not currently supported
-# def test_only_machine_owning_provider_may_submit_attestation(client, db_session):
-#     booking, listing, machine = create_booking_with_machine_and_listing(client, db_session)
-
-#     machine_id = machine["id"]
-
-#     second_provider_user = create_user(
-#         db_session,
-#         email=TestConfig.SECOND_PROVIDER_EMAIL,
-#         role="provider",
-#     )
-#     profile = ProviderProfile(
-#         user_id=second_provider_user.id,
-#         verification_status=ProviderVerificationStatus.VERIFIED,
-#         payout_account_ref="test",
-#     )
-#     db_session.add(profile)
-#     db_session.commit()
-
-#     second_headers = auth_headers_for(TestConfig.SECOND_PROVIDER_EMAIL, "provider")
-
-#     payload = _create_wipe_attestation_payload(booking["id"], machine_id)
-
-#     resp = client.post(
-#         f"{COMPLIANCE_BASE_URL}/attestations",
-#         json=payload,
-#         headers=second_headers,
-#     )
-#     assert "You do not own this machine" in resp.text
-
-
-# ---------------------------------------------------------------------------
-# FIXED SECTION — replaces manual machine/listing creation
-# ---------------------------------------------------------------------------
-
 def create_start_end_times():
     now = datetime.now(timezone.utc)
     start = now + timedelta(hours=1)
     end = start + timedelta(hours=1)
     return start, end
 
-
 def test_booking_completion_auto_generates_wipe_attestation(client, db_session):
-    """FIXED: Now uses helper to ensure machine + listing + provider verification"""
+    """Now uses helper to ensure machine + listing + provider verification"""
     booking, listing, machine = create_booking_with_machine_and_listing(client, db_session)
 
     machine_id = machine["id"]
@@ -230,9 +187,8 @@ def test_booking_completion_auto_generates_wipe_attestation(client, db_session):
     assert len(items) >= 1
     assert items[0]["booking_id"] == booking["id"]
 
-
 def test_booking_can_complete_after_wipe_attestation_exists(client, db_session):
-    """FIXED: Uses helper to guarantee valid machine/listing + verified provider"""
+    """Uses helper to guarantee valid machine/listing + verified provider"""
     booking, listing, machine = create_booking_with_machine_and_listing(client, db_session)
 
     machine_id = machine["id"]

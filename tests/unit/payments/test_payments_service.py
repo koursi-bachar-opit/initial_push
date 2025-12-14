@@ -97,13 +97,6 @@ class TestPaymentsService:
         self, payments_service, mock_db, mock_port, mock_repository, sample_booking, sample_escrow_payment
     ):
         """Test successful escrow creation with external payment processor"""
-        #Mock port.create_hold to return processor reference
-        #Mock repository.create_payment to return created payment
-        #Call service.create_escrow with booking, amount, and currency
-        #Verify port.create_hold was called with correct parameters
-        #Verify payment was created with correct fields (type=ESCROW, status=AUTHORIZED)
-        #Verify repository.create_payment was called with the payment
-        #Verify the created payment is returned
         processor_ref = "re_123456789"
         mock_payment = sample_escrow_payment
         amount = Decimal("100.00")
@@ -124,10 +117,6 @@ class TestPaymentsService:
         self, payments_service, mock_repository, mock_port, sample_booking
     ):
         """Test escrow creation fails when payment processor API fails"""
-        #Mock port.create_hold to raise an exception
-        #Call service.create_escrow with booking, amount, and currency
-        #Verify the exception is propagated
-        #Verify repository.create_payment is NOT called
         amount = Decimal("100.00")
         currency = "USD"
 
@@ -142,16 +131,6 @@ class TestPaymentsService:
         self, payments_service, mock_db, mock_repository, mock_port, mock_notifications_public, sample_booking, sample_escrow_payment
     ):
         """Test successful capture of authorized escrow payment"""
-        #Mock repository.get_latest_escrow to return authorized escrow payment
-        #Mock port.capture to succeed
-        #Mock repository.update_payment to return updated payment
-        #Call service.capture with booking
-        #Verify repository.get_latest_escrow was called with booking ID
-        #Verify port.capture was called with processor_ref
-        #Verify payment status updated to CAPTURED
-        #Verify repository.update_payment was called
-        #Verify notifications.payment_captured was called with buyer and payment
-        #Verify updated payment is returned
         mock_escrow = sample_escrow_payment
         mock_escrow.status = PaymentStatus.AUTHORIZED
         mock_updated_payment = Mock(spec=Payment)
@@ -172,10 +151,6 @@ class TestPaymentsService:
         self, payments_service, mock_port, mock_repository, sample_booking
     ):
         """Test capture fails when no escrow exists for booking"""
-        #Mock repository.get_latest_escrow to return None
-        #Call service.capture with booking
-        #Verify ValueError is raised with correct message
-        #Verify port.capture is NOT called
         mock_repository.get_latest_escrow.return_value = None
 
         with pytest.raises(ValueError, match="No escrow found to capture."):
@@ -187,10 +162,6 @@ class TestPaymentsService:
         self, payments_service, mock_port, mock_repository, sample_booking, sample_escrow_payment
     ):
         """Test capture fails when escrow is not in AUTHORIZED state"""
-        #Mock repository.get_latest_escrow to return escrow with non-AUTHORIZED status
-        #Call service.capture with booking
-        #Verify ValueError is raised with correct message
-        #Verify port.capture is NOT called
         mock_escrow = sample_escrow_payment
         mock_escrow.status = PaymentStatus.REFUNDED
 
@@ -205,11 +176,6 @@ class TestPaymentsService:
         self, payments_service, mock_db, mock_repository, mock_port, sample_booking, sample_escrow_payment
     ):
         """Test capture fails when payment processor capture fails"""
-        #Mock repository.get_latest_escrow to return authorized escrow
-        #Mock port.capture to raise exception
-        #Call service.capture with booking
-        #Verify exception is propagated
-        #Verify repository.update_payment is NOT called
         mock_repository.get_latest_escrow.return_value = sample_escrow_payment
         mock_port.capture.side_effect = ValueError("Could not capture payment.")
 
@@ -222,15 +188,6 @@ class TestPaymentsService:
         self, payments_service, mock_db, mock_repository, mock_port, sample_booking, sample_escrow_payment
     ):
         """Test successful void of authorized escrow payment"""
-        #Mock repository.get_latest_escrow to return authorized escrow
-        #Mock port.cancel_payment_intent to succeed
-        #Mock repository.update_payment to return updated payment
-        #Call service.void_escrow with booking
-        #Verify repository.get_latest_escrow was called
-        #Verify port.cancel_payment_intent was called with processor_ref
-        #Verify payment status updated to CANCELLED
-        #Verify repository.update_payment was called
-        #Verify updated payment is returned
         mock_repository.get_latest_escrow.return_value = sample_escrow_payment
         mock_port.cancel_payment_intent.return_value = None
 
@@ -247,10 +204,6 @@ class TestPaymentsService:
         self, payments_service, mock_port, mock_repository, sample_booking
     ):
         """Test void fails when no escrow exists for booking"""
-        #Mock repository.get_latest_escrow to return None
-        #Call service.void_escrow with booking
-        #Verify ValueError is raised with correct message
-        #Verify port.cancel_payment_intent is NOT called
         mock_repository.get_latest_escrow.return_value = None
 
         with pytest.raises(ValueError, match="No escrow found to void."):
@@ -262,10 +215,6 @@ class TestPaymentsService:
         self, payments_service, mock_repository, sample_booking, sample_escrow_payment, mock_port
     ):
         """Test void fails when escrow is not in AUTHORIZED state"""
-        #Mock repository.get_latest_escrow to return escrow with non-AUTHORIZED status
-        #Call service.void_escrow with booking
-        #Verify ValueError is raised with correct message
-        #Verify port.cancel_payment_intent is NOT called
         sample_escrow_payment.status = PaymentStatus.CAPTURED
 
         mock_repository.get_latest_escrow.return_value = sample_escrow_payment
@@ -279,11 +228,6 @@ class TestPaymentsService:
         self, payments_service, mock_port, mock_repository, sample_booking
     ):
         """Test refund fails when no captured payment exists"""
-        #Mock repository.get_captured_escrow_payment to return None
-        #Call service.refund with booking_id
-        #Verify ValueError is raised with correct message
-        #Verify port.refund is NOT called
-        
         mock_repository.get_captured_escrow_payment.return_value = None
 
         with pytest.raises(ValueError, match="No captured payment found to refund."):
@@ -295,12 +239,6 @@ class TestPaymentsService:
         self, payments_service, mock_repository, mock_port, sample_booking, sample_escrow_payment
     ):
         """Test refund fails when payment processor refund fails"""
-        #Mock repository.get_captured_escrow_payment to return captured escrow
-        #Mock port.refund to raise exception
-        #Call service.refund with booking_id
-        #Verify exception is propagated
-        #Verify repository.create_payment is NOT called
-        
         sample_escrow_payment.status = PaymentStatus.CAPTURED
         mock_repository.get_captured_escrow_payment.return_value = sample_escrow_payment
         mock_port.refund.side_effect = ValueError("Unable to process refund with Stripe.")
@@ -314,11 +252,6 @@ class TestPaymentsService:
         self, payments_service, mock_db, mock_repository, sample_booking
     ):
         """Test payment listing for booking delegates to repository"""
-        #Create booking_id
-        #Mock repository.list_payments_for_booking to return list of payments
-        #Call service.list_for_booking with booking_id
-        #Verify repository.list_payments_for_booking was called with correct parameters
-        #Verify list of payments is returned
         booking_id = sample_booking.id
         mock_payments = [Mock(spec=Payment), Mock(spec=Payment)]
 
@@ -332,9 +265,6 @@ class TestPaymentsService:
         self, payments_service, mock_repository, sample_booking
     ):
         """Test payment listing returns empty list when no payments exist"""
-        #Mock repository.list_payments_for_booking to return empty list
-        #Call service.list_for_booking with booking_id
-        #Verify empty list is returned
         mock_repository.list_payments_for_booking.return_value = []
         result = payments_service.list_for_booking(sample_booking.id)
 
@@ -344,11 +274,6 @@ class TestPaymentsService:
         self, payments_service, mock_db, mock_repository
     ):
         """Test getting payments for multiple bookings delegates to repository"""
-        #Create list of booking_ids
-        #Mock repository.list_payments_for_bookings to return list of payments
-        #Call service.get_payments_for_bookings with booking_ids
-        #Verify repository.list_payments_for_bookings was called with correct parameters
-        #Verify list of payments is returned
         booking_ids = [uuid4(), uuid4()]
         mock_payments = [Mock(spec=Payment), Mock(spec=Payment)]
 
@@ -361,9 +286,6 @@ class TestPaymentsService:
         self, payments_service, mock_db, mock_repository
     ):
         """Test getting payments for empty booking_ids list"""
-        #Call service.get_payments_for_bookings with empty list
-        #Verify repository.list_payments_for_bookings was called with empty list
-        #Verify empty list is returned
         empty_list = []
         mock_repository.list_payments_for_bookings.return_value = []
         result = payments_service.get_payments_for_bookings(empty_list)
@@ -375,14 +297,6 @@ class TestPaymentsService:
         self, payments_service, mock_repository, mock_port, sample_payment_intent_response
     ):
         """Test successful Stripe PaymentIntent creation for frontend"""
-        #Mock port.create_payment_intent to return intent with client_secret
-        #Mock repository.create_payment to return payment
-        #Call service.create_payment_intent with booking_id, amount, currency
-        #Verify port.create_payment_intent called with correct parameters
-        #Verify payment created with type=ESCROW, status=AUTHORIZED
-        #Verify repository.create_payment called with payment
-        #Verify response dict contains client_secret and payment details
-        
         booking_id = uuid4()
         amount = Decimal("100.00")
         currency = "USD"
@@ -418,11 +332,6 @@ class TestPaymentsService:
         self, payments_service, sample_booking, mock_port, mock_repository
     ):
         """Test PaymentIntent creation fails when Stripe API fails"""
-        #Mock port.create_payment_intent to raise exception
-        #Call service.create_payment_intent with booking_id, amount, currency
-        #Verify exception is propagated
-        #Verify repository.create_payment is NOT called
-        
         amount = Decimal("100.00")
         currency = "USD"
         
@@ -437,11 +346,6 @@ class TestPaymentsService:
         self, payments_service, mock_repository, mock_port
     ):
         """Test PaymentIntent amount is correctly handled by port"""
-        #Mock port.create_payment_intent to capture its arguments
-        #Call service.create_payment_intent with amount in dollars
-        #Verify port receives correct amount (not converted to cents)
-        #Verify payment created with original amount
-        
         booking_id = uuid4()
         amount = Decimal("150.75")
         currency = "USD"

@@ -13,7 +13,7 @@ from app.payments.public import PaymentsPublic
 from app.organizations.public import OrganizationsPublic
 from app.notifications.public import NotificationsPublic
 
-#consider: test redo
+
 @pytest.fixture
 def mock_db():
     return Mock()
@@ -134,7 +134,6 @@ def sample_organization():
 
 class TestInvoicesService:
     
-    # Test: generate_invoice
     def test_generate_invoice_success_admin(
         self, invoice_service, mock_db, mock_repository, mock_organizations_public,
         mock_bookings_public, mock_payments_public, mock_notifications_public,
@@ -224,7 +223,6 @@ class TestInvoicesService:
                 is_site_admin=True,
             )
 
-    # Test: list_org_invoices
     def test_list_org_invoices_success_admin(
         self, invoice_service, mock_db, mock_repository, mock_organizations_public
     ):

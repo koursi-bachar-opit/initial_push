@@ -14,12 +14,10 @@ services:
       - .:/app
     environment:
       DATABASE_URL: ${TEST_DATABASE_URL}
-      # consider: new imports
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
       STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
       USE_REAL_STRIPE: ${USE_REAL_STRIPE}
-      # consider: new imports
 
   mock_pg:
     container_name: mock_pg

@@ -5,14 +5,14 @@ from sqlalchemy.orm import Session, joinedload
 from .models import Listing
 from .schemas import ListingFilter
 
-from app.machines.models import Machine     #refactor: remove Machine import
+from app.machines.models import Machine
 
 
 class ListingsRepository:
     def get_listings(self, db: Session):
         """Return all listings sorted by ID."""
         return db.query(Listing).options(
-            joinedload(Listing.machine) # Eager load the machine relationship
+            joinedload(Listing.machine)
         ).order_by(Listing.updated_at.desc()).all()
 
     def create_listing(self, db: Session, listing: Listing) -> Listing:
@@ -33,7 +33,7 @@ class ListingsRepository:
             
         search_term = f"%{title.strip()}%"
         return db.query(Listing).options(
-            joinedload(Listing.machine)  # Eager load the machine relationship
+            joinedload(Listing.machine)
         ).filter(
             Listing.title.ilike(search_term)
         ).order_by(Listing.title.asc()).all()
@@ -53,7 +53,7 @@ class ListingsRepository:
         if filters.max_price is not None:
             query = query.filter(Listing.hourly_price <= filters.max_price)
         
-        # Apply machine filters - we need to join and reference Machine model
+        # Apply machine filters - join and reference Machine model
         query = query.join(Machine, Listing.machine_id == Machine.id)
         
         if filters.min_cpu_cores is not None:
@@ -92,7 +92,7 @@ class ListingsRepository:
             sort_field = Machine.ram_gb
         elif filters.sort_by == "storage_gb":
             sort_field = Machine.storage_gb
-        else:  # Default to created_at
+        else:
             sort_field = Listing.created_at
         
         if filters.sort_order == "desc":

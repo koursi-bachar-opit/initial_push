@@ -44,6 +44,7 @@ def sample_benchmark_create():
     return benchmark_create
 
 class TestBenchmarksRepository:
+    
     def test_create_performs_database_operations(self, benchmark_repository, mock_db, sample_benchmark_create):
         """Test that benchmark creation performs database operations"""
         machine_id = uuid4()

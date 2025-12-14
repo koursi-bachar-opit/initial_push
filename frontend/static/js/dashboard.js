@@ -147,7 +147,7 @@ async function loadUserDashboard() {
                 hourly_price: Number(fd.get("price")),
             };
 
-            console.log("Creating listing with payload:", payload); // debug logging
+            console.log("Creating listing with payload:", payload);
 
             try {
                 await apiCreateListing(payload);
@@ -283,7 +283,7 @@ async function loadAdminDashboard() {
     await initDisputes();
 }
 
-//Load machines and update UI state
+// Load machines and update UI state
 async function loadMachines() {
     if (!machineSelect) return; // buyer dashboard
 
@@ -998,7 +998,7 @@ function updateStats(stats) {
     if (rejectedEl) rejectedEl.textContent = stats.rejected_providers;
 }
 
-//Helper fxns
+// Helper functions
 function rowHTML(b) {
     const userRole = localStorage.getItem('user_role');
     
@@ -3070,7 +3070,6 @@ function getDisputeStatusColor(status) {
     }
 }
 
-// consider: legacy
 // Modify rowHTML function to add dispute buttons for buyers
 // We'll wrap the existing rowHTML function
 const originalRowHTML = window.rowHTML || rowHTML;

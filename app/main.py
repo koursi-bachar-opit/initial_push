@@ -12,9 +12,7 @@ from app.listings.routes import router as listings_router
 from app.machines.routes import router as machines_router
 from app.credentials.routes import router as credentials_router
 from app.payments.routes import router as payments_router
-#
 from app.payments.webhooks import router as payments_webhooks_router
-#
 from app.disputes.routes import router as disputes_router
 from app.organizations.routes import router as organizations_router
 from app.providers.routes import router as providers_router
@@ -27,16 +25,18 @@ from app.metrics.routes import router as metrics_router
 from app.auth.auth import optional_user
 
 
-"""This is the entrypoint of the FastAPI application.
+"""
+This is the entrypoint of the FastAPI application.
 It defines the API routes, page routes (templating with Jinja2), 
-CORS configuration for cross origin requests, and cookie-based session handling."""
+CORS configuration for cross origin requests, and cookie-based session handling.
+"""
 
 app = FastAPI(title="Remote Servers Marketplace", version="0.3")
 
 FRONTEND_ORIGIN = "https://remote-servers-marketplace-test.onrender.com"
 
-#Allow the browser frontend hosted on Render and local dev tools to call our API.
-#allow_credentials=True lets cookies and auth headers pass through.
+# Allow the browser frontend hosted on Render and local dev tools to call our API.
+# Allow_credentials=True lets cookies and auth headers pass through.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -50,15 +50,13 @@ app.add_middleware(
 )
 
 
-#Routers
+# Routers
 app.include_router(listings_router, prefix="/api/v1/listings", tags=["listings"])
 app.include_router(bookings_router, prefix="/api/v1/bookings", tags=["bookings"])
 app.include_router(machines_router, prefix="/api/v1/machines", tags=["machines"])
 app.include_router(credentials_router, prefix="/api/v1/credentials", tags=["credentials"])
 app.include_router(payments_router, prefix="/api/v1/payments", tags=["payments"])
-#
 app.include_router(payments_webhooks_router, prefix="/api/v1/payments/webhooks", tags=["payments:webhooks"])
-#
 app.include_router(disputes_router, prefix="/api/v1/disputes", tags=["disputes"])
 app.include_router(organizations_router, prefix="/api/v1/organizations", tags=["organizations"])
 app.include_router(providers_router, prefix="/api/v1/providers", tags=["providers"])
@@ -68,24 +66,24 @@ app.include_router(benchmarks_router, prefix="/api/v1/benchmarks", tags=["benchm
 app.include_router(metrics_router, prefix="/api/v1/metrics", tags=["metrics"])
 
 
-#App health endpoint
+# App health endpoint
 @app.get("/api/v1/health")
 def health():
     return {"status": "ok"}
 
 
-#Define root paths for serving the frontend
+# Define root paths for serving the frontend
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 templates_dir = os.path.join(BASE_DIR, "frontend", "templates")
 static_dir = os.path.join(BASE_DIR, "frontend", "static")
 
 
-#Serve lightweight HTML frontend directly using FastAPI and Jinja2 templates
+# Serve lightweight HTML frontend directly using FastAPI and Jinja2 templates
 templates = Jinja2Templates(directory=templates_dir)
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 
-#Define the StoreSession class to store sessions and cookies
+# Define the StoreSession class to store sessions and cookies
 class StoreSession(BaseModel):
     token: str
 
@@ -106,7 +104,7 @@ async def store_session(payload: StoreSession, response: Response):
     return {"status": "ok"}
 
 
-#Pages (Jinja2 templating)
+# Pages (Jinja2 templating)
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request, user=Depends(optional_user)):
     return templates.TemplateResponse("index.html", {"request": request, "user": user})
@@ -182,7 +180,7 @@ async def payment_cancel_page(
     )
 
 
-#Log out clears coookies
+# Log out clears coookies
 @app.get("/logout")
 async def logout():
     response = RedirectResponse("/")

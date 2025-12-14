@@ -75,8 +75,8 @@ def sample_benchmark_list():
         benchmarks.append(benchmark)
     return benchmarks
 
-
 class TestBenchmarkService:
+    
     def test_create_benchmark_successfully_creates_benchmark(self, benchmark_service, mock_db, mock_repository, mock_machines_public, sample_machine_id, sample_provider_id, sample_benchmark_read):
         """Test successful benchmark creation"""
         mock_machines_public.provider_owns_machine.return_value = True

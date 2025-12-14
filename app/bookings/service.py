@@ -34,7 +34,7 @@ from app.notifications.public import NotificationsPublic, get_notifications_publ
 
 
 class BookingsService:
-    #refactor: remove this after checking tests BookingStatus = BookingStatus #access ENUM
+
     def __init__(
         self,
         db: Session,
@@ -67,19 +67,19 @@ class BookingsService:
         end_utc = end_time.astimezone(timezone.utc)
         return start_utc, end_utc
 
-    def validate_booking_window(self, start_utc, end_utc):  #TODO: enforce maximum booking window (example: <= 7 days), and minimum bookings time
+    def validate_booking_window(self, start_utc, end_utc):
         """Check that provided start time and end time are provided and sequential"""
         if start_utc is None or end_utc is None:
-            raise ValueError("start_time and end_time must be provided.")   #TODO: convert to domain exception later
+            raise ValueError("start_time and end_time must be provided.")   
 
         if end_utc <= start_utc:
-            raise ValueError("end_time must be after start_time")  #TODO: convert to domain exception later
+            raise ValueError("end_time must be after start_time")  
 
     def fetch_listing_or_raise(self, listing_id):
         """Get the listing or raise an error if none is found"""
         listing = self.listings_public.get_listing_by_id(listing_id)
         if not listing:
-            raise ValueError("Listing not found") #TODO: convert to domain exception later
+            raise ValueError("Listing not found") 
         return listing
 
     def calculate_price(self, start_time, end_time, hourly_price):
@@ -88,8 +88,8 @@ class BookingsService:
             hourly_decimal = Decimal(str(hourly_price))
         else:
             hourly_decimal = hourly_price
-        if hourly_decimal <= 0:   #business rule, a server can't be free to use
-            raise ValueError("Hourly price must be greater than 0.")  #TODO: convert to domain exception later
+        if hourly_decimal <= 0:
+            raise ValueError("Hourly price must be greater than 0.")  
         delta = end_time - start_time
         total_seconds = Decimal(str(delta.total_seconds()))
         total_price = (total_seconds * hourly_decimal) / Decimal('3600')
@@ -103,7 +103,7 @@ class BookingsService:
             start_time=start_utc,
             end_time=end_utc,
             total_price_estimate=total_price,
-            status=BookingStatus.REQUESTED,  #until: status transitions eventually will be used in state machine
+            status=BookingStatus.REQUESTED,
             organization_id=organization_id,
         )
         return booking
@@ -196,21 +196,21 @@ class BookingsService:
             booking = self._get_booking_or_raise(booking_id)
 
         if booking.listing is None:
-            raise ValueError("Cannot confirm a booking without an associated listing")  #TODO: convert to domain exception later
+            raise ValueError("Cannot confirm a booking without an associated listing")  
 
         now = datetime.now(timezone.utc)
 
         if now > booking.end_time:
-            raise ValueError("Cannot confirm booking after booking end_time") #TODO: convert to domain exception later
+            raise ValueError("Cannot confirm booking after booking end_time") 
         
         if booking.status != BookingStatus.REQUESTED:
-            raise ValueError("Bookings can only be confirmed from a requested state") #TODO: convert to domain exception later
+            raise ValueError("Bookings can only be confirmed from a requested state") 
         
         booking.status = BookingStatus.CONFIRMED
 
         updated = self.booking_repo.update_booking(self.db, booking)
 
-        self.notifications.booking_confirmed(booking.buyer, booking)  #consider: booking.buyer - booking created event    
+        self.notifications.booking_confirmed(booking.buyer, booking)
 
         return updated
 
@@ -250,41 +250,6 @@ class BookingsService:
         
         return updated
 
-
-    # def cancel_booking(self, booking_id: UUID, booking: Booking | None = None):
-    #     """
-    #     Cancel only an existing booking.
-    #     """
-    #     if booking is None:
-    #         booking = self._get_booking_or_raise(booking_id)
-
-    #     if booking.listing is None:
-    #         raise ValueError("Cannot cancel a booking without an associated listing")  #TODO: convert to domain exception later
-        
-    #     now = datetime.now(timezone.utc)
-
-    #     if now > booking.start_time:
-    #         raise ValueError("Cannot cancel booking after booking start_time") #TODO: convert to domain exception later
-
-    #     if booking.status not in {BookingStatus.REQUESTED, BookingStatus.CONFIRMED}:
-    #         raise ValueError("Booking must be requested or confirmed in order to cancel.")  #TODO: convert to domain exception later
-
-    #     booking.status = BookingStatus.CANCELLED
-    
-    #     updated = self.booking_repo.update_booking(self.db, booking)
-
-    #     self.notifications.booking_cancelled(booking.buyer, booking, reason="user_cancelled")
-
-    #     if booking.status != BookingStatus.CANCELLED:
-    #         raise ValueError("Cannot void escrow on a booking that isn't cancelled.")
-        
-    #     self.payments_public.void_escrow_for_booking(
-    #         booking=booking,
-    #     )
-
-    #     return updated
-
-
     def start_session(self, booking_id: UUID, booking: Booking | None = None):
         """
         A session can only begin during the reserved window.
@@ -295,20 +260,20 @@ class BookingsService:
             booking = self._get_booking_or_raise(booking_id)
         
         if not booking.listing:
-            raise ValueError("Listing not attached to booking") #TODO: convert to domain exception later
+            raise ValueError("Listing not attached to booking") 
 
         if booking.status != BookingStatus.CONFIRMED:
-            raise ValueError("Only a confirmed booking can be started.") #TODO: convert to domain exception later
+            raise ValueError("Only a confirmed booking can be started.") 
 
         if booking.active_session_start is not None:
-            raise ValueError("Session already started") #TODO: convert to domain exception later
+            raise ValueError("Session already started") 
 
         now = datetime.now(timezone.utc)
 
         if now < booking.start_time:
-            raise ValueError("Cannot start before booking start_time") #TODO: convert to domain exception later
+            raise ValueError("Cannot start before booking start_time") 
         if now > booking.end_time:
-            raise ValueError("Cannot start; booking window expired") #TODO: convert to domain exception later
+            raise ValueError("Cannot start; booking window expired") 
 
         booking.active_session_start = now
         booking.status = BookingStatus.ACTIVE
@@ -362,7 +327,6 @@ class BookingsService:
         self.notifications.booking_completed(booking.buyer, booking)
         
         #Capture the payment
-        #consider: implement try except consistently
         try:
             self.payments_public.capture_for_booking(booking=booking)
         except ValueError as e:
@@ -372,62 +336,6 @@ class BookingsService:
         self.credentials_public.revoke_for_booking(booking)
         
         return updated
-
-    # def end_session(self, booking_id: UUID, booking: Booking | None = None):
-    #     """
-    #     Final billing is based on exact session duration, not the planned window.
-    #     We compute the per-second cost using the listing's hourly price and round
-    #     to cents for storage.
-    #     """
-    #     if booking is None:
-    #         booking = self._get_booking_or_raise(booking_id)
-
-    #     if not booking.listing:
-    #         raise ValueError("Listing not attached to booking") #TODO: convert to domain exception later
-
-    #     if booking.status != BookingStatus.ACTIVE:
-    #         raise ValueError("Cannot end, current status is not active") #TODO: convert to domain exception later
-
-    #     if booking.active_session_end is not None:
-    #         raise ValueError("Session already ended") #TODO: convert to domain exception later
-
-    #     now = datetime.now(timezone.utc)
-    #     booking.active_session_end = now
-
-    #     booking.actual_price_charged = self.calculate_price(
-    #         booking.active_session_start,
-    #         booking.active_session_end,
-    #         booking.listing.hourly_price,
-    #     )
-
-    #     #compliance step 1: simulate wipe
-    #     self.compliance_public.simulate_wipe_for_booking(booking) #NEW LINE
-
-    #     #compliance step 2: enforce existence
-    #     self.compliance_public.require_attestation_for_booking(booking) #NEW LINE
-
-    #     booking.status = BookingStatus.COMPLETED
-
-    #     updated = self.booking_repo.update_booking(self.db, booking)
-
-    #     self.notifications.booking_completed(booking.buyer, booking)
-
-    #     if not (booking.status == BookingStatus.COMPLETED and booking.actual_price_charged is not None):
-    #         raise ValueError("Cannot capture payment: booking not in completable state.")
-        
-    #     #payout the provider
-    #     self.payments_public.capture_for_booking(
-    #         booking=booking,
-    #     )
-
-    #     if not (booking.status == BookingStatus.CANCELLED or booking.status == BookingStatus.COMPLETED):
-    #         raise ValueError("Booking must be cancelled or completed in order to revoke.")
-
-    #     #revoke credentials
-    #     self.credentials_public.revoke_for_booking(booking)
-
-    #     return updated
-    
 
     def get_org_bookings_in_period(self, org_id, period_start, period_end):
         """
@@ -474,14 +382,12 @@ class BookingsService:
         
         return created
 
-
     def get_bookings_for_organization(self, org_id: UUID):
         """
         Get all bookings for an organization.
         Uses repository method that doesn't require cross-domain imports.
         """
         return self.booking_repo.list_bookings_for_organization(self.db, org_id)
-
 
 def get_bookings_service(
     db: Session = Depends(get_db),

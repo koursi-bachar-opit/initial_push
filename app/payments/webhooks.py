@@ -14,7 +14,7 @@ from app.database import get_db
 
 router = APIRouter()
 
-#Initialize Stripe
+# Initialize Stripe
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "")
 
 @router.post("/stripe")
@@ -28,16 +28,16 @@ async def stripe_webhook(
     Processes out-of-band events from the payment processor
     """
     try:
-        #Get raw payload
+        # Get raw payload
         payload_bytes = await request.body()
         payload = payload_bytes.decode('utf-8')
         sig_header = request.headers.get('stripe-signature')
         
-        #For testing without signature verification
+        # For testing without signature verification
         if not sig_header or os.getenv("STRIPE_WEBHOOK_SECRET", "") == "":
             event = json.loads(payload)
         else:
-            #Verify webhook signature for production
+            # Verify webhook signature for production
             try:
                 event = stripe.Webhook.construct_event(
                     payload_bytes,
@@ -53,7 +53,7 @@ async def stripe_webhook(
         event_type = event.get('type')
         data = event.get('data', {}).get('object', {})
         
-        #Handle checkout.session.completed
+        # Handle checkout.session.completed
         if event_type == 'checkout.session.completed':
             session_id = data.get('id')
             booking_id = data.get('metadata', {}).get('booking_id')
@@ -67,10 +67,10 @@ async def stripe_webhook(
             
             if booking_id and payment_intent_id:
                 try:
-                    #convert booking_id to UUID
+                    # convert booking_id to UUID
                     booking_uuid = UUID(booking_id)
                     
-                    #Create payment record with actual booking_id
+                    # Create payment record with actual booking_id
                     payment = Payment(
                         booking_id=booking_uuid,
                         type=PaymentType.ESCROW,
@@ -85,7 +85,7 @@ async def stripe_webhook(
                     
                     print(f"[Webhook] Payment recorded for booking {booking_id}: {saved_payment.id}")
                     
-                    #Return success. Bookings domain can check payment status later
+                    # Return success. Bookings domain can check payment status later
                     return {
                         "status": "payment_recorded", 
                         "event": event_type,
@@ -98,12 +98,12 @@ async def stripe_webhook(
                     
                 except Exception as e:
                     print(f"[Webhook] Failed to record payment: {str(e)}")
-                    #Still return 200 to Stripe (no retries for errors)
+                    # Still return 200 to Stripe (no retries for errors)
                     return {"status": "error", "detail": str(e), "event": event_type}
             
             return {"status": "ignored", "reason": "missing metadata", "event": event_type}
         
-        #Handle payment_intent events (existing logic)
+        # Handle payment_intent events (existing logic)
         processor_ref = data.get('id')
         if not processor_ref:
             return {"status": "ignored", "reason": "no processor ref"}
@@ -113,9 +113,9 @@ async def stripe_webhook(
         if not payment:
             return {"status": "ignored", "reason": "payment not found"}
 
-        #Update payment_intent.succeeded handling
+        # Update payment_intent.succeeded handling
         if event_type == "payment_intent.succeeded":
-            #Check if payment is captured in Stripe
+            # Check if payment is captured in Stripe
             payment_intent_obj = data
             
             if payment_intent_obj.get('captured', False):

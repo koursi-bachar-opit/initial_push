@@ -129,7 +129,6 @@ class DisputesService:
             (DisputeStatus.NEEDS_INFO, DisputeStatus.IN_REVIEW),
         }
 
-        #consider: use logic for booking lifecycle
         if (dispute.status, new_status) not in allowed:
             raise ValueError("Invalid dispute status transition")
 
@@ -164,12 +163,6 @@ class DisputesService:
             if payload.refund_amount is None or payload.refund_amount <= 0:
                 raise ValueError("refund_amount must be > 0 for refund decisions")
 
-            #consider: extend PaymentsPublic for partial refund
-            #safe
-            # _ = self.payments_public.refund_for_booking(
-            #     booking_id=booking.id,
-            #     reason="dispute_resolution",
-            # )
             self.payments_public.refund_for_booking(
                 booking_id=booking.id,
                 reason="dispute_resolution",
@@ -183,11 +176,10 @@ class DisputesService:
                 resolved_at=now,
             )
 
-            self.notifications.dispute_resolved(dispute, dispute.user) #consider: pass decision
+            self.notifications.dispute_resolved(dispute, dispute.user)
             
             return updated
 
-        #Deny
         elif payload.decision == "deny":
             updated = self.repo.update_status(
                 self.db,
@@ -197,7 +189,7 @@ class DisputesService:
                 resolved_at=now,
             )
 
-            self.notifications.dispute_resolved(dispute, dispute.user) #consider: pass decision
+            self.notifications.dispute_resolved(dispute, dispute.user)
             
             return updated
 

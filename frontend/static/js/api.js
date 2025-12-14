@@ -34,7 +34,7 @@ async function request(path, options = {}) {
 }
 
 
-//Listings
+// Listings
 export function apiGetListings() {
     return request("/listings");
 }
@@ -47,7 +47,7 @@ export function apiCreateListing(payload) {
 }
 
 
-//Bookings
+// Bookings
 export function apiGetBookings() {
     return request("/bookings");
 }
@@ -75,7 +75,7 @@ export function apiEndSession(id) {
     return request(`/bookings/${id}/end`, { method: "PUT" });
 }
 
-//Machines
+// Machines
 export function apiGetMachines() {
     return request("/machines");
 }

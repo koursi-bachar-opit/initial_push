@@ -15,7 +15,6 @@ from .permissions import OrgPermission
 from app.users.public import UsersPublic, get_users_public
 
 
-#refactor: verbose user functions
 class OrganizationsService:
     def __init__(
         self,
@@ -125,7 +124,6 @@ class OrganizationsService:
         updated = self.repo.change_role(self.db, org_id, user_id, role)
         return updated
 
-    #consider: mock stats
     def get_member_usage_stats(self, org_id: UUID, user_id: UUID) -> Dict:
         """
         Generate mock usage statistics for a member.

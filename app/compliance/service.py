@@ -16,6 +16,7 @@ from app.notifications.public import NotificationsPublic, get_notifications_publ
 
 
 class ComplianceService:
+
     def __init__(
         self,
         db: Session,
@@ -53,7 +54,6 @@ class ComplianceService:
             evidence_uri=create_data.evidence_uri,
         )
         
-        #consider: Update status to VERIFIED for simulation
         updated_attestation = self.repo.update_status(
             db=self.db,
             attestation_id=attestation.id,
@@ -92,14 +92,14 @@ class ComplianceService:
 
         return att
 
-    #Admin review
+    # Admin review
     def admin_review(self, attestation_id: UUID, data: WipeAttestationUpdateStatus):
         updated = self.repo.update_status(self.db, attestation_id, data.status)
         if not updated:
             raise ValueError("Attestation not found")
         return updated
 
-    #Queries
+    # Queries
     def get_attestation_by_booking(self, booking):
         return self.repo.get_by_booking(self.db, booking.id)
 
@@ -116,9 +116,9 @@ class ComplianceService:
             raise ValueError("No booking attestation found.")
         
         if attestation.booking.buyer_user_id != user_id:
-            raise ValueError("Not your booking") #raise as HTTPException in routes
+            raise ValueError("Not your booking")
         
-        #Map detailed method to user-friendly summary
+        # Map detailed method to user-friendly summary
         method_summary_map = {
             "simulated-secure-erase": "Secure erase",
             "zero-fill": "Zero-fill wipe",

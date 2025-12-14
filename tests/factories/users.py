@@ -8,7 +8,7 @@ def create_user(db_session, email: str, role: str):
     users_public = get_users_public(db_session)
     return users_public.create_user(
         email=email,
-        supabase_id=email,  #using email as supabase_id for tests
+        supabase_id=email,
         role=getattr(UserRole, role.upper()),
     )
 

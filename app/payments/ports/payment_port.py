@@ -75,7 +75,6 @@ class PaymentPort(Protocol):
         """Retrieve Checkout Session details"""
         ...
 
-    #consider: verify function usage, delete if unused
     @abstractmethod
     def create_payment_intent(
         self,

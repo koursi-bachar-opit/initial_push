@@ -8,6 +8,7 @@ from app.users.models import User, UserRole
 
 
 class TestAuthService:
+    
     def test_init_dependencies_injected(self):
         """Test that AuthService properly receives its dependencies"""
         mock_db = Mock()
@@ -20,7 +21,6 @@ class TestAuthService:
 
     def test_decode_supabase_jwt_success(self):
         """Test successful JWT decoding"""
-        #Arrange
         mock_db = Mock()
         mock_users_public = Mock()
         service = AuthService(mock_db, mock_users_public)
@@ -29,10 +29,8 @@ class TestAuthService:
         test_payload = {"sub": "123", "email": "test@example.com"}
         token = jwt.encode(test_payload, "test_secret", algorithm="HS256")
         
-        #Act
         result = service._decode_supabase_jwt(token)
         
-        #Assert
         assert result["sub"] == "123"
         assert result["email"] == "test@example.com"
 
@@ -56,7 +54,6 @@ class TestAuthService:
         with pytest.raises(ValueError, match="Invalid or expired JWT"):
             service._decode_supabase_jwt("invalid.token.here")
 
-    #Refactor: This method holds too many responsibilities
     def test_get_current_user_with_mock_token(self):
         """Test mock token parsing (local dev/test format)"""
         mock_db = Mock()
@@ -68,8 +65,7 @@ class TestAuthService:
         
         #mock token format
         result = service.get_current_user("provider:alice@example.com")
-        
-        #assert
+
         assert result == mock_user
         mock_users_public.get_or_create_user_by_supabase_id.assert_called_once_with(
             sub="alice@example.com",
@@ -85,11 +81,9 @@ class TestAuthService:
         mock_users_public.get_or_create_user_by_supabase_id.return_value = mock_user
         
         service = AuthService(mock_db, mock_users_public)
-        
-        #Act: token with bearer prefix
+
         result = service.get_current_user("Bearer provider:alice@example.com")
-        
-        #Assert
+
         assert result == mock_user
         #Should call with stripped token
         mock_users_public.get_or_create_user_by_supabase_id.assert_called_once_with(
@@ -115,11 +109,9 @@ class TestAuthService:
             "user_metadata": {"role": "buyer"}
         }
         token = jwt.encode(jwt_payload, "test_secret", algorithm="HS256")
-        
-        #Act
+    
         result = service.get_current_user(token)
         
-        #Assert
         assert result == mock_user
         mock_users_public.get_or_create_user_by_supabase_id.assert_called_once_with(
             sub="auth0|12345",
@@ -154,7 +146,6 @@ class TestAuthService:
         with pytest.raises(ValueError, match="Invalid JWT payload: missing 'sub' or 'email'"):
             service.get_current_user(token)
 
-    #Refactor: Extract token parsing logic to separate class
     def test_get_or_create_user_delegates_to_users_public(self):
         """Test that user provisioning delegates to Users domain"""
         mock_db = Mock()

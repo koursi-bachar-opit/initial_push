@@ -1,14 +1,11 @@
 from fastapi import Depends, APIRouter, HTTPException
+from uuid import UUID
 
 from app.auth.auth import get_current_user
 from app.users.models import User, UserRole
 
 from .schemas import MachineCreate, MachineRead
 from .service import MachinesService, get_machines_service
-
-from uuid import UUID
-
-from typing import Optional
 
 router = APIRouter()
 
@@ -21,7 +18,7 @@ def get_machine(
 ):
     try:
         machine = service.get_machine(machine_id)
-    except ValueError as e: #consider: except MachineNotFoundError:
+    except ValueError as e:
         raise HTTPException(404, "Machine not found")
 
     #Provider authorization
@@ -48,9 +45,9 @@ def delete_machine(
 ):
     try:
         service.delete_machine(machine_id, provider_id=user.id)
-    except ValueError as e: #consider: except MachineNotFoundError:
+    except ValueError as e:
         raise HTTPException(404, "Machine not found")
-    except ValueError as e: #consider: except NotProviderMachineError:
+    except ValueError as e:
         raise HTTPException(403, "Not allowed")
 
 @router.post("/", response_model=MachineRead, status_code=201)

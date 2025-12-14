@@ -3,12 +3,13 @@ from typing import List, Optional
 from uuid import UUID
 
 from sqlalchemy.orm import Session
-from sqlalchemy import select, and_, desc
+from sqlalchemy import select, desc
 
 from .models import MetricSample
 
 
 class MetricsRepository:
+
     def create_sample(
         self,
         db: Session,

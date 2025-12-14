@@ -128,12 +128,12 @@ class TestProviderRepository:
         user_id = uuid4()
         mock_profile = Mock(spec=ProviderProfile)
         
-        #Mock the ORM model instantiation and database operations
+        # Mock the ORM model instantiation and database operations
         mock_db.add.return_value = None
         mock_db.commit.return_value = None
         mock_db.refresh.return_value = None
         
-        #We need to mock models.ProviderProfile to return our mock
+        # Mock models.ProviderProfile to return our mock
         with pytest.MonkeyPatch.context() as mp:
             mp.setattr('app.providers.repository.ProviderProfile', lambda **kwargs: mock_profile)
             result = provider_repository.create(user_id, sample_profile_create_data)
@@ -188,12 +188,12 @@ class TestProviderRepository:
         """Test that verification creation performs database operations"""
         mock_verification = Mock(spec=Verification)
         
-        #Mock the ORM model instantiation and database operations
+        # Mock the ORM model instantiation and database operations
         mock_db.add.return_value = None
         mock_db.commit.return_value = None
         mock_db.refresh.return_value = None
         
-        #We need to mock models.Verification to return our mock
+        # Mock models.Verification to return our mock
         with pytest.MonkeyPatch.context() as mp:
             mp.setattr('app.providers.repository.Verification', lambda **kwargs: mock_verification)
             result = provider_repository.create_verification(sample_verification_create_data)

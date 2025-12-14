@@ -3,7 +3,6 @@ from test_config import TestConfig
 
 
 def machine_payload(**overrides):
-    #Removed provider_user_id from base (comes from auth context)
     base = {
         "name": TestConfig.DEFAULT_MACHINE_NAME,
         "cpu": "4 vCPU",
@@ -26,7 +25,7 @@ def machine_payload(provider_id, **overrides):
         "storage_gb": TestConfig.DEFAULT_MACHINE_STORAGE_GB,
         "network_mbps": TestConfig.DEFAULT_MACHINE_NETWORK_MBPS,
         "provider_id": str(provider_id),
-        "notes": None,  # Optional field, can be None
+        "notes": None,
     }
     base.update(overrides)
     return base

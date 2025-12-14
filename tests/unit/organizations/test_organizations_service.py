@@ -105,12 +105,6 @@ class TestOrganizationsService:
     
     def test_create_organization_successfully_creates_and_adds_creator_as_admin(self, organization_service, mock_db, mock_repository, sample_organization_create_data, sample_organization, sample_member_membership):
         """Test successful organization creation with creator as admin"""
-        # Mock repository.create to return organization
-        # Mock repository.add_member to return membership
-        # Call service.create_organization with creator_user_id and create data
-        # Verify repository.create was called with correct data
-        # Verify repository.add_member was called with creator_user_id as ADMIN
-        # Verify created organization is returned
         creator_user_id = uuid4()
         mock_repository.create.return_value = sample_organization
         mock_repository.add_member.return_value = sample_member_membership
@@ -123,14 +117,6 @@ class TestOrganizationsService:
 
     def test_update_organization_successfully_updates_with_admin_permission(self, organization_service, mock_db, mock_repository, sample_organization, sample_membership, sample_organization_update_data):
         """Test successful organization update by admin"""
-        # Mock repository.get_membership to return admin membership
-        # Mock repository.get to return organization
-        # Mock repository.update to return updated organization
-        # Call service.update_organization with org_id, actor_user_id, and update data
-        # Verify repository.get_membership was called to check permissions
-        # Verify repository.get was called to find organization
-        # Verify repository.update was called with correct data
-        # Verify updated organization is returned
         org_id = uuid4()
         actor_user_id = uuid4()
         mock_repository.get_membership.return_value = sample_membership
@@ -146,11 +132,6 @@ class TestOrganizationsService:
 
     def test_update_organization_raises_error_when_not_admin(self, organization_service, mock_repository, sample_organization_update_data, sample_member_membership):
         """Test organization update fails when user is not admin"""
-        # Mock repository.get_membership to return None or member membership
-        # Call service.update_organization with org_id, actor_user_id, and update data
-        # Verify HTTPException is raised with 403 status
-        # Verify repository.get is NOT called
-        # Verify repository.update is NOT called
         org_id = uuid4()
         actor_user_id = uuid4()
         mock_repository.get_membership.return_value = sample_member_membership
@@ -164,11 +145,6 @@ class TestOrganizationsService:
 
     def test_update_organization_raises_error_when_organization_not_found(self, organization_service, mock_repository, sample_membership, sample_organization_update_data):
         """Test organization update fails when organization doesn't exist"""
-        # Mock repository.get_membership to return admin membership
-        # Mock repository.get to return None
-        # Call service.update_organization with org_id, actor_user_id, and update data
-        # Verify HTTPException is raised with 404 status
-        # Verify repository.update is NOT called
         org_id = uuid4()
         actor_user_id = uuid4()
         mock_repository.get_membership.return_value = sample_membership
@@ -182,12 +158,6 @@ class TestOrganizationsService:
 
     def test_add_member_successfully_adds_member_with_admin_permission(self, organization_service, mock_db, mock_repository, sample_membership):
         """Test successful member addition by admin"""
-        # Mock repository.get_membership to return admin membership for actor
-        # Mock repository.add_member to return new membership
-        # Call service.add_member with org_id, actor_user_id, user_id, and role
-        # Verify repository.get_membership was called for actor
-        # Verify repository.add_member was called with correct parameters
-        # Verify new membership is returned
         org_id = uuid4()
         actor_user_id = uuid4()
         user_id = uuid4()
@@ -202,10 +172,6 @@ class TestOrganizationsService:
 
     def test_add_member_raises_error_when_not_admin(self, organization_service, mock_repository, sample_member_membership):
         """Test member addition fails when user is not admin"""
-        # Mock repository.get_membership to return None or member membership
-        # Call service.add_member with org_id, actor_user_id, user_id, and role
-        # Verify HTTPException is raised with 403 status
-        # Verify repository.add_member is NOT called
         org_id = uuid4()
         actor_user_id = uuid4()
         user_id = uuid4()
@@ -219,12 +185,6 @@ class TestOrganizationsService:
 
     def test_remove_member_successfully_removes_member_with_admin_permission(self, organization_service, mock_db, mock_repository, sample_membership):
         """Test successful member removal by admin"""
-        # Mock repository.get_membership to return admin membership for actor
-        # Mock repository.remove_member to succeed
-        # Call service.remove_member with org_id, actor_user_id, and user_id
-        # Verify repository.get_membership was called for actor
-        # Verify repository.remove_member was called with correct parameters
-        # Verify result is None (remove_member doesn't return anything)
         org_id = uuid4()
         actor_user_id = uuid4()
         user_id = uuid4()
@@ -239,10 +199,6 @@ class TestOrganizationsService:
 
     def test_remove_member_raises_error_when_not_admin(self, organization_service, mock_repository):
         """Test member removal fails when user is not admin"""
-        # Mock repository.get_membership to return None or member membership
-        # Call service.remove_member with org_id, actor_user_id, and user_id
-        # Verify HTTPException is raised with 403 status
-        # Verify repository.remove_member is NOT called
         org_id = uuid4()
         actor_user_id = uuid4()
         user_id = uuid4()
@@ -256,12 +212,6 @@ class TestOrganizationsService:
 
     def test_change_member_role_successfully_updates_role_with_admin_permission(self, organization_service, mock_db, mock_repository, sample_membership):
         """Test successful member role change by admin"""
-        # Mock repository.get_membership to return admin membership for actor
-        # Mock repository.change_role to return updated membership
-        # Call service.change_member_role with org_id, actor_user_id, user_id, and new role
-        # Verify repository.get_membership was called for actor
-        # Verify repository.change_role was called with correct parameters
-        # Verify updated membership is returned
         org_id = uuid4()
         actor_user_id = uuid4()
         user_id = uuid4()
@@ -276,10 +226,6 @@ class TestOrganizationsService:
 
     def test_change_member_role_raises_error_when_not_admin(self, organization_service, mock_repository):
         """Test member role change fails when user is not admin"""
-        # Mock repository.get_membership to return None or member membership
-        # Call service.change_member_role with org_id, actor_user_id, user_id, and new role
-        # Verify HTTPException is raised with 403 status
-        # Verify repository.change_role is NOT called
         org_id = uuid4()
         actor_user_id = uuid4()
         user_id = uuid4()
@@ -293,11 +239,6 @@ class TestOrganizationsService:
 
     def test_list_user_organizations_delegates_to_repository(self, organization_service, mock_db, mock_repository):
         """Test listing user organizations delegates to repository"""
-        # Create user_id
-        # Mock repository.list_for_user to return organizations list
-        # Call service.list_user_organizations with user_id
-        # Verify repository.list_for_user was called with user_id
-        # Verify organizations list is returned
         user_id = uuid4()
         sample_organizations = [Mock(spec=Organization), Mock(spec=Organization)]
         mock_repository.list_for_user.return_value = sample_organizations
@@ -309,10 +250,6 @@ class TestOrganizationsService:
 
     def test_list_user_organizations_returns_empty_list_when_none_exist(self, organization_service, mock_db, mock_repository):
         """Test listing user organizations returns empty list when none exist"""
-        # Mock repository.list_for_user to return empty list
-        # Call service.list_user_organizations with user_id
-        # Verify empty list is returned
-        # Verify repository.list_for_user was called
         user_id = uuid4()
         mock_repository.list_for_user.return_value = []
 
@@ -322,12 +259,6 @@ class TestOrganizationsService:
 
     def test_list_members_successfully_returns_members_with_member_permission(self, organization_service, mock_db, mock_repository, sample_member_membership):
         """Test successful member listing with member permission"""
-        # Mock repository.get_membership to return member membership for requesting user
-        # Mock repository.list_members to return members list
-        # Call service.list_members with org_id and requesting_user_id
-        # Verify repository.get_membership was called for requesting user
-        # Verify repository.list_members was called with org_id
-        # Verify members list is returned
         org_id = uuid4()
         requesting_user_id = uuid4()
         sample_members = [Mock(spec=OrganizationMembership), Mock(spec=OrganizationMembership)]
@@ -343,10 +274,6 @@ class TestOrganizationsService:
 
     def test_list_members_raises_error_when_not_member(self, organization_service, mock_repository):
         """Test member listing fails when user is not a member"""
-        # Mock repository.get_membership to return None
-        # Call service.list_members with org_id and requesting_user_id
-        # Verify HTTPException is raised with 403 status
-        # Verify repository.list_members is NOT called
         org_id = uuid4()
         requesting_user_id = uuid4()
         mock_repository.get_membership.return_value = None
@@ -359,10 +286,6 @@ class TestOrganizationsService:
 
     def test_is_org_admin_returns_true_for_admin_member(self, organization_service, mock_repository, sample_membership):
         """Test is_org_admin returns true for admin member"""
-        # Mock repository.get_membership to return admin membership
-        # Call service.is_org_admin with user_id and org_id
-        # Verify repository.get_membership was called
-        # Verify True is returned
         org_id = uuid4()
         user_id = uuid4()
         sample_membership.org_role = OrgRole.ADMIN
@@ -375,10 +298,6 @@ class TestOrganizationsService:
 
     def test_is_org_admin_returns_false_for_non_admin_member(self, organization_service, mock_repository, sample_member_membership):
         """Test is_org_admin returns false for non-admin member"""
-        # Mock repository.get_membership to return member (non-admin) membership
-        # Call service.is_org_admin with user_id and org_id
-        # Verify repository.get_membership was called
-        # Verify False is returned
         org_id = uuid4()
         user_id = uuid4()
         sample_member_membership.org_role = OrgRole.MEMBER
@@ -391,10 +310,6 @@ class TestOrganizationsService:
 
     def test_is_org_admin_returns_false_for_non_member(self, organization_service, mock_repository):
         """Test is_org_admin returns false for non-member"""
-        # Mock repository.get_membership to return None
-        # Call service.is_org_admin with user_id and org_id
-        # Verify repository.get_membership was called
-        # Verify False is returned
         org_id = uuid4()
         user_id = uuid4()
         mock_repository.get_membership.return_value = None
@@ -406,10 +321,6 @@ class TestOrganizationsService:
 
     def test_is_org_member_returns_true_for_member(self, organization_service, mock_repository, sample_member_membership):
         """Test is_org_member returns true for member"""
-        # Mock repository.get_membership to return membership
-        # Call service.is_org_member with user_id and org_id
-        # Verify repository.get_membership was called
-        # Verify True is returned
         org_id = uuid4()
         user_id = uuid4()
         mock_repository.get_membership.return_value = sample_member_membership
@@ -421,10 +332,6 @@ class TestOrganizationsService:
 
     def test_is_org_member_returns_false_for_non_member(self, organization_service, mock_repository):
         """Test is_org_member returns false for non-member"""
-        # Mock repository.get_membership to return None
-        # Call service.is_org_member with user_id and org_id
-        # Verify repository.get_membership was called
-        # Verify False is returned
         org_id = uuid4()
         user_id = uuid4()
         mock_repository.get_membership.return_value = None

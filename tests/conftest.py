@@ -10,11 +10,10 @@ from app.database import Base, get_db
 from app.config import settings
 
 
-#settings.DATABASE_URL for production
-DATABASE_URL = settings.TEST_DATABASE_URL
+TEST_DATABASE_URL = settings.TEST_DATABASE_URL
 
 #Engine & Session setup
-engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+engine = create_engine(TEST_DATABASE_URL, pool_pre_ping=True)
 TestingSessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
 
@@ -22,7 +21,7 @@ TestingSessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=Fals
 @pytest.fixture(scope="session", autouse=True)
 def apply_migrations():
     alembic_cfg = Config("alembic.ini")
-    alembic_cfg.set_main_option("sqlalchemy.url", DATABASE_URL)
+    alembic_cfg.set_main_option("sqlalchemy.url", TEST_DATABASE_URL)
     command.upgrade(alembic_cfg, "head")
     yield
     #No downgrade, tests run on latest schema

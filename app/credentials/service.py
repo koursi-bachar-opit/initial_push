@@ -9,6 +9,7 @@ from app.notifications.public import NotificationsPublic, get_notifications_publ
 
 
 class AccessCredentialsService:
+    
     def __init__(
         self,
         db: Session,

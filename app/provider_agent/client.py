@@ -3,7 +3,6 @@ from uuid import UUID
 from datetime import datetime, timezone
 
 
-#consider: can issuer.py eventually call into this? why?
 @dataclass
 class AgentProvisionResult:
     """
@@ -14,7 +13,6 @@ class AgentProvisionResult:
     """
     vpn_config_uri: str
     ssh_public_key_fingerprint: str
-
 
 class ProviderAgentClient:
     """
@@ -44,8 +42,7 @@ class ProviderAgentClient:
         Mock metrics collection.
         Example return: {"gpu": 40, "cpu": 13, "mem_gb": 5.3}
         """
-        #Mock values for now
-        #consider: add net_rx and net_tx
+        #Mock values
         return {
             "machine_id": str(machine_id),
             "gpu_util": 42,

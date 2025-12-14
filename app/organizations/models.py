@@ -18,6 +18,7 @@ class OrgRole(str, Enum):
     MEMBER = "member"
 
 class Organization(Base):
+    
     __tablename__ = "organizations"
 
     id = Column(

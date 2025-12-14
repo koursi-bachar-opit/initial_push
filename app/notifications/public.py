@@ -2,28 +2,6 @@ import os
 from pathlib import Path
 
 from .service import NotificationsService
-#safe
-# from .events import (
-#     BookingConfirmedEvent,
-#     BookingActivatedEvent,
-#     BookingCompletedEvent,
-#     BookingCancelledEvent,
-#     PaymentCapturedEvent,
-#     PaymentFailedEvent,
-#     RefundIssuedEvent,
-#     CredentialsIssuedEvent,
-#     CredentialsRevokedEvent,
-#     DisputeOpenedEvent,
-#     DisputeResolvedEvent,
-#     WipeProofSubmittedEvent,
-#     WipeFailureEvent,
-#     ProviderSuspendedEvent,
-#     InvoiceGeneratedEvent,
-#     InvoiceFinalizedEvent,
-#     ProviderAlertEvent,
-#     MachineHealthAnomalyEvent,
-#     MachineOfflineEvent,
-# )
 from .ports.console_email_adapter import ConsoleEmailAdapter
 
 
@@ -32,7 +10,7 @@ class NotificationsPublic:
     def __init__(self, service: NotificationsService):
         self.service = service
 
-    #Booking events
+    # Booking events
     def booking_confirmed(self, user, booking):
         self.service.send_booking_confirmation(user, booking)
 
@@ -45,7 +23,7 @@ class NotificationsPublic:
     def booking_cancelled(self, user, booking, reason):
         self.service.send_booking_cancelled(user, booking, reason)
 
-    #Payment events
+    # Payment events
     def payment_captured(self, user, payment):
         self.service.send_payment_captured(user, payment)
 
@@ -55,21 +33,21 @@ class NotificationsPublic:
     def refund_issued(self, user, payment):
         self.service.send_refund_issued(user, payment)
 
-    #Credential events
+    # Credential events
     def credentials_issued(self, user, credential):
         self.service.send_credentials_issued(user, credential)
 
     def credentials_revoked(self, user, credential):
         self.service.send_credentials_revoked(user, credential)
 
-    #Dispute events
+    # Dispute events
     def dispute_opened(self, dispute, user):
         self.service.send_dispute_opened(dispute, user)
 
     def dispute_resolved(self, dispute, user):
         self.service.send_dispute_resolved(dispute, user)
 
-    #Compliance events
+    # Compliance events
     def wipe_proof_submitted(self, provider, booking, attestation):
         self.service.send_wipe_proof_submitted(provider, booking, attestation)
 
@@ -79,14 +57,14 @@ class NotificationsPublic:
     def provider_suspended(self, provider, reason):
         self.service.send_provider_suspended(provider, reason)
 
-    #Invoice events
+    # Invoice events
     def invoice_generated(self, organization, invoice):
         self.service.send_invoice_generated(organization, invoice)
 
     def invoice_finalized(self, organization, invoice):
         self.service.send_invoice_finalized(organization, invoice)
 
-    #Provider/metrics alerts
+    # Provider/metrics alerts
     def provider_alert(self, provider, message):
         self.service.send_provider_alert(provider, message)
 

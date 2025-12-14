@@ -48,6 +48,7 @@ def sample_machine():
     return machine
 
 class TestBookingsRepository:
+    
     def test_create_booking_performs_database_operations(self, mock_db, bookings_repository, sample_booking):
         """Test that booking creation performs database operations"""
         result = bookings_repository.create_booking(mock_db, sample_booking)

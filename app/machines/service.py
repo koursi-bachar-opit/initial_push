@@ -9,11 +9,6 @@ from .models import Machine
 from app.database import get_db
 from app.providers.public import ProvidersPublic, get_providers_public
 
-#until: Domain exceptions
-# class MachineNotFoundError(Exception):
-#     pass
-# class NotProviderMachineError(Exception):
-#     pass
 
 class MachinesService:
     """
@@ -29,7 +24,7 @@ class MachinesService:
     def get_machine(self, machine_id: UUID) -> Machine:
         machine = self.machine_repo.get_machine(self.db, machine_id)
         if not machine:
-            raise ValueError("Machine does not exist.")  #consider: MachineNotFoundError()
+            raise ValueError("Machine does not exist.")
         return machine
 
     def list_machines_for_provider(self, provider_id: UUID) -> list[Machine]:
@@ -41,10 +36,10 @@ class MachinesService:
     def delete_machine(self, machine_id: UUID, provider_id: UUID):
         machine = self.machine_repo.get_machine(self.db, machine_id)
         if not machine:
-            raise ValueError("Machine does not exist.") #consider: MachineNotFoundError()
+            raise ValueError("Machine does not exist.")
 
         if machine.provider_id != provider_id:
-            raise ValueError("You do not own this machine.") #consider: #NotProviderMachineError()
+            raise ValueError("You do not own this machine.")
 
         self.machine_repo.delete_machine(self.db, machine)
 

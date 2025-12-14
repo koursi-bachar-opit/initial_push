@@ -1,11 +1,10 @@
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.templating import Jinja2Templates
-import os
 
 from sqlalchemy.orm import Session
 
-from .schemas import PaymentRead
+from .schemas import PaymentRead, CheckoutRequest
 from .public import PaymentsPublic, get_payments_public
 from app.database import get_db
 from app.auth.auth import get_current_user
@@ -35,18 +34,10 @@ def list_payments_for_booking(
     """
     return payments_public.list_for_booking(booking_id)
 
-
-#refactor: move schema
-from pydantic import BaseModel
-class CheckoutRequest(BaseModel):
-    booking_id: UUID
-    amount: float
-    currency: str = "USD"
-
 #Update the create_checkout function
 @router.post("/checkout")
 def create_checkout(
-    checkout_data: CheckoutRequest,  # Now accepts request body
+    checkout_data: CheckoutRequest,
     payments_service: PaymentsService = Depends(get_payments_service),
     user=Depends(get_current_user),
     request: Request = None,
@@ -82,7 +73,6 @@ def create_checkout(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-
 @router.get("/verify/{session_id}")
 def verify_payment(
     session_id: str,
@@ -97,7 +87,6 @@ def verify_payment(
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
-
 
 @router.get("/success")
 async def payment_success_page(
@@ -119,7 +108,6 @@ async def payment_success_page(
         }
     )
 
-
 @router.get("/cancel")
 async def payment_cancel_page(
     request: Request,
@@ -133,7 +121,6 @@ async def payment_cancel_page(
             "booking_id": booking_id,
         }
     )
-
 
 @router.post("/intent")
 def create_payment_intent(
@@ -155,7 +142,6 @@ def create_payment_intent(
         return result
     except Exception as e:
         raise ValueError(f"Failed to create payment intent: {str(e)}")
-
 
 @router.get("/{payment_intent_id}/status")
 def get_payment_status(

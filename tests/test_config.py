@@ -3,10 +3,10 @@ Centralized test configuration for modularizing our test data.
 """
 
 class TestConfig:
-    #Base URLs
+    # Base URLs
     BASE_URL = "/api/v1"
     
-    #User credentials by role
+    # User credentials by role
     ADMIN_EMAIL = "admin@example.com"
     ADMIN_PASSWORD = "admin"
     
@@ -16,18 +16,16 @@ class TestConfig:
     BUYER_EMAIL = "buyer@example.com" 
     BUYER_PASSWORD = "buyer"
     
-    #Additional test users for scenarios needing multiple users
+    # Additional test users for scenarios needing multiple users
     SECOND_BUYER_EMAIL = "two_buyer@example.com"
     SECOND_PROVIDER_EMAIL = "two_provider@example.com"
     
-    #Default test data
+    # Default test data
     DEFAULT_LISTING_TITLE = "Default Title"
     DEFAULT_LISTING_PRICE = 10
     DEFAULT_MACHINE_NAME = "Test Machine"
 
-    # In test_config.py or wherever TestConfig is defined
-
-    #Default machine data
+    # Default machine data
     DEFAULT_MACHINE_HOSTNAME = "test-machine"
     DEFAULT_MACHINE_REGION = "us-west"
     DEFAULT_MACHINE_GPU_MODEL = "RTX 4090"

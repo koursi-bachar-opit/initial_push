@@ -1,8 +1,6 @@
 from typing import Protocol, List
-from uuid import UUID
 from decimal import Decimal
 
-from sqlalchemy.orm import Session
 from fastapi import Depends
 
 from .service import PaymentsService, get_payments_service

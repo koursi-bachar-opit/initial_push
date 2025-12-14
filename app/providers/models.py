@@ -25,6 +25,7 @@ class VerificationSubject(str, Enum):
     MACHINE = "machine"
 
 class ProviderProfile(Base):
+    
     __tablename__ = "provider_profiles"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

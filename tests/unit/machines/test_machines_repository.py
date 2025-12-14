@@ -30,10 +30,6 @@ class TestMachinesRepository:
 
     def test_create_machine_successfully_creates_machine(self):
         """Test that machine creation works with valid data"""
-        #Mock the database session and create test data
-        #Call create_machine with test MachineCreate data
-        #Verify db.add, db.commit, db.refresh were called
-        #Verify the returned machine has expected attributes
         mock_db = Mock()
         repository = MachinesRepository()
 
@@ -48,9 +44,6 @@ class TestMachinesRepository:
 
     def test_get_machine_returns_machine_when_exists(self):
         """Test retrieving an existing machine by ID"""
-        #Mock db.query().filter().first() to return a machine
-        #Call get_machine with a UUID
-        #Verify the correct machine is returned
         mock_db = Mock()
         mock_machine = Mock()
         repository = MachinesRepository()
@@ -63,9 +56,6 @@ class TestMachinesRepository:
 
     def test_get_machine_returns_none_when_not_found(self):
         """Test retrieving a non-existent machine returns None"""
-        #Mock db.query().filter().first() to return None
-        #Call get_machine with a UUID
-        #Verify None is returned
         mock_db = Mock()
         repository = MachinesRepository()
 
@@ -78,10 +68,6 @@ class TestMachinesRepository:
 
     def test_list_machines_for_provider_returns_provider_machines(self):
         """Test listing machines for a specific provider"""
-        #Mock db.query().filter().all() to return a list of machines
-        #Call list_machines_for_provider with provider UUID
-        #Verify the correct filter was applied (provider_id)
-        #Verify the list of machines is returned
         mock_db = Mock()
         repository = MachinesRepository()
 
@@ -96,9 +82,6 @@ class TestMachinesRepository:
 
     def test_list_machines_for_provider_returns_empty_list_when_no_machines(self):
         """Test listing machines returns empty list when provider has none"""
-        #Mock db.query().filter().all() to return empty list
-        #Call list_machines_for_provider with provider UUID
-        #Verify empty list is returned
         mock_db = Mock()
         repository = MachinesRepository()
 
@@ -111,9 +94,6 @@ class TestMachinesRepository:
 
     def test_provider_owns_machine_returns_true_when_owner(self):
         """Test ownership check returns true when provider owns machine"""
-        #Mock db.query().filter().count() to return 1
-        #Call provider_owns_machine with valid owner UUID and machine UUID
-        #Verify True is returned
         mock_db = Mock()
         repository = MachinesRepository()
 
@@ -127,9 +107,6 @@ class TestMachinesRepository:
 
     def test_provider_owns_machine_returns_false_when_not_owner(self):
         """Test ownership check returns false when provider doesn't own machine"""
-        #Mock db.query().filter().count() to return 0
-        #Call provider_owns_machine with different provider UUID
-        #Verify False is returned
         mock_db = Mock()
         repository = MachinesRepository()
 
@@ -143,10 +120,6 @@ class TestMachinesRepository:
 
     def test_delete_machine_performs_database_operations(self):
         """Test that delete_machine calls db.delete and db.commit"""
-        #Mock db session
-        #Create a mock machine
-        #Call repository.delete_machine with the machine
-        #Verify db.delete and db.commit were called
         mock_db = Mock()
         repository = MachinesRepository()
         mock_machine = Mock()
@@ -155,10 +128,3 @@ class TestMachinesRepository:
         
         mock_db.delete.assert_called_once_with(mock_machine)
         mock_db.commit.assert_called_once()
-
-
-    # def test_provider_owns_machine_uses_correct_filters(self):
-    #     """Test ownership check uses correct database filters"""
-    #     #Mock the query chain and capture the filter calls
-    #     #Call provider_owns_machine
-    #     #Verify both machine_id and provider_id filters were applied

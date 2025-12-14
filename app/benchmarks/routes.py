@@ -9,8 +9,6 @@ from app.users.models import User, UserRole
 
 router = APIRouter()
 
-#consider: more upfront validation if authorization is refactored
-#consider: pass BenchmarkCreate payload instead of as individual parameters
 #Provider upload
 @router.post("/machines/{machine_id}", response_model=BenchmarkRead, status_code=201)
 def create_machine_benchmark(

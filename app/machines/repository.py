@@ -5,6 +5,7 @@ from .schemas import MachineCreate
 
 
 class MachinesRepository:
+    
     def create_machine(self, db: Session, machine_data: MachineCreate):
         """Payload for machine creation"""
         db_machine = Machine(

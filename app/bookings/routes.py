@@ -12,6 +12,8 @@ All business logic lives in bookings_service.py.
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from uuid import UUID
+from typing import List
 
 from app.auth.auth import get_current_user
 from .permissions import (
@@ -21,6 +23,7 @@ from .permissions import (
     can_end_session,
 )
 
+from .models import BookingStatus
 from .schemas import (
     BookingRead,
     BookingRequest,
@@ -30,17 +33,11 @@ from .service import (
     BookingsService,
     get_bookings_service,
 )
-from app.users.models import User, UserRole  #until users domain migration
-
-from uuid import UUID
+from app.users.models import User, UserRole
+from app.payments.models import PaymentStatus
 
 from app.payments.public import PaymentsPublic, get_payments_public
-
-from app.payments.models import PaymentStatus #refactor: different domain model
-from .models import BookingStatus
-
 from app.organizations.public import get_organizations_public, OrganizationsPublic
-from typing import List
 
 
 router = APIRouter()
@@ -59,14 +56,13 @@ def create_booking(
     if user.role == UserRole.ADMIN:
         try:
             return service.admin_create_booking(payload=booking)
-        except ValueError as e: #NotFound -> 404 ValidationError ||| InvalidStateTransition → 400 / 409
+        except ValueError as e:
             raise HTTPException(status_code=404, detail=str(e)) 
-    #explicitly reject non admins
     else:
         raise HTTPException(403)
 
 
-@router.get("/", response_model=list[BookingRead])  #actor_user_id=user.id
+@router.get("/", response_model=list[BookingRead])
 def list_bookings(
     user: User = Depends(get_current_user),
     service: BookingsService = Depends(get_bookings_service),
@@ -83,10 +79,9 @@ def list_bookings(
     if user.role == UserRole.ADMIN:
         return service.list_all_bookings()
     
-    else:   #Add route for org admins (should see all bookings in their ORGANIZATION only)
+    else:
         raise HTTPException(403)
 
-#consider: legacy request
 @router.post("/request", response_model=BookingRead)
 def request_booking(
     booking: BookingRequest,
@@ -99,7 +94,7 @@ def request_booking(
     """
     try:
         return service.request_booking(user.id, payload=booking)
-    except ValueError as e: #NotFound -> 404 ValidationError ||| InvalidStateTransition → 400 / 409
+    except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
 @router.post("/request-with-payment", response_model=BookingRead)

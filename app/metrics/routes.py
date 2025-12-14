@@ -12,8 +12,8 @@ from .schemas import (
 
 from app.auth.auth import get_current_user
 
-router = APIRouter()
 
+router = APIRouter()
 
 # Provider (authenticated) ingestion endpoint
 @router.post(
@@ -38,13 +38,11 @@ def ingest_metric_sample(
             provider_id=user.id,
         )
     except ValueError as e:
-        #consider: machine not found
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e),
         )
     except PermissionError as e:
-        #consider: provider does not own machine
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=str(e),

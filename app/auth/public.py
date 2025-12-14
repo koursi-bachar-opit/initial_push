@@ -6,6 +6,7 @@ from app.auth.auth import get_current_user
 
 
 class AuthPublic(Protocol):
+    
     """Public interface for authentication and authorization checks."""
     def ensure_buyer(self) -> None:
         ...

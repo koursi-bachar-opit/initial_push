@@ -6,6 +6,7 @@ from .models import Payment, PaymentType, PaymentStatus
 
 
 class PaymentsRepository:
+    
     def create_payment(self, db: Session, payment: Payment) -> Payment:
         db.add(payment)
         db.commit()

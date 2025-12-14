@@ -5,41 +5,31 @@ from jinja2 import Environment, FileSystemLoader
 
 from .ports.email_port import EmailPort
 
-#consider: old template
-# class NotificationsService:
-#     def __init__(self, email_port: EmailPort, template_dir: str):
-#         self.email_port = email_port
-
-#         #load Jinja2 environment for email templates
-#         self.jinja_env = Environment(
-#             loader=FileSystemLoader(template_dir),
-#             autoescape=True
-#         )
 
 class NotificationsService:
     def __init__(self, email_port: EmailPort, template_dir: str):
         self.email_port = email_port
 
-        #Better path handling
+        # Better path handling
         from pathlib import Path
         
         template_path = Path(template_dir)
         if not template_path.is_absolute():
-            #If relative path, make it absolute relative to current file
+            # If relative path, make it absolute relative to current file
             template_path = Path(__file__).parent / template_dir
         
         print(f"Loading templates from: {template_path}")
         
-        #Ensure directory exists
+        # Ensure directory exists
         template_path.mkdir(parents=True, exist_ok=True)
         
-        #Load Jinja2 environment for email templates
+        # Load Jinja2 environment for email templates
         self.jinja_env = Environment(
             loader=FileSystemLoader(str(template_path)),
             autoescape=True
         )
 
-    #Internal render and send helpers
+    # Internal render and send helpers
     def _render(self, template_name: str, context: Dict) -> str:
         template = self.jinja_env.get_template(template_name)
         return template.render(**context)
@@ -48,7 +38,7 @@ class NotificationsService:
         html = self._render(template, context)
         self.email_port.send_email(to, subject, html)
 
-    #Booking emails
+    # Booking emails
     def send_booking_confirmation(self, user, booking):
         self._send(
             to=user.email,
@@ -81,7 +71,7 @@ class NotificationsService:
             context={"user": user, "booking": booking, "reason": reason},
         )
 
-    #Payment emails
+    # Payment emails
     def send_payment_captured(self, user, payment):
         self._send(
             to=user.email,
@@ -106,7 +96,7 @@ class NotificationsService:
             context={"user": user, "payment": payment},
         )
 
-    #Credentials emails
+    # Credentials emails
     def send_credentials_issued(self, user, credential):
         self._send(
             to=user.email,
@@ -123,7 +113,7 @@ class NotificationsService:
             context={"user": user, "credential": credential},
         )
 
-    #Dispute emails
+    # Dispute emails
     def send_dispute_opened(self, dispute, user):
         self._send(
             to=user.email,
@@ -140,7 +130,7 @@ class NotificationsService:
             context={"dispute": dispute, "user": user},
         )
 
-    #Compliance emails
+    # Compliance emails
     def send_wipe_proof_submitted(self, provider, booking, attestation):
         self._send(
             to=provider.email,
@@ -165,7 +155,7 @@ class NotificationsService:
             context={"provider": provider, "reason": reason},
         )
 
-    #Invoice emails
+    # Invoice emails
     def send_invoice_generated(self, organization, invoice):
         self._send(
             to=organization.billing_email,
@@ -182,7 +172,7 @@ class NotificationsService:
             context={"organization": organization, "invoice": invoice},
         )
 
-    #Provider/metrics Alerts
+    # Provider/metrics Alerts
     def send_provider_alert(self, provider, message: str):
         self._send(
             to=provider.email,

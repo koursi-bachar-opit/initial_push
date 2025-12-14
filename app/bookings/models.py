@@ -17,6 +17,7 @@ class BookingStatus(str, Enum):
     CANCELLED = "cancelled"
 
 class Booking(Base):
+    
     __tablename__ = "bookings"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -64,7 +65,6 @@ class Booking(Base):
     usage_seconds = Column(Numeric(precision=10, scale=2), nullable=True)
     currency = Column(String(length=3), nullable=False, default="USD")
 
-    #refactor: default status pending_payment
     status = Column(
         SQLEnum(BookingStatus, name="bookingstatus", native_enum=False),
         nullable=False,

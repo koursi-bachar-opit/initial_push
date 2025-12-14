@@ -17,6 +17,7 @@ class InvoiceStatus(str, Enum):
     VOID = "void"
 
 class Invoice(Base):
+    
     __tablename__ = "invoices"
 
     id = Column(

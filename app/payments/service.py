@@ -121,14 +121,14 @@ class PaymentsService:
             type=PaymentType.REFUND,
             amount=captured_payment.amount,
             currency=captured_payment.currency,
-            processor_ref=captured_payment.processor_ref,  # Or generate a new refund ID
+            processor_ref=captured_payment.processor_ref, 
             status=PaymentStatus.REFUNDED,
         )
         
         return self.repo.create_payment(self.db, refund_payment)
 
-    #query
-    def list_for_booking(self, booking_id):    #consider: takes booking ID to pass tests, many others still take full object
+    # Query
+    def list_for_booking(self, booking_id):
         return self.repo.list_payments_for_booking(self.db, booking_id)
     
     def get_payments_for_bookings(self, booking_ids: list[UUID]):

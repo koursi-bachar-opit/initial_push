@@ -7,6 +7,7 @@ from app.listings.models import Listing
 
 
 class BookingsRepository:
+    
     def create_booking(self, db: Session, booking: Booking) -> Booking: 
         db.add(booking)
         db.commit()

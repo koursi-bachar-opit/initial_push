@@ -10,7 +10,7 @@ from typing import Optional
 from app.users.models import User, UserRole
 from app.auth.auth import require_roles, get_current_user
 
-from .schemas import ListingCreate, ListingRead, ListingFilter #, ListingFilter
+from .schemas import ListingCreate, ListingRead, ListingFilter
 from .service import ListingsService, get_listings_service
 
 
@@ -38,7 +38,6 @@ def create_listing(
     except ValueError as e:
         raise HTTPException(status_code=403)
 
-#consider: loads listings and attaches metrics to display for customers, not attached asynchronously
 @router.get("/search")
 def search_listings_by_name(
     name: str = "",

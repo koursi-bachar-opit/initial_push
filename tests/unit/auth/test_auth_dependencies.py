@@ -5,6 +5,7 @@ from app.auth.auth import extract_token, get_current_user, optional_user, requir
 
 
 class TestAuthDependencies:
+    
     def test_extract_token_from_header(self):
         """Test token extraction from Authorization header"""
         mock_credentials = Mock()
@@ -124,8 +125,6 @@ class TestAuthDependencies:
             
             assert result is None
 
-    #refactor: require_roles is a decorator factory - hard to test directly
-    # Consider extracting the role checking logic to make it more testable
     def test_require_roles_decorator_with_valid_role(self):
         """Test require_roles allows access with valid role"""
         mock_user = Mock()

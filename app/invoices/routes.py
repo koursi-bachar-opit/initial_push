@@ -4,7 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.auth.public import ensure_admin
-from app.organizations.public import OrganizationsPublic, get_organizations_public #type: ignore
+from app.organizations.public import OrganizationsPublic, get_organizations_public
 from app.auth.auth import get_current_user
 from app.invoices.schemas import InvoiceCreate, InvoiceListItem, InvoiceRead
 from app.invoices.service import InvoicesService, get_invoice_service
@@ -14,7 +14,6 @@ from app.users.models import User, UserRole
 router = APIRouter()
 
 
-#Helpers
 def _user_org_ids(current_user) -> list[UUID]:
     """
     Adjust to user/org membership representation.

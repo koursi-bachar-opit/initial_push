@@ -47,9 +47,6 @@ class TestMachinesService:
 
     def test_get_machine_returns_machine_when_exists(self, machines_service, mock_db, mock_repository):
         """Test successful machine retrieval"""
-        #Mock repository.get_machine to return a machine
-        #Call service.get_machine with UUID
-        #Verify the machine is returned
         mock_existing_machine = Mock(spec=Machine)
         machine_id = uuid4()
         
@@ -62,9 +59,6 @@ class TestMachinesService:
 
     def test_get_machine_raises_error_when_not_found(self, machines_service, mock_db, mock_repository):
         """Test error when machine doesn't exist"""
-        #Mock repository.get_machine to return None
-        #Call service.get_machine with UUID
-        #Verify ValueError is raised with correct message
         machine_id = uuid4()
 
         mock_repository.get_machine.return_value = None
@@ -76,9 +70,6 @@ class TestMachinesService:
 
     def test_list_machines_for_provider_delegates_to_repository(self, machines_service, mock_db, mock_repository):
         """Test listing machines delegates to repository"""
-        #Mock repository.list_machines_for_provider to return machines
-        #Call service.list_machines_for_provider with provider UUID
-        #Verify repository method was called and result returned
         mock_machines = [Mock(spec=Machine), Mock(spec=Machine)]
         provider_id = uuid4()
 
@@ -91,9 +82,6 @@ class TestMachinesService:
 
     def test_create_machine_delegates_to_repository(self, machines_service, mock_db, mock_repository, sample_machine_data):
         """Test machine creation delegates to repository"""
-        #Mock repository.create_machine to return a machine
-        #Call service.create_machine with MachineCreate payload
-        #Verify repository method was called and result returned
         mock_machine = Mock(spec=Machine)
         
         mock_repository.create_machine.return_value = mock_machine
@@ -105,10 +93,6 @@ class TestMachinesService:
 
     def test_delete_machine_successfully_deletes_owned_machine(self, machines_service, mock_db, mock_repository):
         """Test successful deletion when provider owns machine"""
-        #Mock repository.get_machine to return owned machine
-        #Mock repository.delete_machine
-        #Call service.delete_machine with owner's provider_id
-        #Verify repository.delete_machine was called with the machine
         owner_id = uuid4()
         machine_id = uuid4()
         mock_machine = Mock(spec=Machine)
@@ -123,9 +107,6 @@ class TestMachinesService:
 
     def test_delete_machine_raises_error_when_machine_not_found(self, machines_service, mock_db, mock_repository):
         """Test error when deleting non-existent machine"""
-        #Mock repository.get_machine to return None
-        #Call service.delete_machine
-        #Verify ValueError is raised
         machine_id = uuid4()
         provider_id = uuid4()
 
@@ -138,9 +119,6 @@ class TestMachinesService:
 
     def test_delete_machine_raises_error_when_not_owner(self, machines_service, mock_db, mock_repository):
         """Test error when provider doesn't own machine"""
-        #Mock repository.get_machine to return machine with different owner
-        #Call service.delete_machine with different provider_id
-        #Verify ValueError is raised
         owner_a_id = uuid4()
         owner_b_id = uuid4()
         machine_id = uuid4()

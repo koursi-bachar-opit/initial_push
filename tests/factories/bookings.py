@@ -5,7 +5,6 @@ from test_config import TestConfig
 
 
 def booking_payload(listing_id, buyer_user_id=None, **overrides):
-    # default window: now to 1 hour from now, but can be overridden by tests
     start = datetime.now(timezone.utc)
     end = start + timedelta(hours=1)
 

@@ -29,15 +29,3 @@ def test_list_listings_public(client, db_session):
     assert any(item.get('listing', {}).get('title') == TestConfig.DEFAULT_LISTING_TITLE 
                for item in data), \
         f"No listing found with title = {TestConfig.DEFAULT_LISTING_TITLE}"
-
-# def test_list_listings_public(client, db_session):
-#     """
-#     The public show listings endpoint works.
-#     """
-#     api = ApiClient(client)
-#     create_listing(client, db_session)
-
-#     resp = client.get("/api/v1/listings/")
-#     assert_status_code(resp, 200)
-#     assert_is_list(resp)
-#     assert_any_item_contains(resp, "title", TestConfig.DEFAULT_LISTING_TITLE)

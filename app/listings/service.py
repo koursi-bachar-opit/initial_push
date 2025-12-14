@@ -13,10 +13,6 @@ from app.providers.public import ProvidersPublic, get_providers_public
 from app.provider_agent.client import ProviderAgentClient, get_agent_client
 from app.metrics.public import MetricsPublic, get_metrics_public
 
-#refactor: permissions
-# class MachineOwnershipError(Exception):
-#     """Raised when a provider tries to list a machine they do not own."""
-#     pass
 
 class ListingsService:
     def __init__(
@@ -45,7 +41,7 @@ class ListingsService:
         if not self.machines_public.provider_owns_machine(
             provider_id, payload.machine_id
         ):
-            raise ValueError("You must own this machine.")  #consider: raise MachineOwnershipError()
+            raise ValueError("You must own this machine.")  
 
         #Create listing in repository
         listing = Listing(**payload.model_dump())
@@ -86,8 +82,6 @@ class ListingsService:
         
         return enhanced_listings
     
-    #consider: metrics collection in listings
-    #refactor: move to provider agent client and call when listing is found
     def search_listings_by_name(self, name: str):
         """Search listings by name with real-time metrics - for customer search."""
         if not name.strip():

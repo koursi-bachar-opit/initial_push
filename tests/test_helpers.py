@@ -4,13 +4,13 @@ from factories.users import auth_headers_for, create_user
 
 class ApiClient:
     """
-    We use these wrappers around test client to provide
+    These wrappers are used around test client to provide
     consistent endpoint construction and common operations.
     """
     def __init__(self, client):
         self.client = client
     
-    #URL construction
+    # URL construction
     def booking_url(self, booking_id=None, action=None):
         """Construct booking-related URLs."""
         base = f"{TestConfig.BASE_URL}/bookings"
@@ -31,7 +31,7 @@ class ApiClient:
         base = f"{TestConfig.BASE_URL}/machines"
         return f"{base}/{machine_id}" if machine_id else base
     
-    #Common operations
+    # Common operations
     def put_booking_action(self, booking_id, action, role="admin"):
         """Perform booking actions (confirm, cancel, start, end)."""
         email = TestConfig.ADMIN_EMAIL if role == "admin" else getattr(TestConfig, f"{role.upper()}_EMAIL")

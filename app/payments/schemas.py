@@ -31,3 +31,8 @@ class PaymentRead(BaseModel):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+class CheckoutRequest(BaseModel):
+    booking_id: UUID
+    amount: float
+    currency: str = "USD"

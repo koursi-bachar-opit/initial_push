@@ -15,6 +15,7 @@ class ListingStatus(str, Enum):
     ARCHIVED = "archived"
 
 class Listing(Base):
+    
     __tablename__ = "listings"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

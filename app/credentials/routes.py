@@ -28,7 +28,7 @@ def get_buyer_credentials(
             detail="You do not own this booking.",
         )
 
-    creds = service.get_for_booking(booking) #consider: mixed passing of booking object and booking id
+    creds = service.get_for_booking(booking)
     return {"credentials": creds}
 
 @router.get("/provider/{booking_id}")
@@ -51,5 +51,5 @@ def get_provider_credentials(
             detail="You are not the provider of this machine.",
         )
 
-    creds = service.get_for_booking(booking) #consider: mixed passing of booking object and booking id
+    creds = service.get_for_booking(booking)
     return {"credentials": creds}

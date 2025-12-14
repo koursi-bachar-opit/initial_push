@@ -7,6 +7,7 @@ from .models import AccessCredential
 
 
 class AccessCredentialRepository:
+
     def create(self, db: Session, booking_id, vpn_config_uri, ssh_public_key_fingerprint):
         """"Create credentials with booking_id as reference information"""
         credential = AccessCredential(
@@ -37,7 +38,7 @@ class AccessCredentialRepository:
         result = db.execute(stmt)
         credential = result.scalar_one_or_none()
 
-        if credential is None:  #consider: use this pattern more consistently for DB operations
+        if credential is None:
             return None
 
         credential.revoked_at = datetime.now(timezone.utc)

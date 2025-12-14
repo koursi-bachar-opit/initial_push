@@ -74,7 +74,6 @@ def sample_booking():
     booking.id = uuid4()
     booking.buyer_user_id = uuid4()
     
-    # Create mock machine structure
     mock_machine = Mock()
     mock_machine.provider_id = uuid4()
     
