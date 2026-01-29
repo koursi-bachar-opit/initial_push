@@ -44,56 +44,7 @@
         </div>
       </div>
     </section>
-    
-    <!-- Floating Cards Section with Parallax -->
-    <section class="cards-section py-20 relative z-10">
-      <div class="max-w-7xl mx-auto px-6">
-        <div class="text-center mb-16">
-          <h2 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-            Why Choose Our Platform?
-          </h2>
-          <p class="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto text-lg">
-            Experience the future of cloud computing with our innovative features
-          </p>
-        </div>
-        
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <!-- Card 1 -->
-          <div class="card-item bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-2xl p-8 border border-white/20 dark:border-gray-700/20 shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2">
-            <div class="icon-wrapper mb-6 inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 text-white text-3xl">
-              ⚡
-            </div>
-            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Instant Access</h3>
-            <p class="text-gray-600 dark:text-gray-300">
-              Deploy compute power from trusted providers with zero setup time. Launch servers in seconds, not days.
-            </p>
-          </div>
-          
-          <!-- Card 2 -->
-          <div class="card-item bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-2xl p-8 border border-white/20 dark:border-gray-700/20 shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 delay-100">
-            <div class="icon-wrapper mb-6 inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 text-white text-3xl">
-              🔒
-            </div>
-            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Secure Sessions</h3>
-            <p class="text-gray-600 dark:text-gray-300">
-              Your sessions are isolated, protected, and wiped after usage. Enterprise-grade security for every deployment.
-            </p>
-          </div>
-          
-          <!-- Card 3 -->
-          <div class="card-item bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-2xl p-8 border border-white/20 dark:border-gray-700/20 shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 delay-200">
-            <div class="icon-wrapper mb-6 inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-600 text-white text-3xl">
-              💻
-            </div>
-            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Real Providers</h3>
-            <p class="text-gray-600 dark:text-gray-300">
-              Users and organizations list their actual hardware — no cloud intermediaries. Direct access to real resources.
-            </p>
-          </div>
-        </div>
-      </div>
-    </section>
-    
+
     <!-- REACT Showcase -->
     <section id="react-showcase" class="py-20 relative z-10">
       <div id="react-root"></div>
@@ -130,9 +81,10 @@
 </div> <!-- End parallax-container -->
 
 <!-- Parallax JavaScript -->
+<!-- All JavaScript in one place -->
 <script>
   document.addEventListener('DOMContentLoaded', function() {
-    // Simple parallax effect
+    // 1. Simple parallax effect
     const parallaxContainer = document.querySelector('.parallax-container');
     const bgLayers = document.querySelectorAll('.parallax-bg, .parallax-bg-2, .parallax-bg-3');
     const cardItems = document.querySelectorAll('.card-item');
@@ -158,7 +110,7 @@
       });
     }
     
-    // Smooth scroll for anchor links
+    // 2. Smooth scroll for anchor links
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
       anchor.addEventListener('click', function (e) {
         e.preventDefault();
@@ -171,22 +123,8 @@
         }
       });
     });
-  });
-</script>
-
-<!-- INLINE SCRIPT - Load React -->
-<script>
-  // Try to load React
-  const script = document.createElement('script');
-  script.src = '/static/react/assets/index.js';
-  script.type = 'module';
-  document.body.appendChild(script);
-</script>
-
-<!-- Add this script AFTER your existing parallax JavaScript but BEFORE the closing block -->
-<script>
-  // Intersection Observer for fade-in animations
-  document.addEventListener('DOMContentLoaded', function() {
+    
+    // 3. Intersection Observer for fade-in animations
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
@@ -199,6 +137,12 @@
       observer.observe(section);
     });
   });
+  
+  // 4. Load React (outside DOMContentLoaded so it loads immediately)
+  const script = document.createElement('script');
+  script.src = '/static/react/assets/index.js';
+  script.type = 'module';
+  document.body.appendChild(script);
 </script>
 
 {% endblock %}
