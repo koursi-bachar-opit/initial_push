@@ -1,7 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import App from './App.tsx'
 import { DashboardApp } from './DashboardApp.tsx'
+import App from './App.tsx'
 import './index.css'
 
 function mountReactApp() {
@@ -12,27 +12,43 @@ function mountReactApp() {
     return;
   }
 
-  // Determine which app to load based on URL
-  const isDashboard = window.location.pathname.includes('/dashboard');
-  
   try {
+    const currentPath = window.location.pathname.toLowerCase();
+    const userRole = localStorage.getItem('user_role') || 'buyer';
     const root = ReactDOM.createRoot(rootElement);
     
-    if (isDashboard) {
-      root.render(
-        <React.StrictMode>
-          <DashboardApp />
-        </React.StrictMode>
-      );
-      console.log('Dashboard React app mounted');
-    } else {
+    console.log('Current path:', currentPath);
+    console.log('User role:', userRole);
+    
+    // More specific path checking
+    const isHomePage = currentPath === '/' || 
+                      currentPath === '/index.html' || 
+                      currentPath.includes('/home') ||
+                      currentPath === '';
+    
+    const isDashboardPage = currentPath.includes('/dashboard');
+    
+    if (isHomePage) {
+      // Homepage - mount Homepage App
+      console.log('Mounting Homepage App');
       root.render(
         <React.StrictMode>
           <App />
         </React.StrictMode>
       );
-      console.log('Homepage React app mounted');
+    } else if (isDashboardPage) {
+      // Dashboard - mount Dashboard App
+      console.log('Mounting Dashboard App');
+      root.render(
+        <React.StrictMode>
+          <DashboardApp userRole={userRole} />
+        </React.StrictMode>
+      );
+    } else {
+      // Other pages - could mount different app or nothing
+      console.log('Not homepage or dashboard, not mounting React');
     }
+    
   } catch (error) {
     console.error('Error mounting React app:', error);
   }
