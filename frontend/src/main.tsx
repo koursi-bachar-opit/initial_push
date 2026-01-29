@@ -1,53 +1,67 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { DashboardApp } from './DashboardApp.tsx'
+import { ListingsApp } from './ListingsApp.tsx' // Import the ListingsApp
 import App from './App.tsx'
 import './index.css'
 
 function mountReactApp() {
-  const rootElement = document.getElementById('react-root');
+  // Check for different root elements based on page
+  const listingsRoot = document.getElementById('react-listings-root');
+  const dashboardRoot = document.getElementById('react-dashboard-root');
+  const homepageRoot = document.getElementById('react-homepage-root');
+  const defaultRoot = document.getElementById('react-root'); // Fallback
   
-  if (!rootElement) {
-    console.log('No react-root element found');
-    return;
-  }
+  const currentPath = window.location.pathname.toLowerCase();
+  
+  console.log('Current path:', currentPath);
+  console.log('Available roots:', {
+    listingsRoot: !!listingsRoot,
+    dashboardRoot: !!dashboardRoot,
+    homepageRoot: !!homepageRoot,
+    defaultRoot: !!defaultRoot
+  });
 
   try {
-    const currentPath = window.location.pathname.toLowerCase();
     const userRole = localStorage.getItem('user_role') || 'buyer';
-    const root = ReactDOM.createRoot(rootElement);
     
-    console.log('Current path:', currentPath);
-    console.log('User role:', userRole);
-    
-    // More specific path checking
-    const isHomePage = currentPath === '/' || 
-                      currentPath === '/index.html' || 
-                      currentPath.includes('/home') ||
-                      currentPath === '';
-    
-    const isDashboardPage = currentPath.includes('/dashboard');
-    
-    if (isHomePage) {
-      // Homepage - mount Homepage App
-      console.log('Mounting Homepage App');
+    // Check for listings page
+    if (listingsRoot || (currentPath.includes('/listings') && defaultRoot)) {
+      console.log('Mounting ListingsApp on listings page');
+      const root = ReactDOM.createRoot(listingsRoot || defaultRoot!);
       root.render(
         <React.StrictMode>
-          <App />
+          <ListingsApp />
         </React.StrictMode>
       );
-    } else if (isDashboardPage) {
-      // Dashboard - mount Dashboard App
-      console.log('Mounting Dashboard App');
+      return;
+    }
+    
+    // Check for dashboard page
+    if (dashboardRoot || (currentPath.includes('/dashboard') && defaultRoot)) {
+      console.log('Mounting DashboardApp on dashboard page');
+      const root = ReactDOM.createRoot(dashboardRoot || defaultRoot!);
       root.render(
         <React.StrictMode>
           <DashboardApp userRole={userRole} />
         </React.StrictMode>
       );
-    } else {
-      // Other pages - could mount different app or nothing
-      console.log('Not homepage or dashboard, not mounting React');
+      return;
     }
+    
+    // Check for homepage
+    if (homepageRoot || (currentPath === '/' && defaultRoot)) {
+      console.log('Mounting App on homepage');
+      const root = ReactDOM.createRoot(homepageRoot || defaultRoot!);
+      root.render(
+        <React.StrictMode>
+          <App />
+        </React.StrictMode>
+      );
+      return;
+    }
+    
+    console.log('No React app mounted for current page');
     
   } catch (error) {
     console.error('Error mounting React app:', error);
@@ -60,37 +74,3 @@ if (document.readyState === 'loading') {
 } else {
   mountReactApp();
 }
-
-
-// import React from 'react'
-// import ReactDOM from 'react-dom/client'
-// import App from './App.tsx'
-// import './index.css'
-
-// // Function to mount React app
-// function mountReactApp() {
-//   const rootElement = document.getElementById('react-root')
-  
-//   if (!rootElement) {
-//     console.log('React root element not found - skipping React mount')
-//     return
-//   }
-
-//   try {
-//     ReactDOM.createRoot(rootElement).render(
-//       <React.StrictMode>
-//         <App />
-//       </React.StrictMode>
-//     )
-//     console.log('React app mounted successfully')
-//   } catch (error) {
-//     console.error('Failed to mount React app:', error)
-//   }
-// }
-
-// // Mount when DOM is ready
-// if (document.readyState === 'loading') {
-//   document.addEventListener('DOMContentLoaded', mountReactApp)
-// } else {
-//   mountReactApp()
-// }
