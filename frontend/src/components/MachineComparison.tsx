@@ -15,11 +15,6 @@ const MachineComparison = () => {
 
   const fetchMachines = async () => {
     try {
-      const response = await api.getFeaturedMachines();
-      setMachines(response.data.data || []);
-    } catch (error) {
-      console.error('Error fetching machines:', error);
-      // Mock data for demo
       setMachines([
         {
           id: '1',
@@ -56,6 +51,10 @@ const MachineComparison = () => {
           updated_at: new Date().toISOString(),
         },
       ]);
+    } catch (error) {
+      console.log("Couldn't get featured machines.")
+      //const response = await api.getFeaturedMachines();
+      //setMachines(response.data.data || []);
     } finally {
       setLoading(false);
     }

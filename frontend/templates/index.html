@@ -26,7 +26,7 @@
 </section>
 
 <!--Value propositions/marketing text-->
-<section class="mt-20 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+<!-- <section class="mt-20 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
 
     <div class="p-6 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition">
         <div class="mb-4 text-blue-600 text-4xl">⚡</div>
@@ -52,7 +52,17 @@
         </p>
     </div>
 
+</section> -->
+
+
+
+
+<!-- REACT -->
+<section id="react-showcase" class="mt-20">
+    <!-- React app mount point -->
+    <div id="react-root"></div>
 </section>
+
 
 <!--Second CTA-->
 <section class="mt-20 text-center">
@@ -67,4 +77,60 @@
     </a>
 </section>
 
+
+<!-- INLINE SCRIPT - NOT IN BLOCK -->
+<script>
+    // Try to load React
+    const script = document.createElement('script');
+    script.src = '/static/react/assets/index.js';
+    script.type = 'module';
+
+    document.body.appendChild(script);
+</script>
+
+
+{% endblock %}
+
+
+
+
+{% block scripts %}
+{{ super() }}
+{% if react_enabled %}
+<!-- DIRECT SCRIPT TAG - NO DYNAMIC CREATION -->
+<script type="module" src="/static/react/assets/index.js"></script>
+
+<!-- DEBUG SCRIPT -->
+<script>
+    // This will confirm scripts are running
+    console.log('React integration script executing');
+    
+    // Add a visible indicator
+    const indicator = document.createElement('div');
+    indicator.id = 'react-debug-indicator';
+    indicator.style.cssText = 'position: fixed; bottom: 10px; right: 10px; background: #4CAF50; color: white; padding: 8px 12px; border-radius: 4px; z-index: 9999; font-size: 12px;';
+    indicator.textContent = 'React loading...';
+    document.body.appendChild(indicator);
+    
+    // Monitor React loading
+    let reactLoaded = false;
+    const checkReact = setInterval(() => {
+        const root = document.getElementById('react-root');
+        if (root && root.children.length > 0) {
+            reactLoaded = true;
+            indicator.textContent = '✅ React loaded';
+            indicator.style.background = '#2196F3';
+            clearInterval(checkReact);
+        }
+    }, 100);
+    
+    // Timeout after 5 seconds
+    setTimeout(() => {
+        if (!reactLoaded) {
+            indicator.textContent = '❌ React timeout';
+            indicator.style.background = '#f44336';
+        }
+    }, 5000);
+</script>
+{% endif %}
 {% endblock %}
