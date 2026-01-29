@@ -1,68 +1,74 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { DashboardApp } from './DashboardApp.tsx'
-import { ListingsApp } from './ListingsApp.tsx' // Import the ListingsApp
+import { ListingsApp } from './ListingsApp.tsx'
 import App from './App.tsx'
 import './index.css'
 
 function mountReactApp() {
-  // Check for different root elements based on page
-  const listingsRoot = document.getElementById('react-listings-root');
-  const dashboardRoot = document.getElementById('react-dashboard-root');
-  const homepageRoot = document.getElementById('react-homepage-root');
-  const defaultRoot = document.getElementById('react-root'); // Fallback
-  
+  // Get the current path and convert to lowercase
   const currentPath = window.location.pathname.toLowerCase();
   
   console.log('Current path:', currentPath);
-  console.log('Available roots:', {
-    listingsRoot: !!listingsRoot,
-    dashboardRoot: !!dashboardRoot,
-    homepageRoot: !!homepageRoot,
-    defaultRoot: !!defaultRoot
-  });
+  console.log('Current URL:', window.location.href);
 
-  try {
+  // Try to find any of the possible root elements
+  const roots = [
+    'react-listings-root',
+    'react-dashboard-root', 
+    'react-homepage-root',
+    'react-root'
+  ];
+
+  let targetRoot = null;
+  let appToMount = null;
+
+  // Check which root element exists on the page
+  for (const rootId of roots) {
+    const element = document.getElementById(rootId);
+    if (element) {
+      console.log(`Found root element: ${rootId}`);
+      targetRoot = element;
+      break;
+    }
+  }
+
+  // If no specific root found, use body or create one
+  if (!targetRoot) {
+    console.log('No specific root found, checking for listings in path...');
+    
+    // Create a new root element if needed
+    const newRoot = document.createElement('div');
+    newRoot.id = 'react-app-root';
+    document.body.appendChild(newRoot);
+    targetRoot = newRoot;
+  }
+
+  // Determine which app to mount based on URL path
+  if (currentPath.includes('/listings') || currentPath.includes('/browse')) {
+    console.log('Mounting ListingsApp');
+    appToMount = <ListingsApp />;
+  } else if (currentPath.includes('/dashboard') || currentPath.includes('/account')) {
+    console.log('Mounting DashboardApp');
     const userRole = localStorage.getItem('user_role') || 'buyer';
-    
-    // Check for listings page
-    if (listingsRoot || (currentPath.includes('/listings') && defaultRoot)) {
-      console.log('Mounting ListingsApp on listings page');
-      const root = ReactDOM.createRoot(listingsRoot || defaultRoot!);
-      root.render(
-        <React.StrictMode>
-          <ListingsApp />
-        </React.StrictMode>
-      );
-      return;
-    }
-    
-    // Check for dashboard page
-    if (dashboardRoot || (currentPath.includes('/dashboard') && defaultRoot)) {
-      console.log('Mounting DashboardApp on dashboard page');
-      const root = ReactDOM.createRoot(dashboardRoot || defaultRoot!);
-      root.render(
-        <React.StrictMode>
-          <DashboardApp userRole={userRole} />
-        </React.StrictMode>
-      );
-      return;
-    }
-    
-    // Check for homepage
-    if (homepageRoot || (currentPath === '/' && defaultRoot)) {
-      console.log('Mounting App on homepage');
-      const root = ReactDOM.createRoot(homepageRoot || defaultRoot!);
-      root.render(
-        <React.StrictMode>
-          <App />
-        </React.StrictMode>
-      );
-      return;
-    }
-    
-    console.log('No React app mounted for current page');
-    
+    appToMount = <DashboardApp userRole={userRole} />;
+  } else if (currentPath === '/' || currentPath.includes('/home')) {
+    console.log('Mounting Homepage App');
+    appToMount = <App />;
+  } else {
+    console.log('Defaulting to App component');
+    appToMount = <App />;
+  }
+
+  // Mount the React app
+  try {
+    const root = ReactDOM.createRoot(targetRoot);
+    root.render(
+      <React.StrictMode>
+        {appToMount}
+      </React.StrictMode>
+    );
+    console.log('React app successfully mounted');
   } catch (error) {
     console.error('Error mounting React app:', error);
   }
