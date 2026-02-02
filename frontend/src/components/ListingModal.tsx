@@ -111,23 +111,23 @@ export const ListingModal: React.FC<ListingModalProps> = ({
       <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
         <div>
           <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{listing.title}</h3>
-          <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">{listing.machine.hostname}</p>
+          <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">{listing.machine?.hostname || 'Unknown Host'}</p>
         </div>
         <Badge color="blue" size="xl" className="text-lg">
           ${listing.hourly_price}/hr
         </Badge>
       </div>
       
-      {/* Custom Modal Body */}
-      <div className="p-6">
+      {/* Custom Modal Body - UPDATED with better height management */}
+      <div className="p-6" style={{ maxHeight: 'calc(100vh - 200px)', overflowY: 'auto' }}>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Left Column - Listing Details */}
           <div className="space-y-6">
             {/* Description */}
             <div>
               <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Description</h4>
-              <p className="text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
-                {listing.description || listing.machine.notes || 'High-performance compute server optimized for AI/ML workloads.'}
+              <p className="text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-900 p-4 rounded-lg min-h-[120px]">
+                {listing.description || listing.machine?.notes || 'High-performance compute server optimized for AI/ML workloads.'}
               </p>
             </div>
 
@@ -138,55 +138,103 @@ export const ListingModal: React.FC<ListingModalProps> = ({
                 <SpecCard
                   icon="💻"
                   title="CPU"
-                  value={`${listing.machine.cpu_model} (${listing.machine.cpu_cores} cores)`}
+                  value={`${listing.machine?.cpu_model || 'Unknown'} (${listing.machine?.cpu_cores || '?'} cores)`}
                   color="blue"
                 />
                 <SpecCard
                   icon="🧠"
                   title="RAM"
-                  value={`${listing.machine.ram_gb} GB`}
+                  value={`${listing.machine?.ram_gb || '?'} GB`}
                   color="purple"
                 />
                 <SpecCard
                   icon="🎮"
                   title="GPU"
-                  value={`${listing.machine.gpu_model} × ${listing.machine.gpu_count}`}
+                  value={`${listing.machine?.gpu_model || 'Unknown'} × ${listing.machine?.gpu_count || 1}`}
                   color="green"
                 />
                 <SpecCard
                   icon="💾"
                   title="VRAM"
-                  value={`${listing.machine.vram_gb} GB per GPU`}
+                  value={`${listing.machine?.vram_gb || '?'} GB per GPU`}
                   color="yellow"
                 />
                 <SpecCard
                   icon="💽"
                   title="Storage"
-                  value={`${listing.machine.storage_gb} GB`}
+                  value={`${listing.machine?.storage_gb || '?'} GB`}
                   color="red"
                 />
                 <SpecCard
                   icon="🌐"
                   title="Network"
-                  value={`${listing.machine.network_mbps} Mbps`}
+                  value={`${listing.machine?.network_mbps || '?'} Mbps`}
                   color="indigo"
                 />
               </div>
             </div>
 
-            {/* Benchmarks */}
+            {/* Benchmarks - UPDATED with better layout and minimum height */}
             {benchmarks.length > 0 && (
-              <div>
-                <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Performance Benchmarks</h4>
-                <div className="space-y-3">
+              <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 border border-purple-100 dark:border-purple-800 rounded-xl p-6 min-h-[300px]">
+                <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                  <svg className="w-5 h-5 text-purple-600 dark:text-purple-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z" clipRule="evenodd" />
+                  </svg>
+                  Performance Benchmarks
+                </h4>
+                
+                <div className="space-y-4">
                   {benchmarks.map((benchmark, index) => (
-                    <div key={index} className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 p-4 rounded-lg border border-purple-100 dark:border-purple-800">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h5 className="font-semibold text-gray-900 dark:text-white">{benchmark.name}</h5>
-                          <p className="text-2xl font-bold text-purple-600 dark:text-purple-400 mt-1">{benchmark.score}</p>
+                    <div 
+                      key={index} 
+                      className="bg-white dark:bg-gray-800 rounded-lg p-5 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow"
+                    >
+                      <div className="flex justify-between items-start mb-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <Badge color="purple" className="text-sm">
+                              {benchmark.category}
+                            </Badge>
+                            <h5 className="text-lg font-semibold text-gray-900 dark:text-white">
+                              {benchmark.name}
+                            </h5>
+                          </div>
+                          <p className="text-3xl font-bold text-purple-600 dark:text-purple-400 mt-2">
+                            {benchmark.score}
+                          </p>
                         </div>
-                        <Badge color="purple">{benchmark.category}</Badge>
+                      </div>
+                      
+                      {/* Contextual hardware info */}
+                      <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                          <div className="bg-gray-50 dark:bg-gray-900 p-2 rounded">
+                            <div className="text-gray-500 dark:text-gray-400">RAM</div>
+                            <div className="font-medium text-gray-900 dark:text-white">
+                              {listing.machine?.ram_gb || '?'} GB
+                            </div>
+                          </div>
+                          <div className="bg-gray-50 dark:bg-gray-900 p-2 rounded">
+                            <div className="text-gray-500 dark:text-gray-400">GPU</div>
+                            <div className="font-medium text-gray-900 dark:text-white">
+                              {listing.machine?.gpu_model || 'N/A'} 
+                              {listing.machine?.gpu_count > 1 ? ` ×${listing.machine.gpu_count}` : ''}
+                            </div>
+                          </div>
+                          <div className="bg-gray-50 dark:bg-gray-900 p-2 rounded">
+                            <div className="text-gray-500 dark:text-gray-400">Region</div>
+                            <div className="font-medium text-gray-900 dark:text-white">
+                              {listing.machine?.location_region || 'N/A'}
+                            </div>
+                          </div>
+                          <div className="bg-gray-50 dark:bg-gray-900 p-2 rounded">
+                            <div className="text-gray-500 dark:text-gray-400">CPU</div>
+                            <div className="font-medium text-gray-900 dark:text-white">
+                              {listing.machine?.cpu_model || 'N/A'}
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -327,14 +375,14 @@ export const ListingModal: React.FC<ListingModalProps> = ({
                     {loading ? (
                       <>
                         <Spinner size="sm" className="mr-2" />
-                        Processing...
+                        Processing Payment...
                       </>
                     ) : (
                       <>
                         <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                         </svg>
-                        Request Booking
+                        Proceed to Payment
                       </>
                     )}
                   </Button>
