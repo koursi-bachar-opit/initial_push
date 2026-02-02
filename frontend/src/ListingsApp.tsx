@@ -409,6 +409,51 @@ const clearFilters = () => {
           <p className="text-gray-600 dark:text-gray-300 mt-2">Find the perfect compute power for your needs</p>
         </div>
 
+        {/* Search Bar - ADD THIS SECTION */}
+        {!loading && !error && (
+          <div className="mb-6">
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              applyFilters();
+            }}>
+              <label htmlFor="search" className="block mb-2.5 text-sm font-medium text-gray-900 dark:text-white sr-only">
+                Search Listings
+              </label>
+              <div className="relative max-w-2xl mx-auto">
+                <div className="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
+                  <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+                    <path stroke="currentColor" strokeLinecap="round" strokeWidth="2" d="m21 21-3.5-3.5M17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z"/>
+                  </svg>
+                </div>
+                <input 
+                  type="search" 
+                  id="search" 
+                  value={filters.search}
+                  onChange={(e) => {
+                    setFilters({...filters, search: e.target.value});
+                  }}
+                  onKeyUp={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      applyFilters();
+                    }
+                  }}
+                  className="block w-full p-3 ps-9 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm placeholder:text-gray-500 dark:placeholder:text-gray-400" 
+                  placeholder="Search listings by title, hostname, or description..." 
+                  required 
+                />
+                <button 
+                  type="button" 
+                  onClick={applyFilters}
+                  className="absolute end-1.5 bottom-1.5 text-white bg-blue-600 hover:bg-blue-700 border border-transparent focus:ring-4 focus:ring-blue-300 shadow-sm font-medium rounded text-xs px-3 py-1.5 focus:outline-none dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                >
+                  Search
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Filters Sidebar - Only show when not loading and no error */}
           {!loading && !error && (

@@ -23,7 +23,6 @@ export const ListingModal: React.FC<ListingModalProps> = ({
   const [totalPrice, setTotalPrice] = useState(0);
   const [loading, setLoading] = useState(false);
   const [benchmarks, setBenchmarks] = useState<any[]>([]);
-  const [showBookingForm, setShowBookingForm] = useState(false);
   const [organizations, setOrganizations] = useState<any[]>([]);
   const [selectedOrg, setSelectedOrg] = useState<string | null>(null);
 
@@ -118,7 +117,7 @@ export const ListingModal: React.FC<ListingModalProps> = ({
         </Badge>
       </div>
       
-      {/* Custom Modal Body - UPDATED with better height management */}
+      {/* Custom Modal Body */}
       <div className="p-6" style={{ maxHeight: 'calc(100vh - 200px)', overflowY: 'auto' }}>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Left Column - Listing Details */}
@@ -174,7 +173,7 @@ export const ListingModal: React.FC<ListingModalProps> = ({
               </div>
             </div>
 
-            {/* Benchmarks - UPDATED with better layout and minimum height */}
+            {/* Benchmarks */}
             {benchmarks.length > 0 && (
               <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 border border-purple-100 dark:border-purple-800 rounded-xl p-6 min-h-[300px]">
                 <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
@@ -243,151 +242,144 @@ export const ListingModal: React.FC<ListingModalProps> = ({
             )}
           </div>
 
-          {/* Right Column - Booking Form */}
+          {/* Right Column - Booking Form (ALWAYS VISIBLE) */}
           <div className="space-y-6">
-            {/* Booking Form Toggle */}
-            <div className="flex items-center justify-between">
-              <h4 className="text-lg font-semibold text-gray-900 dark:text-white">Book This Server</h4>
-              <Button
-                color={showBookingForm ? "light" : "blue"}
-                onClick={() => setShowBookingForm(!showBookingForm)}
-              >
-                {showBookingForm ? 'Hide Form' : 'Show Booking'}
-              </Button>
+            {/* Booking Form Header */}
+            <div>
+              <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Book This Server</h4>
             </div>
 
-            {showBookingForm && (
-              <div className="bg-gradient-to-br from-blue-50 to-gray-50 dark:from-blue-900/10 dark:to-gray-900/10 border border-blue-100 dark:border-blue-800 rounded-xl p-6">
-                {/* Date Picker */}
-                <div className="mb-6">
+            {/* Booking Form Content */}
+            <div className="text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
+              {/* Date Picker */}
+              <div className="mb-6">
+                <label className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                  Select Date
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                    <svg className="w-5 h-5 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <input
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    className="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 p-2.5"
+                    min={new Date().toISOString().split('T')[0]}
+                  />
+                </div>
+              </div>
+
+              {/* Time Pickers */}
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <div>
                   <label className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                    Select Date
+                    Start Time
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                      <svg className="w-5 h-5 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                      <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     </div>
                     <input
-                      type="date"
-                      value={selectedDate}
-                      onChange={(e) => setSelectedDate(e.target.value)}
+                      type="time"
+                      value={startTime}
+                      onChange={(e) => handleTimeChange('start', e.target.value)}
                       className="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 p-2.5"
-                      min={new Date().toISOString().split('T')[0]}
                     />
                   </div>
                 </div>
-
-                {/* Time Pickers */}
-                <div className="grid grid-cols-2 gap-4 mb-6">
-                  <div>
-                    <label className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                      Start Time
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                        <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                      </div>
-                      <input
-                        type="time"
-                        value={startTime}
-                        onChange={(e) => handleTimeChange('start', e.target.value)}
-                        className="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 p-2.5"
-                      />
+                <div>
+                  <label className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                    End Time
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                      <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
                     </div>
+                    <input
+                      type="time"
+                      value={endTime}
+                      onChange={(e) => handleTimeChange('end', e.target.value)}
+                      className="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 p-2.5"
+                      min={startTime}
+                    />
                   </div>
-                  <div>
-                    <label className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                      End Time
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                        <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                      </div>
-                      <input
-                        type="time"
-                        value={endTime}
-                        onChange={(e) => handleTimeChange('end', e.target.value)}
-                        className="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 p-2.5"
-                        min={startTime}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Organization Selection */}
-                {organizations.length > 0 && (
-                  <div className="mb-6">
-                    <label className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                      Book Under Organization (Optional)
-                    </label>
-                    <select
-                      value={selectedOrg || ''}
-                      onChange={(e) => setSelectedOrg(e.target.value || null)}
-                      className="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                    >
-                      <option value="">Personal Account</option>
-                      {organizations.map((org) => (
-                        <option key={org.id} value={org.id}>
-                          {org.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-                {/* Price Summary */}
-                <div className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 border border-green-100 dark:border-green-800 rounded-lg p-4 mb-6">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-gray-700 dark:text-gray-300 font-medium">Duration:</span>
-                    <span className="text-lg font-bold text-gray-900 dark:text-white">{duration.toFixed(1)} hours</span>
-                  </div>
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-gray-600 dark:text-gray-400">Hourly Rate:</span>
-                    <span className="text-gray-900 dark:text-white">${listing.hourly_price}/hr</span>
-                  </div>
-                  <div className="flex justify-between items-center mt-4 pt-4 border-t border-green-200 dark:border-green-700">
-                    <span className="text-lg font-bold text-gray-900 dark:text-white">Total:</span>
-                    <span className="text-2xl font-bold text-green-600 dark:text-green-400">${totalPrice.toFixed(2)}</span>
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex gap-3">
-                  <Button
-                    color="light"
-                    onClick={onClose}
-                    className="flex-1"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    color="green"
-                    onClick={handleBookingRequest}
-                    disabled={loading}
-                    className="flex-1 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700"
-                  >
-                    {loading ? (
-                      <>
-                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto"></div>
-                      </>
-                    ) : (
-                      <>
-                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                        </svg>
-                        Proceed to Payment
-                      </>
-                    )}
-                  </Button>
                 </div>
               </div>
-            )}
+
+              {/* Organization Selection */}
+              {organizations.length > 0 && (
+                <div className="mb-6">
+                  <label className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                    Book Under Organization (Optional)
+                  </label>
+                  <select
+                    value={selectedOrg || ''}
+                    onChange={(e) => setSelectedOrg(e.target.value || null)}
+                    className="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                  >
+                    <option value="">Personal Account</option>
+                    {organizations.map((org) => (
+                      <option key={org.id} value={org.id}>
+                        {org.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Price Summary */}
+              <div className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 border border-green-100 dark:border-green-800 rounded-lg p-4 mb-6">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-gray-700 dark:text-gray-300 font-medium">Duration:</span>
+                  <span className="text-lg font-bold text-gray-900 dark:text-white">{duration.toFixed(1)} hours</span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-600 dark:text-gray-400">Hourly Rate:</span>
+                  <span className="text-gray-900 dark:text-white">${listing.hourly_price}/hr</span>
+                </div>
+                <div className="flex justify-between items-center mt-4 pt-4 border-t border-green-200 dark:border-green-700">
+                  <span className="text-lg font-bold text-gray-900 dark:text-white">Total:</span>
+                  <span className="text-2xl font-bold text-green-600 dark:text-green-400">${totalPrice.toFixed(2)}</span>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3">
+                <Button
+                  color="light"
+                  onClick={onClose}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  color="green"
+                  onClick={handleBookingRequest}
+                  disabled={loading}
+                  className="flex-1 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700"
+                >
+                  {loading ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto"></div>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                      </svg>
+                      Proceed to Payment
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
 
             {/* Additional Info */}
             <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
