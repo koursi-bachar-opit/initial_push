@@ -14,6 +14,7 @@ export const ListingsApp: React.FC = () => {
   const [listings, setListings] = useState<MachineListing[]>([]);
   const [filteredListings, setFilteredListings] = useState<MachineListing[]>([]);
   const [loading, setLoading] = useState(true);
+  const [bookingLoading, setBookingLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedListing, setSelectedListing] = useState<MachineListing | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -276,100 +277,102 @@ const clearFilters = () => {
   };
 
 
-const handleBookingRequest = async (listing: MachineListing, startTime: string, endTime: string, selectedDate: string, organizationId: string | null) => {
-  setLoading(true);
-  
-  try {
-    const startDateTime = new Date(`${selectedDate}T${startTime}`);
-    const endDateTime = new Date(`${selectedDate}T${endTime}`);
-
-    // Calculate duration and total price
-    const durationMs = endDateTime.getTime() - startDateTime.getTime();
-    const durationHours = durationMs / (1000 * 60 * 60);
-    const totalPrice = durationHours * listing.hourly_price;
-
-    // Create booking payload
-    const bookingPayload = {
-      listing_id: listing.id,
-      start_time: startDateTime.toISOString(),
-      end_time: endDateTime.toISOString(),
-      organization_id: organizationId
-    };
-
-    console.log('Step 1: Creating booking draft...');
+  const handleBookingRequest = async (listing: MachineListing, startTime: string, endTime: string, selectedDate: string, organizationId: string | null) => {
+    setBookingLoading(true); // Use bookingLoading instead of loading
     
-    // Try payment-enabled booking first, fallback to regular
-    let booking;
     try {
-      const response = await api.requestBookingWithPayment(bookingPayload);
-      booking = response.data?.data || response.data;
+      const startDateTime = new Date(`${selectedDate}T${startTime}`);
+      const endDateTime = new Date(`${selectedDate}T${endTime}`);
+
+      // Calculate duration and total price
+      const durationMs = endDateTime.getTime() - startDateTime.getTime();
+      const durationHours = durationMs / (1000 * 60 * 60);
+      const totalPrice = durationHours * listing.hourly_price;
+
+      // Create booking payload
+      const bookingPayload = {
+        listing_id: listing.id,
+        start_time: startDateTime.toISOString(),
+        end_time: endDateTime.toISOString(),
+        organization_id: organizationId
+      };
+
+      console.log('Step 1: Creating booking draft...');
+      
+      // Try payment-enabled booking first, fallback to regular
+      let booking;
+      try {
+        const response = await api.requestBookingWithPayment(bookingPayload);
+        booking = response.data?.data || response.data;
+      } catch (error: any) {
+        console.log('Payment booking failed, trying regular booking:', error);
+        const response = await api.requestBooking(bookingPayload);
+        booking = response.data?.data || response.data;
+      }
+
+      if (!booking || !booking.id) {
+        throw new Error('Failed to create booking reservation');
+      }
+
+      console.log('Step 2: Booking draft created:', booking.id);
+      
+      // Get the price (use server's estimate or our calculation)
+      const price = booking.total_price_estimate || totalPrice;
+      
+      console.log('Step 3: Creating Stripe checkout session...');
+      
+      // Create Stripe checkout
+      const checkoutResponse = await fetch('/api/v1/payments/checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('access_token') || ''}`
+        },
+        body: JSON.stringify({
+          booking_id: booking.id,
+          amount: price,
+          currency: "USD"
+        })
+      });
+
+      if (!checkoutResponse.ok) {
+        const errorData = await checkoutResponse.json().catch(() => ({}));
+        throw new Error(errorData.detail || errorData.message || `Payment error: ${checkoutResponse.status}`);
+      }
+
+      const checkoutData = await checkoutResponse.json();
+      
+      if (!checkoutData.checkout_url) {
+        throw new Error('No payment URL received');
+      }
+
+      console.log('Step 4: Redirecting to payment...');
+
+      // DON'T set bookingLoading to false here - we want to redirect immediately
+      window.location.href = checkoutData.checkout_url;
+      
     } catch (error: any) {
-      console.log('Payment booking failed, trying regular booking:', error);
-      const response = await api.requestBooking(bookingPayload);
-      booking = response.data?.data || response.data;
+      console.error('Booking process error:', error);
+      setBookingLoading(false); // Reset loading state on error
+      
+      // More specific error messages
+      let errorMessage = 'Booking failed. Please try again.';
+      
+      if (error.message.includes('401') || error.message.includes('unauthorized')) {
+        errorMessage = 'Please log in to complete your booking.';
+      } else if (error.message.includes('402') || error.message.includes('payment')) {
+        errorMessage = 'Payment processing failed. Please check your payment method.';
+      } else if (error.message.includes('404') || error.message.includes('not found')) {
+        errorMessage = 'Booking endpoint not found. Please contact support.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      alert(errorMessage);
+      
+      throw error;
     }
-
-    if (!booking || !booking.id) {
-      throw new Error('Failed to create booking reservation');
-    }
-
-    console.log('Step 2: Booking draft created:', booking.id);
-    
-    // Get the price (use server's estimate or our calculation)
-    const price = booking.total_price_estimate || totalPrice;
-    
-    console.log('Step 3: Creating Stripe checkout session...');
-    
-    // Create Stripe checkout
-    const checkoutResponse = await fetch('/api/v1/payments/checkout', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('access_token') || ''}`
-      },
-      body: JSON.stringify({
-        booking_id: booking.id,
-        amount: price,
-        currency: "USD"
-      })
-    });
-
-    if (!checkoutResponse.ok) {
-      const errorData = await checkoutResponse.json().catch(() => ({}));
-      throw new Error(errorData.detail || errorData.message || `Payment error: ${checkoutResponse.status}`);
-    }
-
-    const checkoutData = await checkoutResponse.json();
-    
-    if (!checkoutData.checkout_url) {
-      throw new Error('No payment URL received');
-    }
-
-    console.log('Step 4: Redirecting to payment...');
-
-    window.location.href = checkoutData.checkout_url;
-    
-  } catch (error: any) {
-    console.error('Booking process error:', error);
-    
-    // More specific error messages
-    let errorMessage = 'Booking failed. Please try again.';
-    
-    if (error.message.includes('401') || error.message.includes('unauthorized')) {
-      errorMessage = 'Please log in to complete your booking.';
-    } else if (error.message.includes('402') || error.message.includes('payment')) {
-      errorMessage = 'Payment processing failed. Please check your payment method.';
-    } else if (error.message.includes('404') || error.message.includes('not found')) {
-      errorMessage = 'Booking endpoint not found. Please contact support.';
-    } else if (error.message) {
-      errorMessage = error.message;
-    }
-    
-    alert(errorMessage);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   if (loading) {
     return (

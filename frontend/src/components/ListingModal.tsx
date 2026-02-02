@@ -98,10 +98,10 @@ export const ListingModal: React.FC<ListingModalProps> = ({
     setLoading(true);
     try {
       await onBookingRequest(listing, startTime, endTime, selectedDate, selectedOrg);
+      // Don't setLoading(false) here - the redirect will happen
     } catch (error: any) {
+      setLoading(false); // Only reset on error
       alert(`Booking failed: ${error.message}`);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -374,8 +374,7 @@ export const ListingModal: React.FC<ListingModalProps> = ({
                   >
                     {loading ? (
                       <>
-                        <Spinner size="sm" className="mr-2" />
-                        Processing Payment...
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto"></div>
                       </>
                     ) : (
                       <>
