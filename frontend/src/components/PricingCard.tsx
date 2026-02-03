@@ -28,10 +28,10 @@ export const PricingCard: React.FC<PricingCardProps> = ({
   return (
     <motion.div
       whileHover={{ y: -5 }}
-      className={`group relative p-8 bg-white dark:bg-zinc-900/50 border rounded-2xl transition-all duration-300 flex flex-col h-full ${
+      className={`group relative p-6 bg-white dark:bg-gray-800 border rounded-xl transition-all duration-300 flex flex-col h-full ${
         popular
-          ? 'border-blue-500/30 shadow-xl shadow-blue-500/10'
-          : 'border-zinc-200 dark:border-white/5'
+          ? 'border-blue-500 shadow-lg'
+          : 'border-gray-200 dark:border-gray-700'
       }`}
     >
       {popular && (

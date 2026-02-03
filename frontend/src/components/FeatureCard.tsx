@@ -52,7 +52,7 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
   return (
     <motion.div
       whileHover={{ y: -5 }}
-      className={`p-6 rounded-2xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-white/5 backdrop-blur-md flex-shrink-0 ${colors.border} transition-all shadow-sm hover:shadow-lg`}
+      className={`p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 ${colors.border} transition-all shadow-sm hover:shadow-lg`}
     >
       <div className="flex items-center gap-3 mb-4">
         <div className={`w-8 h-8 rounded-lg ${colors.bg} flex items-center justify-center ${colors.text}`}>

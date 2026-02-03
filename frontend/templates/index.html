@@ -2,30 +2,5 @@
 
 {% block content %}
 <!-- Homepage specific content - React will take over this section -->
-<div id="react-homepage-root"></div>
-
-<!-- Fallback content if React doesn't load -->
-<div id="fallback-content" class="hidden">
-    <div class="text-center py-20">
-        <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-4">
-            SuperVision Remote Servers
-        </h1>
-        <p class="text-gray-600 dark:text-gray-300 mb-8">
-            High-performance GPU servers on demand
-        </p>
-        <a href="/listings" class="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition">
-            Browse Listings
-        </a>
-    </div>
-</div>
-
-<script>
-    // Show fallback if React doesn't load within 3 seconds
-    setTimeout(() => {
-        const reactRoot = document.getElementById('react-homepage-root');
-        if (reactRoot && reactRoot.children.length === 0) {
-            document.getElementById('fallback-content').classList.remove('hidden');
-        }
-    }, 3000);
-</script>
+<div id="react-homepage-root" class="p-6"></div>
 {% endblock %}

@@ -12,10 +12,67 @@ import { CheckIcon, Github, Linkedin, Mail, ChevronDown, ChevronUp } from 'lucid
 export { CheckIcon, Github, Linkedin, Mail, ChevronDown, ChevronUp }
 
 function mountReactApp() {
-  // Get the current path
+
+
+
+
+
   const currentPath = window.location.pathname;
   
-  console.log('Mounting React app for path:', currentPath);
+  console.log('🔍 Checking page:', currentPath);
+  console.log('🔍 Document body children:', document.body.children.length);
+  
+  // List of pages that should NOT mount React
+  const nonReactPages = ['/login', '/signup', '/logout'];
+  
+  // Check if current path is a non-React page
+  for (const page of nonReactPages) {
+    if (currentPath === page || currentPath.startsWith(page + '/')) {
+      console.log(`🚫 Skipping React mount for ${currentPath}`);
+      
+      // Clean up any React root elements that might have been created
+      const reactRoots = [
+        'react-listings-root',
+        'react-dashboard-root',
+        'react-homepage-root',
+        'react-account-root',
+        'react-bookings-root',
+        'react-app-root'
+      ];
+      
+      reactRoots.forEach(rootId => {
+        const element = document.getElementById(rootId);
+        if (element) {
+          console.log(`🧹 Removing leftover React root: ${rootId}`);
+          element.remove();
+        }
+      });
+      
+      return;
+    }
+  }
+
+
+
+
+  
+  // // Get the current path
+  // const currentPath = window.location.pathname;
+  
+  // console.log('Mounting React app for path:', currentPath);
+
+  // // Pages that should NOT have React mounted
+  // const nonReactPages = [
+  //   '/login',
+  //   '/signup',
+  //   '/logout'
+  // ];
+
+  // Check if this is a non-React page
+  if (nonReactPages.some(page => currentPath === page || currentPath.startsWith(page + '/'))) {
+    console.log('This is a non-React page, skipping React mount');
+    return;
+  }
 
   // Define root IDs for different pages
   const rootConfigs = [
@@ -53,6 +110,10 @@ function mountReactApp() {
       targetRootId = 'react-homepage-root';
     } else if (currentPath.includes('/bookings')) {
       targetRootId = 'react-bookings-root';
+    } else {
+      // If it's not a React page and we're here, don't mount React
+      console.log('Not a React page, not mounting');
+      return;
     }
 
     // Create the root element
@@ -103,17 +164,39 @@ function mountReactApp() {
     console.log(`React app successfully mounted to ${targetRootId}`);
   } catch (error) {
     console.error('Error mounting React app:', error);
-    // Show fallback content
-    const fallback = document.getElementById('fallback-content');
-    if (fallback) {
-      fallback.classList.remove('hidden');
-    }
   }
+}
+
+// Only mount if we're on a React page
+function shouldMountReact() {
+  const currentPath = window.location.pathname;
+  const reactPages = [
+    '/',
+    '/home',
+    '/listings',
+    '/browse',
+    '/dashboard',
+    '/account',
+    '/bookings'
+  ];
+  
+  return reactPages.some(page => 
+    currentPath === page || 
+    currentPath.startsWith(page + '/') ||
+    // For homepage with query params
+    (page === '/' && currentPath === '/')
+  );
 }
 
 // Mount when ready
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', mountReactApp);
+  document.addEventListener('DOMContentLoaded', () => {
+    if (shouldMountReact()) {
+      mountReactApp();
+    }
+  });
 } else {
-  mountReactApp();
+  if (shouldMountReact()) {
+    mountReactApp();
+  }
 }
