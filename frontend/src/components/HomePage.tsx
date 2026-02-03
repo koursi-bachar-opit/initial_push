@@ -1,13 +1,13 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Navbar } from './Navbar';
+import { HomeNavbar } from './HomeNavbar'; // Create this
 import { HeroSection } from './HeroSection';
 import { FeaturesSection } from './FeaturesSection';
 import { DashboardPreview } from './DashboardPreview';
 import { PricingSection } from './PricingSection';
 import { TestimonialsSection } from './TestimonialsSection';
 import { FAQSection } from './FAQSection';
-import { Footer } from './Footer';
+import { HomeFooter } from './HomeFooter'; // Create this
 import { useScrollAnimation } from '../hooks/useScrollAnimation';
 
 export const HomePage: React.FC = () => {
@@ -27,7 +27,8 @@ export const HomePage: React.FC = () => {
         </div>
       </div>
 
-      <Navbar />
+      {/* Homepage-specific navbar */}
+      <HomeNavbar />
 
       <main className="relative z-10 pt-32 pb-20 overflow-hidden">
         {/* Particles Background */}
@@ -122,7 +123,8 @@ export const HomePage: React.FC = () => {
         </div>
       </main>
 
-      <Footer />
+      {/* Homepage-specific footer */}
+      <HomeFooter />
     </div>
   );
 };

@@ -114,7 +114,7 @@ async def store_session(payload: StoreSession, response: Response):
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request, user=Depends(optional_user)):
     return templates.TemplateResponse(
-        "index.html", 
+        "homepage.html", 
         {
             "request": request, 
             "user": user,
