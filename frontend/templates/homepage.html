@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <title>SuperVision - High-Performance GPU Compute</title>
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Particles.js for background -->
+    <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+    
+    <!-- Inline critical CSS for homepage -->
+    <style>
+        /* Reset and base styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            overflow-x: hidden;
+        }
+        
+        /* Dark mode by default */
+        :root {
+            color-scheme: dark;
+        }
+        
+        /* Hide fallback initially */
+        #fallback-content {
+            display: none;
+        }
+    </style>
+    
+    <!-- Load React CSS bundle -->
+    <link rel="stylesheet" href="/static/react/assets/index.css">
+</head>
+<body>
+    <!-- React will mount here -->
+    <div id="react-homepage-root"></div>
+    
+    <!-- Fallback content if React doesn't load -->
+    <div id="fallback-content">
+        <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #010205; color: white; padding: 2rem;">
+            <div style="text-align: center; max-width: 600px;">
+                <h1 style="font-size: 3rem; font-weight: bold; margin-bottom: 1.5rem; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                    SuperVision Remote Servers
+                </h1>
+                <p style="font-size: 1.25rem; color: #9ca3af; margin-bottom: 2rem;">
+                    High-performance GPU servers on demand. Rent, scale, and pay only for what you use.
+                </p>
+                <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                    <a href="/listings" style="background: linear-gradient(135deg, #3b82f6, #10b981); color: white; padding: 0.75rem 2rem; border-radius: 9999px; text-decoration: none; font-weight: bold; transition: transform 0.2s;">
+                        Browse Listings
+                    </a>
+                    <a href="/login" style="border: 1px solid rgba(255,255,255,0.1); color: white; padding: 0.75rem 2rem; border-radius: 9999px; text-decoration: none; font-weight: 500;">
+                        Log In
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Load React bundle -->
+    <script type="module" src="/static/react/assets/index.js"></script>
+    
+    <script>
+        // Show fallback if React doesn't load within 5 seconds
+        setTimeout(() => {
+            const reactRoot = document.getElementById('react-homepage-root');
+            if (!reactRoot || reactRoot.children.length === 0) {
+                document.getElementById('fallback-content').style.display = 'block';
+            }
+        }, 5000);
+        
+        // Initialize particles.js
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.particlesJS) {
+                particlesJS('particles-js', {
+                    particles: {
+                        number: { value: 80, density: { enable: true, value_area: 800 } },
+                        color: { value: "#3b82f6" },
+                        shape: { type: "circle" },
+                        opacity: { value: 0.5, random: false },
+                        size: { value: 3, random: true },
+                        line_linked: {
+                            enable: true,
+                            distance: 150,
+                            color: "#3b82f6",
+                            opacity: 0.4,
+                            width: 1
+                        },
+                        move: {
+                            enable: true,
+                            speed: 2,
+                            direction: "none",
+                            random: false,
+                            straight: false,
+                            out_mode: "out",
+                            bounce: false
+                        }
+                    },
+                    interactivity: {
+                        detect_on: "canvas",
+                        events: {
+                            onhover: { enable: true, mode: "repulse" },
+                            onclick: { enable: true, mode: "push" }
+                        }
+                    },
+                    retina_detect: true
+                });
+            }
+        });
+    </script>
+</body>
+</html>

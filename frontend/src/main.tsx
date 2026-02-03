@@ -2,65 +2,72 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { DashboardApp } from './DashboardApp.tsx'
 import { ListingsApp } from './ListingsApp.tsx'
-import App from './App.tsx'
+import { HomePage } from './components/HomePage.tsx'
 import './index.css'
 
+// Lucide icons for components
+import { CheckIcon, Github, Linkedin, Mail, ChevronDown, ChevronUp, Moon, Sun } from 'lucide-react'
+
+export { CheckIcon, Github, Linkedin, Mail, ChevronDown, ChevronUp, Moon, Sun }
+
 function mountReactApp() {
-  // Get the current path and convert to lowercase
-  const currentPath = window.location.pathname.toLowerCase();
+  const currentPath = window.location.pathname;
+  console.log('Mounting React app for path:', currentPath);
+
+  // Check if we're on homepage (special template) or other pages (base.html)
+  const isHomepage = currentPath === '/';
   
-  console.log('Current path:', currentPath);
-  console.log('Current URL:', window.location.href);
-
-  // Try to find any of the possible root elements
-  const roots = [
-    'react-listings-root',
-    'react-dashboard-root', 
-    'react-homepage-root',
-    'react-root'
-  ];
-
-  let targetRoot = null;
+  let targetRootId = '';
   let appToMount = null;
 
-  // Check which root element exists on the page
-  for (const rootId of roots) {
-    const element = document.getElementById(rootId);
-    if (element) {
-      console.log(`Found root element: ${rootId}`);
-      targetRoot = element;
-      break;
+  if (isHomepage) {
+    // Homepage uses special template - mount to react-homepage-root
+    targetRootId = 'react-homepage-root';
+    appToMount = <HomePage />;
+  } else if (currentPath.includes('/listings') || currentPath.includes('/browse')) {
+    // Listings page uses base.html
+    targetRootId = 'react-listings-root';
+    appToMount = <ListingsApp />;
+  } else if (currentPath.includes('/dashboard') || currentPath.includes('/account')) {
+    // Dashboard page uses base.html
+    targetRootId = 'react-dashboard-root';
+    const userRole = localStorage.getItem('user_role') || 'buyer';
+    appToMount = <DashboardApp userRole={userRole} />;
+  } else if (currentPath.includes('/bookings')) {
+    // Bookings page uses base.html
+    targetRootId = 'react-bookings-root';
+    const userRole = localStorage.getItem('user_role') || 'buyer';
+    appToMount = <DashboardApp userRole={userRole} />;
+  } else {
+    // Default to homepage
+    targetRootId = 'react-homepage-root';
+    appToMount = <HomePage />;
+  }
+
+  // Find or create root element
+  let targetRoot = document.getElementById(targetRootId);
+  
+  if (!targetRoot) {
+    console.log(`Creating root element: ${targetRootId}`);
+    targetRoot = document.createElement('div');
+    targetRoot.id = targetRootId;
+    
+    // Insert into appropriate location
+    if (isHomepage) {
+      // Homepage: insert at beginning of body
+      document.body.insertBefore(targetRoot, document.body.firstChild);
+    } else {
+      // Other pages: insert into main content area
+      const mainContent = document.querySelector('main');
+      if (mainContent) {
+        mainContent.appendChild(targetRoot);
+      } else {
+        document.body.appendChild(targetRoot);
+      }
     }
   }
 
-  // If no specific root found, use body or create one
-  if (!targetRoot) {
-    console.log('No specific root found, checking for listings in path...');
-    
-    // Create a new root element if needed
-    const newRoot = document.createElement('div');
-    newRoot.id = 'react-app-root';
-    document.body.appendChild(newRoot);
-    targetRoot = newRoot;
-  }
-
-  // Determine which app to mount based on URL path
-  if (currentPath.includes('/listings') || currentPath.includes('/browse')) {
-    console.log('Mounting ListingsApp');
-    appToMount = <ListingsApp />;
-  } else if (currentPath.includes('/dashboard') || currentPath.includes('/account')) {
-    console.log('Mounting DashboardApp');
-    const userRole = localStorage.getItem('user_role') || 'buyer';
-    appToMount = <DashboardApp userRole={userRole} />;
-  } else if (currentPath === '/' || currentPath.includes('/home')) {
-    console.log('Mounting Homepage App');
-    appToMount = <App />;
-  } else {
-    console.log('Defaulting to App component');
-    appToMount = <App />;
-  }
-
-  // Mount the React app
+  // Mount the app
   try {
     const root = ReactDOM.createRoot(targetRoot);
     root.render(
@@ -68,9 +75,15 @@ function mountReactApp() {
         {appToMount}
       </React.StrictMode>
     );
-    console.log('React app successfully mounted');
+    console.log(`React app successfully mounted to ${targetRootId}`);
   } catch (error) {
     console.error('Error mounting React app:', error);
+    
+    // Show fallback content
+    const fallback = document.getElementById('fallback-content');
+    if (fallback) {
+      fallback.style.display = 'block';
+    }
   }
 }
 
