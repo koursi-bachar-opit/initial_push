@@ -138,37 +138,31 @@ export const ListingModal: React.FC<ListingModalProps> = ({
                   icon="💻"
                   title="CPU"
                   value={`${listing.machine?.cpu_model || 'Unknown'} (${listing.machine?.cpu_cores || '?'} cores)`}
-                  color="blue"
                 />
                 <SpecCard
                   icon="🧠"
                   title="RAM"
                   value={`${listing.machine?.ram_gb || '?'} GB`}
-                  color="purple"
                 />
                 <SpecCard
                   icon="🎮"
                   title="GPU"
                   value={`${listing.machine?.gpu_model || 'Unknown'} × ${listing.machine?.gpu_count || 1}`}
-                  color="green"
                 />
                 <SpecCard
                   icon="💾"
                   title="VRAM"
                   value={`${listing.machine?.vram_gb || '?'} GB per GPU`}
-                  color="yellow"
                 />
                 <SpecCard
                   icon="💽"
                   title="Storage"
                   value={`${listing.machine?.storage_gb || '?'} GB`}
-                  color="red"
                 />
                 <SpecCard
                   icon="🌐"
                   title="Network"
                   value={`${listing.machine?.network_mbps || '?'} Mbps`}
-                  color="indigo"
                 />
               </div>
             </div>
@@ -335,7 +329,7 @@ export const ListingModal: React.FC<ListingModalProps> = ({
               )}
 
               {/* Price Summary */}
-              <div className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 border border-green-100 dark:border-green-800 rounded-lg p-4 mb-6">
+              <div className="bg-blue-50 dark:bg-blue-900/10 border border-gray-200 dark:border-gray-500 rounded-lg p-4 mb-6">
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-gray-700 dark:text-gray-300 font-medium">Duration:</span>
                   <span className="text-lg font-bold text-gray-900 dark:text-white">{duration.toFixed(1)} hours</span>
@@ -344,9 +338,9 @@ export const ListingModal: React.FC<ListingModalProps> = ({
                   <span className="text-gray-600 dark:text-gray-400">Hourly Rate:</span>
                   <span className="text-gray-900 dark:text-white">${listing.hourly_price}/hr</span>
                 </div>
-                <div className="flex justify-between items-center mt-4 pt-4 border-t border-green-200 dark:border-green-700">
+                <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-200 dark:border-gray-500">
                   <span className="text-lg font-bold text-gray-900 dark:text-white">Total:</span>
-                  <span className="text-2xl font-bold text-green-600 dark:text-green-400">${totalPrice.toFixed(2)}</span>
+                  <span className="text-2xl font-bold text-purple-600 dark:text-purple-300">${totalPrice.toFixed(2)}</span>
                 </div>
               </div>
 
@@ -396,40 +390,20 @@ export const ListingModal: React.FC<ListingModalProps> = ({
   );
 };
 
-// Helper component for specification cards with proper typing
-type SpecColor = 'blue' | 'purple' | 'green' | 'yellow' | 'red' | 'indigo';
-
 const SpecCard: React.FC<{
   icon: string;
   title: string;
   value: string;
-  color: SpecColor;
-}> = ({ icon, title, value, color }) => {
-  const colorClasses: Record<SpecColor, string> = {
-    blue: 'bg-blue-50 dark:bg-blue-900/20 border-blue-100 dark:border-blue-800',
-    purple: 'bg-purple-50 dark:bg-purple-900/20 border-purple-100 dark:border-purple-800',
-    green: 'bg-green-50 dark:bg-green-900/20 border-green-100 dark:border-green-800',
-    yellow: 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-100 dark:border-yellow-800',
-    red: 'bg-red-50 dark:bg-red-900/20 border-red-100 dark:border-red-800',
-    indigo: 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-100 dark:border-indigo-800',
-  };
-
-  const textColorClasses: Record<SpecColor, string> = {
-    blue: 'text-blue-600 dark:text-blue-400',
-    purple: 'text-purple-600 dark:text-purple-400',
-    green: 'text-green-600 dark:text-green-400',
-    yellow: 'text-yellow-600 dark:text-yellow-400',
-    red: 'text-red-600 dark:text-red-400',
-    indigo: 'text-indigo-600 dark:text-indigo-400',
-  };
-
+}> = ({ icon, title, value }) => {
+  // All spec cards now use the same color as performance benchmarks box
+  const baseClasses = 'bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 border border-purple-100 dark:border-purple-800 rounded-xl p-4 min-h-[100px] flex flex-col justify-center';
   return (
-    <div className={`${colorClasses[color]} border rounded-lg p-3`}>
+    <div className={`${baseClasses} hover:shadow-md transition-shadow duration-200`}>
       <div className="flex items-center gap-3">
-        <div className="text-2xl">{icon}</div>
-        <div>
-          <div className="text-sm font-medium text-gray-600 dark:text-gray-400">{title}</div>
-          <div className={`font-semibold ${textColorClasses[color]}`}>{value}</div>
+        <div className="text-3xl">{icon}</div>
+        <div className="flex-1">
+          <div className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">{title}</div>
+          <div className={`font-semibold text-lg text-gray-900 dark:text-white`}>{value}</div>
         </div>
       </div>
     </div>
