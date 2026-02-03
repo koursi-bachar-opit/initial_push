@@ -401,14 +401,13 @@ const clearFilters = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-8 text-center">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Server Listings</h1>
           <p className="text-gray-600 dark:text-gray-300 mt-2">Find the perfect compute power for your needs</p>
         </div>
-
         {/* Search Bar - ADD THIS SECTION */}
         {!loading && !error && (
           <div className="mb-6">

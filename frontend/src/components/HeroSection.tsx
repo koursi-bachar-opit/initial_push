@@ -18,17 +18,6 @@ export const HeroSection: React.FC = () => {
         </span>
       </motion.h1>
 
-      {/* Subtitle */}
-      <motion.p
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.2 }}
-        className="text-lg md:text-xl text-gray-600 dark:text-gray-300 font-normal leading-relaxed mb-10 max-w-xl mx-auto"
-      >
-        Rent GPU servers instantly. Scale as needed. Pay only for what you use.
-        The most flexible compute marketplace for AI, ML, and HPC.
-      </motion.p>
-
       {/* CTA Buttons */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -40,9 +29,9 @@ export const HeroSection: React.FC = () => {
           href="/listings"
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className="group relative rounded-lg p-[1px] bg-gradient-to-r from-blue-600 to-emerald-500 overflow-hidden"
+          className="group relative rounded-lg p-[1px] bg-gradient-to-r from-blue-600 to-purple-600 overflow-hidden"
         >
-          <div className="relative rounded-lg bg-gradient-to-r from-blue-600 to-emerald-600 px-8 py-3 flex items-center gap-2">
+          <div className="relative rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 px-8 py-3 flex items-center gap-2">
             <span className="text-sm font-bold text-white tracking-tight">
               Browse Listings
             </span>
@@ -63,10 +52,10 @@ export const HeroSection: React.FC = () => {
         </motion.a>
 
         <a 
-          href="/docs"
-          className="group px-8 py-3 rounded-lg border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-800 transition-all text-sm font-medium"
+          href="/signup"
+          className="group inline-flex items-center justify-center px-8 py-3 text-sm font-semibold text-blue-700 dark:text-blue-200 bg-blue-50 dark:bg-blue-900/50 border-2 border-blue-200 dark:border-blue-700 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900 transition-all duration-300 transform hover:scale-105"
         >
-          Documentation
+          Become a Provider
         </a>
       </motion.div>
 
