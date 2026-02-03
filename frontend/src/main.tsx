@@ -131,6 +131,31 @@ function mountReactApp() {
     console.log(`Created root element: ${targetRootId}`);
   }
 
+  // // Determine which app to mount
+  // let appToMount = null;
+
+  // if (currentPath.includes('/listings') || currentPath.includes('/browse')) {
+  //   console.log('Mounting ListingsApp');
+  //   appToMount = <ListingsApp />;
+  // } else if (currentPath.includes('/dashboard') || currentPath.includes('/account')) {
+  //   console.log('Mounting DashboardApp');
+  //   const userRole = localStorage.getItem('user_role') || 'buyer';
+  //   appToMount = <DashboardApp userRole={userRole} />;
+  // } else if (currentPath === '/' || currentPath.includes('/home')) {
+  //   console.log('Mounting HomePage');
+  //   appToMount = <HomePage />;
+  // } else if (currentPath.includes('/bookings')) {
+  //   console.log('Mounting BookingsApp (defaulting to Dashboard)');
+  //   const userRole = localStorage.getItem('user_role') || 'buyer';
+  //   appToMount = <DashboardApp userRole={userRole} />;
+  // } else {
+  //   console.log('Defaulting to HomePage');
+  //   appToMount = <HomePage />;
+  // }
+
+
+
+
   // Determine which app to mount
   let appToMount = null;
 
@@ -145,14 +170,23 @@ function mountReactApp() {
     console.log('Mounting HomePage');
     appToMount = <HomePage />;
   } else if (currentPath.includes('/bookings')) {
-    console.log('Mounting BookingsApp (defaulting to Dashboard)');
-    const userRole = localStorage.getItem('user_role') || 'buyer';
-    appToMount = <DashboardApp userRole={userRole} />;
+    // Don't mount React on bookings page - it's a Flask page
+    console.log('Bookings page - not mounting React app');
+    return; // Exit early, don't mount anything
   } else {
     console.log('Defaulting to HomePage');
     appToMount = <HomePage />;
   }
 
+  // Only continue if we have an app to mount
+  if (!appToMount) {
+    console.log('No React app to mount for this page');
+    return;
+  }
+
+
+
+  
   // Mount the React app
   try {
     const root = ReactDOM.createRoot(targetRoot);

@@ -39,7 +39,7 @@ const testimonials: Testimonial[] = [
     author: "James Wilson",
     role: "Data Science Director",
     company: "FinTech Solutions",
-    rating: 4,
+    rating: 5,
     initials: "JW",
     gradient: "from-orange-500 to-red-500"
   }
@@ -54,7 +54,7 @@ const StarRating: React.FC<{ rating: number }> = ({ rating }) => {
           className={`w-5 h-5 ${
             i < rating
               ? 'text-yellow-400 fill-current'
-              : 'text-zinc-300 dark:text-zinc-600 fill-current'
+              : 'text-gray-300 dark:text-gray-600 fill-current'
           }`}
           viewBox="0 0 20 20"
         >
@@ -67,14 +67,14 @@ const StarRating: React.FC<{ rating: number }> = ({ rating }) => {
 
 export const TestimonialsSection: React.FC = () => {
   return (
-    <section id="testimonials" className="pt-32 pb-0 relative z-10 bg-transparent dark:bg-black/40 backdrop-blur-xl transition-colors duration-500">
-      <div className="max-w-7xl mx-auto px-6 relative z-10">
+    <section id="testimonials" className="py-20 bg-transparent transition-colors duration-500">
+      <div className="max-w-7xl mx-auto px-6">
         <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-5xl font-semibold tracking-tighter text-zinc-900 dark:text-white mb-6">
+          <h2 className="text-3xl md:text-5xl font-semibold tracking-tighter text-gray-900 dark:text-white mb-6">
             Trusted by AI Teams Worldwide
           </h2>
-          <p className="text-zinc-600 dark:text-zinc-400 text-lg">
-            See what our customers have to say about ComputeHub
+          <p className="text-gray-600 dark:text-gray-400 text-lg">
+            See what our customers have to say
           </p>
         </div>
 
@@ -86,24 +86,33 @@ export const TestimonialsSection: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
               whileHover={{ y: -5 }}
-              className="group relative p-8 bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-white/5 rounded-2xl transition-all duration-300"
+              className="group relative p-8 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl transition-all duration-300 flex flex-col h-full min-h-[300px]"
             >
-              <StarRating rating={testimonial.rating} />
+              {/* Star Rating */}
+              <div className="mb-4">
+                <StarRating rating={testimonial.rating} />
+              </div>
               
-              <p className="text-zinc-700 dark:text-zinc-300 mb-6 leading-relaxed italic">
-                "{testimonial.quote}"
-              </p>
+              {/* Quote - Flex-grow to push content down and center vertically */}
+              <div className="flex-grow flex flex-col justify-center mb-6">
+                <p className="text-gray-700 dark:text-gray-300 leading-relaxed italic text-center md:text-left">
+                  "{testimonial.quote}"
+                </p>
+              </div>
               
-              <div className="flex items-center gap-4">
-                <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${testimonial.gradient} flex items-center justify-center text-white font-bold`}>
-                  {testimonial.initials}
-                </div>
-                <div>
-                  <div className="font-semibold text-zinc-900 dark:text-white">
-                    {testimonial.author}
+              {/* Author Info - Fixed at bottom with proper spacing */}
+              <div className="pt-4 border-t border-gray-100 dark:border-gray-700 mt-auto">
+                <div className="flex items-center gap-4">
+                  <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${testimonial.gradient} flex items-center justify-center text-white font-bold flex-shrink-0`}>
+                    {testimonial.initials}
                   </div>
-                  <div className="text-sm text-zinc-500 dark:text-zinc-400">
-                    {testimonial.role}, {testimonial.company}
+                  <div className="flex-grow">
+                    <div className="font-semibold text-gray-900 dark:text-white">
+                      {testimonial.author}
+                    </div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                      {testimonial.role}, {testimonial.company}
+                    </div>
                   </div>
                 </div>
               </div>
