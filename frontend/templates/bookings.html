@@ -1,16 +1,40 @@
 {% extends "base.html" %}
 {% block content %}
 
-<div class="py-6 px-6 md:py-8 md:px-8 lg:py-10 lg:px-10">
-    <h1 class="text-3xl font-bold mb-8 text-gray-900 dark:text-white">Your Bookings</h1>
+<div class="py-6 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+    <!-- Header Section -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Your Bookings</h1>
+        <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">Manage all your active, pending, and past bookings</p>
+    </div>
 
-    <div class="mb-6">
-        <div class="p-4 mb-4 text-sm text-blue-800 dark:text-blue-100 rounded-lg bg-blue-50 dark:bg-blue-900 border border-blue-200 dark:border-blue-700" role="alert">
-            View all of your active, pending, and past bookings.
+    <!-- Information Alert -->
+    <div class="mb-8">
+        <div class="flex items-center p-4 mb-6 text-sm text-blue-800 border border-blue-300 rounded-lg bg-blue-50 dark:bg-gray-800 dark:text-blue-400 dark:border-blue-800" role="alert">
+            <svg class="flex-shrink-0 inline w-4 h-4 me-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5ZM9.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM12 15H8a1 1 0 0 1 0-2h1v-3H8a1 1 0 0 1 0-2h2a1 1 0 0 1 1 1v4h1a1 1 0 0 1 0 2Z"/>
+            </svg>
+            <span class="sr-only">Info</span>
+            <div>
+                <span class="font-medium">View all of your active, pending, and past bookings.</span> Click on action buttons to manage each booking.
+            </div>
         </div>
     </div>
 
+    <!-- Bookings Grid -->
     <div id="bookings" class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <!-- Bookings will be dynamically inserted here -->
+    </div>
+
+    <!-- Empty State (hidden when bookings exist) -->
+    <div id="empty-state" class="hidden text-center py-12">
+        <div class="mx-auto w-24 h-24 text-gray-400 dark:text-gray-500 mb-4">
+            <svg class="w-full h-full" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+            </svg>
+        </div>
+        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">No bookings found</h3>
+        <p class="text-gray-500 dark:text-gray-400">You don't have any bookings yet.</p>
     </div>
 </div>
 

@@ -72,21 +72,29 @@ export const ListingModal: React.FC<ListingModalProps> = ({
   };
 
   const handleTimeChange = (field: 'start' | 'end', value: string) => {
+    // Calculate the NEW start and end times based on which field is changing
+    let newStartTime = startTime;
+    let newEndTime = endTime;
+    
     if (field === 'start') {
-      setStartTime(value);
+      newStartTime = value;
       // Update end time if start is after end
-      if (value >= endTime) {
+      if (value >= newEndTime) {
         const [hours, minutes] = value.split(':').map(Number);
         const newEnd = new Date(0, 0, 0, hours + 1, minutes);
-        setEndTime(`${newEnd.getHours().toString().padStart(2, '0')}:${newEnd.getMinutes().toString().padStart(2, '0')}`);
+        newEndTime = `${newEnd.getHours().toString().padStart(2, '0')}:${newEnd.getMinutes().toString().padStart(2, '0')}`;
       }
     } else {
-      setEndTime(value);
+      newEndTime = value;
     }
 
-    // Calculate duration
-    const [startHours, startMinutes] = startTime.split(':').map(Number);
-    const [endHours, endMinutes] = (field === 'start' ? value : endTime).split(':').map(Number);
+    // Update state with new times
+    setStartTime(newStartTime);
+    setEndTime(newEndTime);
+
+    // Calculate duration using the NEW times
+    const [startHours, startMinutes] = newStartTime.split(':').map(Number);
+    const [endHours, endMinutes] = newEndTime.split(':').map(Number);
     const start = startHours + startMinutes / 60;
     const end = endHours + endMinutes / 60;
     const newDuration = end - start;
@@ -169,7 +177,7 @@ export const ListingModal: React.FC<ListingModalProps> = ({
 
             {/* Benchmarks */}
             {benchmarks.length > 0 && (
-              <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 border border-purple-100 dark:border-purple-800 rounded-xl p-6 min-h-[300px]">
+              <div className="bg-gradient-to-r from-gray-100 to-gray-100 dark:from-gray-900 dark:to-gray-900 border border-gray-100 dark:border-gray-900 rounded-xl p-6 min-h-[300px]">
                 <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                   <svg className="w-5 h-5 text-purple-600 dark:text-purple-400" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z" clipRule="evenodd" />
@@ -340,7 +348,7 @@ export const ListingModal: React.FC<ListingModalProps> = ({
                 </div>
                 <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-200 dark:border-gray-500">
                   <span className="text-lg font-bold text-gray-900 dark:text-white">Total:</span>
-                  <span className="text-2xl font-bold text-purple-600 dark:text-purple-300">${totalPrice.toFixed(2)}</span>
+                  <span className="text-2xl font-bold text-green-700 dark:text-green-700">${totalPrice.toFixed(2)}</span>
                 </div>
               </div>
 
@@ -357,7 +365,7 @@ export const ListingModal: React.FC<ListingModalProps> = ({
                   color="green"
                   onClick={handleBookingRequest}
                   disabled={loading}
-                  className="flex-1 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700"
+                  className="flex-1 bg-gradient-to-r from-green-700 to-green-700 hover:from-green-800 hover:to-green-800"
                 >
                   {loading ? (
                     <>
@@ -396,14 +404,14 @@ const SpecCard: React.FC<{
   value: string;
 }> = ({ icon, title, value }) => {
   // All spec cards now use the same color as performance benchmarks box
-  const baseClasses = 'bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 border border-purple-100 dark:border-purple-800 rounded-xl p-4 min-h-[100px] flex flex-col justify-center';
+  const baseClasses = 'bg-gradient-to-r from-gray-100 to-gray-100 dark:from-gray-900 dark:to-gray-900 border border-gray-100 dark:border-gray-900 rounded-xl p-4 min-h-[100px] flex flex-col justify-center';
   return (
     <div className={`${baseClasses} hover:shadow-md transition-shadow duration-200`}>
       <div className="flex items-center gap-3">
         <div className="text-3xl">{icon}</div>
         <div className="flex-1">
           <div className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">{title}</div>
-          <div className={`font-semibold text-lg text-gray-900 dark:text-white`}>{value}</div>
+          <div className={`font-semibold text-lg text-purple-600 dark:text-purple-400`}>{value}</div>
         </div>
       </div>
     </div>

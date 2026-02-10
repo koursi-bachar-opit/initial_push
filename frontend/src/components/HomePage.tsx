@@ -19,16 +19,39 @@ export const HomePage: React.FC = () => {
           
           {/* Trusted Companies Logos */}
           <section className="mt-24 border-y border-gray-200 dark:border-gray-700 py-10 overflow-hidden transition-colors duration-500">
-            <div className="flex justify-center flex-wrap gap-12 md:gap-20 opacity-50 px-6 grayscale hover:grayscale-0 transition-all duration-700">
+            <div className="flex justify-center flex-wrap gap-12 md:gap-20 px-6">
               {['NVIDIA', 'AMD', 'Intel', 'AWS', 'Google Cloud', 'Microsoft Azure'].map((company, index) => (
                 <motion.div
                   key={company}
                   initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 0.5, y: 0 }}
+                  animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
-                  className="text-lg font-semibold text-gray-900 dark:text-white"
+                  whileHover={{ 
+                    scale: 1.1, 
+                    y: -5,
+                    transition: { type: "spring", stiffness: 300, damping: 15 }
+                  }}
+                  className="text-lg font-semibold text-gray-500 dark:text-white 
+                            relative group cursor-pointer transition-all duration-300
+                            hover:text-gray-900 dark:hover:text-white"
                 >
-                  {company}
+                  {/* Glow effect background */}
+                  <span className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-500/0 to-purple-500/0 
+                                  group-hover:from-blue-500/10 group-hover:to-purple-500/10 
+                                  blur-xl group-hover:blur-lg transition-all duration-500 -z-10"></span>
+                  
+                  {/* Text with gradient effect on hover */}
+                  <span className="bg-clip-text bg-gradient-to-r from-gray-500 to-gray-500 
+                                  group-hover:from-blue-600 group-hover:to-purple-600
+                                  dark:from-white dark:to-white
+                                  dark:group-hover:from-blue-400 dark:group-hover:to-purple-400
+                                  transition-all duration-300">
+                    {company}
+                  </span>
+                  
+                  {/* Underline animation */}
+                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-500 to-purple-500 
+                                  group-hover:w-full transition-all duration-300"></span>
                 </motion.div>
               ))}
             </div>
